@@ -462,7 +462,7 @@ $country_codes = [
                                                 </button>
                                             </div>
 
-                                            <!-- Bank Details Tab -->
+                                           
                                          <div class="tab-pane fade" id="bankTab" role="tabpanel">
                                                 <h6 class="mb-3">Banking Details</h6>
                                                 <div class="row gx-3">
