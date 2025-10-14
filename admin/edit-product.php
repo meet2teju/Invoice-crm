@@ -91,68 +91,67 @@ $row = mysqli_fetch_assoc($result);
         <div class="page-wrapper">
             <div class="content">
                 <div class="row">
-                    <div class="col-md-10 mx-auto">
+                    <div class="col-md-12 mx-auto">
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-3">
-                                <h6><a href="products.php"><i class="isax isax-arrow-left me-2"></i>Products</a></h6>
+                                <h6>Edit Products</h6>
                                 <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center" id="previewBtn">
                                     <i class="isax isax-eye me-1"></i>Preview</a>
                             </div>
                             <div class="card">
                                 <div class="card-body">
-                                    <h6 class="mb-3">Basic Details</h6>
                                     <form id="productForm" action="process/action_edit_product.php" method="POST" enctype="multipart/form-data">
                                         <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                                         <input type="hidden" name="current_image" value="<?= $row['product_img'] ?>">
                                         <input type="hidden" name="remove_main_image" id="remove_main_image" value="0">
                                         
-                                        <!-- Product Image Field -->
-                                        <div class="mb-3">
-                                            <label class="form-label">Product Image </label>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
-                                                    <div class="position-relative d-flex align-items-center">
-                                                        <?php
-                                                        $default_image = 'assets/img/products/default.png';
-                                                        $image_path = '../uploads/' . $row['product_img'];
-                                                        $product_img = (!empty($row['product_img']) && file_exists($image_path)) ? $image_path : $default_image;
-                                                        ?>
-                                                        <img src="<?= $product_img ?>"  id="image_preview" class="avatar avatar-xl" alt="Product Image">
-                                                        <a href="javascript:void(0);" class="rounded-trash trash-top d-flex align-items-center justify-content-center" id="remove_image">
-                                                            <i class="isax isax-trash"></i>
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                                <div class="d-inline-flex flex-column align-items-start">
-                                                    <div class="drag-upload-btn btn btn-sm btn-primary position-relative mb-2">
-                                                        <i class="isax isax-image me-1"></i>Upload Image
-                                                        <input type="file" id="image_upload" name="product_img" class="form-control image-sign" accept="image/jpeg,image/png">
-                                                    </div>
-                                                    <span class="text-gray-9 fs-12">JPG or PNG format, not exceeding 5MB.</span>
-                                                    <span id="image_error" class="error-message text-danger"></span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Item Type Field -->
-                                        <div class="mb-3">
-                                            <label class="form-label">Item Type</label>
-                                            <div class="d-flex align-items-center">
-                                                <div class="form-check me-3">
-                                                    <input class="form-check-input" type="radio" name="item_type" id="Radio-sm-1" value="1" <?= ($row['item_type'] == '1') ? 'checked' : '' ?>>
-                                                    <label class="form-check-label" for="Radio-sm-1">Product</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="item_type" id="Radio-sm-2" value="0" <?= ($row['item_type'] == '0') ? 'checked' : '' ?>>
-                                                    <label class="form-check-label" for="Radio-sm-2">Service</label>
-                                                </div>
-                                            </div>
-                                            <!-- <span id="item_type_error" class="error-message text-danger"></span> -->
-                                        </div>
-
                                         <!-- Main Form Fields -->
                                         <div class="row gx-3">
                                             <!-- Name Field -->
+                                            <div class="col-lg-6 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Product Image </label>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
+                                                            <div class="position-relative d-flex align-items-center">
+                                                                <?php
+                                                                $default_image = 'assets/img/products/default.png';
+                                                                $image_path = '../uploads/' . $row['product_img'];
+                                                                $product_img = (!empty($row['product_img']) && file_exists($image_path)) ? $image_path : $default_image;
+                                                                ?>
+                                                                <img src="<?= $product_img ?>"  id="image_preview" class="avatar avatar-xl" alt="Product Image">
+                                                                <a href="javascript:void(0);" class="rounded-trash trash-top d-flex align-items-center justify-content-center" id="remove_image">
+                                                                    <i class="isax isax-trash"></i>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                        <div class="d-inline-flex flex-column align-items-start">
+                                                            <div class="drag-upload-btn btn btn-sm btn-primary position-relative mb-2">
+                                                                <i class="isax isax-image me-1"></i>Upload Image
+                                                                <input type="file" id="image_upload" name="product_img" class="form-control image-sign" accept="image/jpeg,image/png">
+                                                            </div>
+                                                            <span class="text-gray-9 fs-12">JPG or PNG format, not exceeding 5MB.</span>
+                                                            <span id="image_error" class="error-message text-danger"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Item Type</label>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="form-check me-3">
+                                                            <input class="form-check-input" type="radio" name="item_type" id="Radio-sm-1" value="1" <?= ($row['item_type'] == '1') ? 'checked' : '' ?>>
+                                                            <label class="form-check-label" for="Radio-sm-1">Product</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="item_type" id="Radio-sm-2" value="0" <?= ($row['item_type'] == '0') ? 'checked' : '' ?>>
+                                                            <label class="form-check-label" for="Radio-sm-2">Service</label>
+                                                        </div>
+                                                    </div>
+                                                    <!-- <span id="item_type_error" class="error-message text-danger"></span> -->
+                                                </div>
+                                            </div>
                                             <div class="col-lg-4 col-md-6">
                                                 <div class="mb-3">
                                                     <label class="form-label">Name <span class="required">*</span></label>

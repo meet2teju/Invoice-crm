@@ -129,162 +129,168 @@
         <?php include 'layouts/menu.php'; ?>
 
         <div class="page-wrapper">
-            <div class="row">
-                <div class="col-md-10 mx-auto">
-                    <div>
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <h6><a href="products.php"><i class="isax isax-arrow-left me-2"></i>Products</a></h6>
-                            <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center" id="previewBtn">
-                                <i class="isax isax-eye me-1"></i>Preview</a>
-                        </div>
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="mb-3">Basic Details</h6>
-                                <form action="process/action_add_product.php" method="POST" id="form" enctype="multipart/form-data">
-                                    <input type="hidden" name="user_id" value="<?php echo $_SESSION['crm_user_id'] ?? 1; ?>">
-
-                                    <div class="mb-3">
-                                        <span class="text-gray-9 fw-bold mb-2 d-flex">Product Image</span>
-                                        <div class="d-flex align-items-center">
-                                            <div id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
-                                                <i class="isax isax-image text-primary fs-24"></i>
-                                            </div>
-                                            <div class="d-inline-flex flex-column align-items-start">
-                                                <div class="drag-upload-btn btn btn-sm btn-primary position-relative mb-2">
-                                                    <i class="isax isax-image me-1"></i>Upload Image
-                                                    <input type="file" name="product_img" id="add_image" class="form-control image-sign" accept="image/*">
+            <div class="content">
+                <div class="row">
+                    <div class="col-md-12 mx-auto">
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6>Add Products</h6>
+                                <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center" id="previewBtn">
+                                    <i class="isax isax-eye me-1"></i>Preview</a>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <form action="process/action_add_product.php" method="POST" id="form" enctype="multipart/form-data">
+                                        <input type="hidden" name="user_id" value="<?php echo $_SESSION['crm_user_id'] ?? 1; ?>">
+                                        <div class="row gx-3">
+                                            <div class="col-lg-6 col-md-6">
+                                                <div class="mb-3">
+                                                    <span class="text-gray-9 fw-bold mb-2 d-flex">Product Image</span>
+                                                    <div class="d-flex align-items-center">
+                                                        <div id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
+                                                            <i class="isax isax-image text-primary fs-24"></i>
+                                                        </div>
+                                                        <div class="d-inline-flex flex-column align-items-start">
+                                                            <div class="drag-upload-btn btn btn-sm btn-primary position-relative mb-2">
+                                                                <i class="isax isax-image me-1"></i>Upload Image
+                                                                <input type="file" name="product_img" id="add_image" class="form-control image-sign" accept="image/*">
+                                                            </div>
+                                                            <span id="add_image_error" class="text-danger error-text fs-12"></span>
+                                                            <span class="text-gray-9 fs-12">JPG or PNG format, not exceeding 5MB.</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <span id="add_image_error" class="text-danger error-text fs-12"></span>
-                                                <span class="text-gray-9 fs-12">JPG or PNG format, not exceeding 5MB.</span>
                                             </div>
+                                            <div class="col-lg-6 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Item Type</label>
+                                                    <div class="d-flex align-items-center mb-3">
+                                                        <div class="form-check me-3">
+                                                            <input class="form-check-input" value="1" type="radio" name="item_type"  id="product_type" checked>
+                                                            <label class="form-check-label">Product</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" value="0" type="radio" name="item_type" id="service_type">
+                                                            <label class="form-check-label">Service</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Name<span class="text-danger ms-1">*</span></label>
+                                                    <input type="text" name="name" id="name" class="form-control no-numbers">
+                                                    <span class="text-danger error-text" id="name_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">HSN Code<span class="text-danger ms-1">*</span></label>
+                                                    <input type="text" name="code" id="code" class="form-control">
+                                                    <span class="text-danger error-text" id="code_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Category<span class="text-danger ms-1">*</span></label>
+                                                    <select class="form-select" name="category_id" id="category_id">
+                                                        <option value="">Select Category</option>
+                                                        <?php $result = mysqli_query($conn, "SELECT * FROM category WHERE status=1");
+                                                        while ($row = mysqli_fetch_assoc($result)) {
+                                                            echo '<option value="' . $row['id'] . '">' . $row['name'] . '</option>';
+                                                        } ?>
+                                                    </select>
+                                                    <span class="text-danger error-text" id="category_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6 product-only">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Selling Price</label>
+                                                    <input type="text" name="selling_price" id="selling_price" class="form-control">
+                                                    <span class="text-danger error-text" id="selling_price_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6 stock-only">
+                                                <div class="mb-3">
+                                                    <label class="form-label ">Purchase Price</label>
+                                                    <input type="text" name="purchase_price" id="purchase_price" class="form-control">
+                                                    <span class="text-danger error-text" id="purchase_price_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6 stock-only">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Quantity</label>
+                                                    <input type="text" name="quantity" id="quantity" class="form-control">
+                                                    <span class="text-danger error-text" id="quantity_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6 stock-only">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Units</label>
+                                                    <select class="form-select" name="unit_id" id="unit_id">
+                                                        <option value="">Select unit</option>
+                                                        <?php $unit = mysqli_query($conn, "SELECT * FROM units WHERE status=1");
+                                                        while ($row = mysqli_fetch_assoc($unit)) {
+                                                            echo '<option value="' . $row['id'] . '">' . $row['name'] . '</option>';
+                                                        } ?>
+                                                    </select>
+                                                    <span class="text-danger error-text" id="unit_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6 product-only">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Discount Type</label>
+                                                    <select class="form-select" name="discount_type" id="discount_type">
+                                                        <option value="">Select</option>
+                                                        <option value="%">%</option>
+                                                        <option value="fixed">Fixed</option>
+                                                    </select>
+                                                    <span class="text-danger error-text" id="discount_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6 product-only">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Tax</label>
+                                                    <select class="form-select" name="tax_id"  id="tax_id">
+                                                        <option value="">Select</option>
+                                                        <?php 
+                                                        $tax = mysqli_query($conn, "SELECT * FROM tax WHERE status=1");
+                                                        while ($row = mysqli_fetch_assoc($tax)) {
+                                                            echo '<option value="' . $row['id'] . '" data-rate="' . $row['rate'] . '">'
+                                                                . $row['name'] . ' (' . $row['rate'] . '%)</option>';
+                                                        }
+                                                        ?>
+
+                                                    </select>
+                                                    <span class="text-danger error-text" id="tax_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6 stock-only">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Alert Quantity</label>
+                                                    <input type="text" name="alert_quantity" id="alert_quantity" class="form-control">
+                                                    <span class="text-danger error-text" id="alert_quantity_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-12 product-only">
+                                        <div class="mb-3">
+                                            <label class="form-label">Product Description</label>
+
+                                            <!-- Quill Editor Container -->
+                                            <div id="editorContainer" style="height: 200px; background-color: #fff;"></div>
+
+                                            <!-- Hidden Textarea to store HTML content on submit -->
+                                            <textarea name="description" id="productDescription" class="form-control d-none"></textarea>
                                         </div>
                                     </div>
-                                    <label class="form-label">Item Type</label>
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="form-check me-3">
-                                            <input class="form-check-input" value="1" type="radio" name="item_type"  id="product_type" checked>
-                                            <label class="form-check-label">Product</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" value="0" type="radio" name="item_type" id="service_type">
-                                            <label class="form-check-label">Service</label>
-                                        </div>
-                                    </div>
-                                    <div class="row gx-3">
-                                        <div class="col-lg-4 col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">Name<span class="text-danger ms-1">*</span></label>
-                                                <input type="text" name="name" id="name" class="form-control no-numbers">
-                                                <span class="text-danger error-text" id="name_error"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">HSN Code<span class="text-danger ms-1">*</span></label>
-                                                <input type="text" name="code" id="code" class="form-control">
-                                                <span class="text-danger error-text" id="code_error"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">Category<span class="text-danger ms-1">*</span></label>
-                                                <select class="form-select" name="category_id" id="category_id">
-                                                    <option value="">Select Category</option>
-                                                    <?php $result = mysqli_query($conn, "SELECT * FROM category WHERE status=1");
-                                                    while ($row = mysqli_fetch_assoc($result)) {
-                                                        echo '<option value="' . $row['id'] . '">' . $row['name'] . '</option>';
-                                                    } ?>
-                                                </select>
-                                                <span class="text-danger error-text" id="category_error"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 product-only">
-                                            <div class="mb-3">
-                                                <label class="form-label">Selling Price</label>
-                                                <input type="text" name="selling_price" id="selling_price" class="form-control">
-                                                <span class="text-danger error-text" id="selling_price_error"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 stock-only">
-                                            <div class="mb-3">
-                                                <label class="form-label ">Purchase Price</label>
-                                                <input type="text" name="purchase_price" id="purchase_price" class="form-control">
-                                                <span class="text-danger error-text" id="purchase_price_error"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 stock-only">
-                                            <div class="mb-3">
-                                                <label class="form-label">Quantity</label>
-                                                <input type="text" name="quantity" id="quantity" class="form-control">
-                                                <span class="text-danger error-text" id="quantity_error"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 stock-only">
-                                            <div class="mb-3">
-                                                <label class="form-label">Units</label>
-                                                <select class="form-select" name="unit_id" id="unit_id">
-                                                    <option value="">Select unit</option>
-                                                    <?php $unit = mysqli_query($conn, "SELECT * FROM units WHERE status=1");
-                                                    while ($row = mysqli_fetch_assoc($unit)) {
-                                                        echo '<option value="' . $row['id'] . '">' . $row['name'] . '</option>';
-                                                    } ?>
-                                                </select>
-                                                <span class="text-danger error-text" id="unit_error"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 product-only">
-                                            <div class="mb-3">
-                                                <label class="form-label">Discount Type</label>
-                                                <select class="form-select" name="discount_type" id="discount_type">
-                                                    <option value="">Select</option>
-                                                    <option value="%">%</option>
-                                                    <option value="fixed">Fixed</option>
-                                                </select>
-                                                <span class="text-danger error-text" id="discount_error"></span>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 product-only">
-                                            <div class="mb-3">
-                                                <label class="form-label">Tax</label>
-                                                <select class="form-select" name="tax_id"  id="tax_id">
-                                                    <option value="">Select</option>
-                                                    <?php 
-                                                    $tax = mysqli_query($conn, "SELECT * FROM tax WHERE status=1");
-                                                    while ($row = mysqli_fetch_assoc($tax)) {
-                                                        echo '<option value="' . $row['id'] . '" data-rate="' . $row['rate'] . '">'
-                                                            . $row['name'] . ' (' . $row['rate'] . '%)</option>';
-                                                    }
-                                                    ?>
 
-                                                </select>
-                                                <span class="text-danger error-text" id="tax_error"></span>
-                                            </div>
                                         </div>
-                                        <div class="col-lg-4 col-md-6 stock-only">
-                                            <div class="mb-3">
-                                                <label class="form-label">Alert Quantity</label>
-                                                <input type="text" name="alert_quantity" id="alert_quantity" class="form-control">
-                                                <span class="text-danger error-text" id="alert_quantity_error"></span>
-                                            </div>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <button type="button" class="btn btn-outline-white" onclick="window.location.href='products.php'">Cancel</button>
+                                            <button type="submit" name="product" class="btn btn-primary">Create New</button>
                                         </div>
-                                        <div class="col-lg-12 product-only">
-                                    <div class="mb-3">
-                                        <label class="form-label">Product Description</label>
-
-                                        <!-- Quill Editor Container -->
-                                        <div id="editorContainer" style="height: 200px; background-color: #fff;"></div>
-
-                                        <!-- Hidden Textarea to store HTML content on submit -->
-                                        <textarea name="description" id="productDescription" class="form-control d-none"></textarea>
-                                    </div>
+                                    </form>
                                 </div>
-
-                                    </div>
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <button type="button" class="btn btn-outline-white" onclick="window.location.href='products.php'">Cancel</button>
-                                        <button type="submit" name="product" class="btn btn-primary">Create New</button>
-                                    </div>
-                                </form>
                             </div>
                         </div>
                     </div>

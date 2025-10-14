@@ -437,15 +437,14 @@ while ($row = mysqli_fetch_assoc($status_result)) {
 
                 <!-- Start row  -->
                 <div class="row">
-                    <div class="col-md-11 mx-auto">
+                    <div class="col-md-12 mx-auto">
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-3">
-                                <h6><a href="project-tasks.php"><i class="isax isax-arrow-left me-2"></i>Tasks</a></h6>
+                                <h6>Add Tasks</h6>
                                 <a href="project-tasks.php" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
                             </div>
                             <div class="card">
                                 <div class="card-body">
-                                    <h6 class="mb-3">Task Details</h6>
                                     <form action="process/action_add_task.php" method="POST" id="form" enctype="multipart/form-data">
                                         <input type="hidden" name="user_id" value="<?php echo $_SESSION['crm_user_id'] ?? 1; ?>">
 
@@ -585,7 +584,7 @@ while ($row = mysqli_fetch_assoc($status_result)) {
 <!-- end row -->
 
 
-                                        <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
                                             <button type="button" class="btn btn-outline-white" onclick="window.location.href='project-tasks.php'">Cancel</button>
                                             <button type="submit" class="btn btn-primary">Save Task</button>
                                         </div>

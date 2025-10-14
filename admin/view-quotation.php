@@ -144,7 +144,7 @@ if (!empty($quotation['client_id'])) {
                                     <div class="col-lg-4">
                                         <div>
                                             <h6 class="mb-2 fs-16 fw-semibold">Billing From</h6>
-                                            <div class="bg-white rounded p-3">
+                                            <div class="bg-white rounded">
                                                 <div class="d-flex align-items-center mb-1">
                                                     <div>
                                                         <h6 class="fs-14 fw-semibold"><?= htmlspecialchars($company['name']) ?></h6>
@@ -166,7 +166,7 @@ if (!empty($quotation['client_id'])) {
                                     <div class="col-lg-4">
                                         <div>
                                             <h6 class="mb-2 fs-16 fw-semibold">Billing To</h6>
-                                            <div class="bg-white rounded p-3">
+                                            <div class="bg-white rounded">
                                                 <div class="d-flex align-items-center mb-1">
                                                     <div>
                                                         <h6 class="fs-14 fw-semibold"><?= htmlspecialchars($quotation['first_name'] . ' ' . $quotation['last_name']) ?></h6>

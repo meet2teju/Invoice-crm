@@ -33,140 +33,144 @@
 
         <div class="page-wrapper">
             <div class="content">
-            <?php if (isset($_SESSION['message'])): ?>
-    <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
-        <?= $_SESSION['message']; unset($_SESSION['message']); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-<?php endif;
- ?>
-
-                <div class="row justify-content-center">
-                    <div class="col-xl-12">
-                        <div class="row settings-wrapper d-flex">
-                            <div class="col-12">
-
-                                <div class="mb-3">
-                                    <div class="pb-3 border-bottom mb-3">
-                                        <h6 class="mb-0">Bank Details</h6>
-                                    </div>
-
-                                    <div class="mb-3 d-flex justify-content-between align-items-center">
-                                        <div class="d-flex align-items-center flex-wrap gap-2">
-                                          
-                                        </div>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#add_bank_modal" class="btn btn-primary">
-                                            <i class="isax isax-add-circle5 me-2"></i>New Bank
-                                        </a>
-                                    </div>
-
-                                    <div class="table-responsive table-nowrap pb-3 border-bottom">
-                                        <div class="table-search d-flex align-items-center mb-0">
+                <?php if (isset($_SESSION['message'])): ?>
+                    <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
+                        <?= $_SESSION['message']; unset($_SESSION['message']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif;
+                ?>
+                <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3">
+                    <h6 class="mb-0">Bank Details</h6>
+                    <div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
+                        <div class="table-search d-flex align-items-center mb-0">
                             <div class="search-input">
                                 <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
                             </div>
-                              <!-- Multiple Delete Button (Hidden by default) -->
-                                            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
-                                                <i class="fa-regular fa-trash-can me-1"></i>Delete
+                            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                                <i class="fa-regular fa-trash-can me-1"></i>Delete
+                            </a>
+                        </div>
+                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#add_bank_modal" class="btn btn-primary">
+                            <i class="isax isax-add-circle5 me-2"></i>New Bank
+                        </a>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <!-- <div class="table-search d-flex align-items-center mb-0">
+                                <div class="search-input">
+                                    <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
+                                </div>
+                                <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                                    <i class="fa-regular fa-trash-can me-1"></i>Delete
+                                </a>
+                            </div> -->
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive table-nowrap pb-3 border-bottom">
+                    <!-- <div class="table-search d-flex align-items-center mb-0">
+                        <div class="search-input">
+                            <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
+                        </div>
+                        <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                            <i class="fa-regular fa-trash-can me-1"></i>Delete
+                        </a>
+                    </div> -->
+                    <table class="table table-nowrap datatable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="no-sort">
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" id="select-all">
+                                    </div>
+                                </th>
+                                <th>Bank Name</th>
+                                <th>Account Holder</th>
+                                <th>Account No.</th>
+                                <th>IFSC Code</th>
+                                <th>SWIFT Code</th>
+                                <th>Opening Balance</th>
+                                <th class="no-sort">Status</th>
+                                <th class="no-sort">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $query = "SELECT * FROM bank ORDER BY created_at DESC";
+                            $result = mysqli_query($conn, $query);
+                            while ($row = mysqli_fetch_assoc($result)) {
+                                $status = $row['status'] ? 'checked' : '';
+                            ?>
+                            <tr>
+                                <td>
+                                    <div class="form-check form-check-md">
+                                        <input type="checkbox" class="form-check-input bank-checkbox" name="bank_ids[]" value="<?= $row['id'] ?>">
+                                    </div>
+                                </td>
+                                <td><?= htmlspecialchars($row['bank_name']) ?></td>
+                                <td><?= htmlspecialchars($row['account_holder']) ?></td>
+                                <td><?= htmlspecialchars($row['account_number']) ?></td>
+                                <td><?= htmlspecialchars($row['ifsc_code']) ?></td>
+                                <td><?= htmlspecialchars($row['swift_code']) ?></td>
+                                <td>$&nbsp;<?= number_format($row['opening_balance'], 2) ?></td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input status-toggle" type="checkbox" role="switch" <?= $status ?> data-id="<?= $row['id'] ?>">
+                                    </div>
+                                </td>
+                                <td class="action-item">
+                                    <a href="#" data-bs-toggle="dropdown">
+                                        <i class="isax isax-more"></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a href="#" class="dropdown-item edit-bank-btn" 
+                                                data-id="<?= $row['id'] ?>"
+                                                data-bank-name="<?= htmlspecialchars($row['bank_name']) ?>"
+                                                data-account-holder="<?= htmlspecialchars($row['account_holder']) ?>"
+                                                data-account-number="<?= htmlspecialchars($row['account_number']) ?>"
+                                                data-ifsc-code="<?= htmlspecialchars($row['ifsc_code']) ?>"
+                                                data-swift-code="<?= htmlspecialchars($row['swift_code']) ?>"
+                                                data-opening-balance="<?= htmlspecialchars($row['opening_balance']) ?>">
+                                                <i class="isax isax-edit me-2"></i>Edit
                                             </a>
-                        </div><br>
-                                        <table class="table table-nowrap datatable">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th class="no-sort">
-                                                        <div class="form-check form-check-md">
-                                                            <input class="form-check-input" type="checkbox" id="select-all">
-                                                        </div>
-                                                    </th>
-                                                    <th>Bank Name</th>
-                                                    <th>Account Holder</th>
-                                                    <th>Account No.</th>
-                                                    <th>IFSC Code</th>
-                                                    <th>SWIFT Code</th>
-                                                    <th>Opening Balance</th>
-                                                    <th class="no-sort">Status</th>
-                                                    <th class="no-sort">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php
-                                                $query = "SELECT * FROM bank ORDER BY created_at DESC";
-                                                $result = mysqli_query($conn, $query);
-                                                while ($row = mysqli_fetch_assoc($result)) {
-                                                    $status = $row['status'] ? 'checked' : '';
-                                                ?>
-                                                <tr>
-                                                    <td>
-                                                        <div class="form-check form-check-md">
-                                                            <input type="checkbox" class="form-check-input bank-checkbox" name="bank_ids[]" value="<?= $row['id'] ?>">
-                                                        </div>
-                                                    </td>
-                                                    <td><?= htmlspecialchars($row['bank_name']) ?></td>
-                                                    <td><?= htmlspecialchars($row['account_holder']) ?></td>
-                                                    <td><?= htmlspecialchars($row['account_number']) ?></td>
-                                                    <td><?= htmlspecialchars($row['ifsc_code']) ?></td>
-                                                    <td><?= htmlspecialchars($row['swift_code']) ?></td>
-                                                    <td>$&nbsp;<?= number_format($row['opening_balance'], 2) ?></td>
-                                                    <td>
-                                                        <div class="form-check form-switch">
-                                                            <input class="form-check-input status-toggle" type="checkbox" role="switch" <?= $status ?> data-id="<?= $row['id'] ?>">
-                                                        </div>
-                                                    </td>
-                                                    <td class="action-item">
-                                                        <a href="#" data-bs-toggle="dropdown">
-                                                            <i class="isax isax-more"></i>
-                                                        </a>
-                                                        <ul class="dropdown-menu">
-                                                            <li>
-                                                                <a href="#" class="dropdown-item edit-bank-btn" 
-                                                                   data-id="<?= $row['id'] ?>"
-                                                                   data-bank-name="<?= htmlspecialchars($row['bank_name']) ?>"
-                                                                   data-account-holder="<?= htmlspecialchars($row['account_holder']) ?>"
-                                                                   data-account-number="<?= htmlspecialchars($row['account_number']) ?>"
-                                                                   data-ifsc-code="<?= htmlspecialchars($row['ifsc_code']) ?>"
-                                                                   data-swift-code="<?= htmlspecialchars($row['swift_code']) ?>"
-                                                                   data-opening-balance="<?= htmlspecialchars($row['opening_balance']) ?>">
-                                                                    <i class="isax isax-edit me-2"></i>Edit
-                                                                </a>
-                                                            </li>
-                                                            <li>
-                                                                <a href="#" class="dropdown-item" 
-                                                                   data-bs-toggle="modal" 
-                                                                   data-bs-target="#deleteModal<?= $row['id']; ?>">
-                                                                    <i class="isax isax-trash me-2"></i>Delete
-                                                                </a>
-                                                            </li>
-                                                        </ul>
-                                                    </td>
-                                                </tr>
+                                        </li>
+                                        <li>
+                                            <a href="#" class="dropdown-item" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteModal<?= $row['id']; ?>">
+                                                <i class="isax isax-trash me-2"></i>Delete
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </td>
+                            </tr>
 
-                                                <!-- Delete Modal -->
-                                                <div class="modal fade" id="deleteModal<?= $row['id']; ?>" tabindex="-1" aria-hidden="true">
-                                                    <div class="modal-dialog modal-dialog-centered">
-                                                        <div class="modal-content">
-                                                            <form method="POST" action="process/action_delete_bank.php">
-                                                                <input type="hidden" name="id" value="<?= $row['id'] ?>">
-                                                                <div class="modal-body text-center">
-                                                                    <div class="mb-3"><img src="assets/img/icons/delete.svg" alt="delete"></div>
-                                                                    <h6 class="mb-1">Delete Bank</h6>
-                                                                    <p class="mb-3">Are you sure you want to delete this bank?</p>
-                                                                    <div class="d-flex justify-content-center">
-                                                                        <button type="button" class="btn btn-outline-white me-3" data-bs-dismiss="modal">Cancel</button>
-                                                                        <button type="submit" class="btn btn-primary">Yes, Delete</button>
-                                                                    </div>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </div>
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteModal<?= $row['id']; ?>" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="process/action_delete_bank.php">
+                                            <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                            <div class="modal-body text-center">
+                                                <div class="mb-3"><img src="assets/img/icons/delete.svg" alt="delete"></div>
+                                                <h6 class="mb-1">Delete Bank</h6>
+                                                <p class="mb-3">Are you sure you want to delete this bank?</p>
+                                                <div class="d-flex justify-content-center">
+                                                    <button type="button" class="btn btn-outline-white me-3" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">Yes, Delete</button>
                                                 </div>
-                                                <?php } ?>
-                                            </tbody>
-                                        </table>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                            <?php } ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <?php include 'layouts/footer.php'; ?>

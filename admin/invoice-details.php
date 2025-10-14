@@ -140,23 +140,23 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 							</div>
 							<div class="card" id="downloadpdf">
 								<div class="card-body">
-									<div class="bg-light p-4 rounded position-relative mb-3">
-										<div class="position-absolute top-0 end-0 z-0">
+									<div class="bg-light rounded position-relative mb-3">
+										<!-- <div class="position-absolute top-0 end-0 z-0">
 											
 										</div>
 										<div class="d-flex align-items-center justify-content-between border-bottom flex-wrap mb-3 pb-2 position-relative z-1">
 											<div class="mb-3">
 												<div class="d-flex align-items-center flex-wrap row-gap-3">
 													<div class="me-4">
-														<!-- <h6 class="fs-14 fw-semibold mb-1">Dreams Technologies Pvt Ltd.,</h6> -->
-														<!-- <p class="mb-1"><?= htmlspecialchars($login_user['city_name']) ?>, <?= htmlspecialchars($login_user['state_name']) ?>, <?= htmlspecialchars($login_user['country_name']) ?>, <?= htmlspecialchars($login_user['zipcode']) ?></p> -->
+														<h6 class="fs-14 fw-semibold mb-1">Dreams Technologies Pvt Ltd.,</h6>
+														<p class="mb-1"><?= htmlspecialchars($login_user['city_name']) ?>, <?= htmlspecialchars($login_user['state_name']) ?>, <?= htmlspecialchars($login_user['country_name']) ?>, <?= htmlspecialchars($login_user['zipcode']) ?></p>
 
 													</div>
 													
 												</div>
 											</div>
 											
-										</div>
+										</div> -->
 
 										<!-- start row -->
 										<div class="row gy-3 position-relative z-1">
@@ -192,7 +192,7 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 											<div class="col-lg-4">
     <div>
         <h6 class="mb-2 fs-16 fw-semibold">Billing From</h6>
-        <div class="bg-white rounded p-3">
+        <div class="bg-white rounded">
             <div class="d-flex align-items-center mb-1">
                 <div>
                     <h6 class="fs-14 fw-semibold"><?= htmlspecialchars($company['name']) ?></h6>
@@ -215,7 +215,7 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 											<div class="col-lg-4">
 												<div>
 													<h6 class="mb-2 fs-16 fw-semibold">Billing To</h6>
-													<div class="bg-white rounded p-3">
+													<div class="bg-white rounded">
 														<div class="d-flex align-items-center mb-1">
 															
 															<div>

@@ -16,122 +16,124 @@
         <div class="page-wrapper">
             <div class="content">
                 <!-- Display messages -->
-             <?php if (isset($_SESSION['message'])): ?>
-    <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
-        <?= $_SESSION['message']; ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <?php unset($_SESSION['message'], $_SESSION['message_type']); ?>
-<?php endif; ?>
+                <?php if (isset($_SESSION['message'])): ?>
+                <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
+                    <?= $_SESSION['message']; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php unset($_SESSION['message'], $_SESSION['message_type']); ?>
+                <?php endif; ?>
 
-                <div class="row justify-content-center">
-                    <div class="col-xl-12">
-                        <div class="row settings-wrapper d-flex">
-                            <div class="col-12">
-
-                                <div class="mb-3">
-                                    <div class="pb-3 border-bottom mb-3">
-                                        <h6 class="mb-0">Tax Rates</h6>
-                                    </div>
-                                
-                                    <div class="mb-3">
-                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                                           
-                                             <?php if (check_is_access_new("add_tax") == 1) { ?>
-                                            <div class="d-flex align-items-center flex-wrap gap-2">
-                                                <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#add_tax_rates" class="btn btn-primary d-flex align-items-center">
-                                                    <i class="isax isax-add-circle5 me-2"></i>New Tax Rate
-                                                </a>
-                                            </div>
-                                            <?php } ?>
-                                        </div>
-                                    </div>
-                                    
-                                    	<div class="table-responsive">
-                                            <div class="table-search d-flex align-items-center mb-0">
+                <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3">
+                    <h6 class="mb-0">Tax Rates</h6>
+                    <div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
+                        <div class="table-search d-flex align-items-center mb-0">
                             <div class="search-input">
                                 <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
                             </div>
 
-                             <div class="d-flex align-items-center flex-wrap gap-4">
-                                                <!-- Multiple Delete Button (Hidden by default) -->
-                                                <a href="#" class="btn btn-outline-danger delete-multiple d-none">
-                                                    <i class="fa-regular fa-trash-can me-1"></i>Delete
-                                                </a>
-                                            </div>
-                        </div><br>
-                                            <table class="table table-nowrap datatable">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th class="no-sort">
-                                                        <div class="form-check form-check-md">
-                                                            <input class="form-check-input" type="checkbox" id="select-all">
-                                                        </div>
-                                                    </th>
-                                                    <th>Name</th>
-                                                    <th>Tax Rate</th>
-                                                    <th>Created On</th>
-                                                    <th class="no-sort">Status</th>
-                                                    <th class="no-sort">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php
-                                                $query = "SELECT * FROM tax ORDER BY created_at DESC";
-                                                $result = mysqli_query($conn, $query);
-                                                
-                                                while ($row = mysqli_fetch_assoc($result)) {
-                                                    $status = $row['status'] ? 'checked' : '';
-                                                    $created_at = date('d M Y', strtotime($row['created_at']));
-                                                ?>
-                                                <tr data-id="<?= $row['id'] ?>">
-                                                    <td>
-                                                        <div class="form-check form-check-md">
-                                                            <input type="checkbox" class="form-check-input tax-checkbox" name="tax_ids[]" value="<?= $row['id'] ?>">
-                                                        </div>
-                                                    </td>
-                                                    <td><?= htmlspecialchars($row['name']) ?></td>
-                                                    <td><?= htmlspecialchars($row['rate']) ?>%</td>
-                                                    <td><?= $created_at ?></td>
-                                                    <td>
-                                                        <div class="form-check form-switch">
-                                                            <input class="form-check-input status-toggle" type="checkbox" role="switch" <?= $status ?> data-id="<?= $row['id'] ?>">
-                                                        </div>
-                                                    </td>
-                                                    <td class="action-item">
-                                                        <a href="javascript:void(0);" data-bs-toggle="dropdown">
-                                                            <i class="isax isax-more"></i>
-                                                        </a>
-                                                        <ul class="dropdown-menu">
-                                                             <?php if (check_is_access_new("edit_tax") == 1) { ?>
-                                                            <li>
-                                                                <a href="javascript:void(0);" class="dropdown-item edit-tax-rate" 
-                                                                   data-id="<?= $row['id'] ?>"
-                                                                   data-name="<?= htmlspecialchars($row['name']) ?>"
-                                                                   data-rate="<?= htmlspecialchars($row['rate']) ?>">
-                                                                   <i class="isax isax-edit me-2"></i>Edit
-                                                                </a>
-                                                            </li>
-                                                            <?php } ?>
-                                                             <?php if (check_is_access_new("delete_tax") == 1) { ?>
-                                                            <li>
-                                                                <a href="javascript:void(0);" class="dropdown-item delete-tax-rate" 
-                                                                   data-id="<?= $row['id'] ?>">
-                                                                   <i class="isax isax-trash me-2"></i>Delete
-                                                                </a>
-                                                            </li>
-                                                            <?php } ?>
-                                                        </ul>
-                                                    </td>
-                                                </tr>
-                                                <?php } ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                            <div class="d-flex align-items-center flex-wrap gap-4">
+                                
+                                <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                                    <i class="fa-regular fa-trash-can me-1"></i>Delete
+                                </a>
                             </div>
                         </div>
+                        <?php if (check_is_access_new("add_tax") == 1) { ?>
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#add_tax_rates" class="btn btn-primary d-flex align-items-center">
+                                <i class="isax isax-add-circle5 me-2"></i>New Tax Rate
+                            </a>
+                        </div>
+                        <?php } ?>
                     </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <!-- <div class="table-search d-flex align-items-center mb-0">
+                                <div class="search-input">
+                                    <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
+                                </div>
+
+                                <div class="d-flex align-items-center flex-wrap gap-4">
+                                    
+                                    <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                                        <i class="fa-regular fa-trash-can me-1"></i>Delete
+                                    </a>
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-nowrap datatable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="no-sort">
+                                    <div class="form-check form-check-md">
+                                        <input class="form-check-input" type="checkbox" id="select-all">
+                                    </div>
+                                </th>
+                                <th>Name</th>
+                                <th>Tax Rate</th>
+                                <th>Created On</th>
+                                <th class="no-sort">Status</th>
+                                <th class="no-sort">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $query = "SELECT * FROM tax ORDER BY created_at DESC";
+                            $result = mysqli_query($conn, $query);
+                            
+                            while ($row = mysqli_fetch_assoc($result)) {
+                                $status = $row['status'] ? 'checked' : '';
+                                $created_at = date('d M Y', strtotime($row['created_at']));
+                            ?>
+                            <tr data-id="<?= $row['id'] ?>">
+                                <td>
+                                    <div class="form-check form-check-md">
+                                        <input type="checkbox" class="form-check-input tax-checkbox" name="tax_ids[]" value="<?= $row['id'] ?>">
+                                    </div>
+                                </td>
+                                <td><?= htmlspecialchars($row['name']) ?></td>
+                                <td><?= htmlspecialchars($row['rate']) ?>%</td>
+                                <td><?= $created_at ?></td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input status-toggle" type="checkbox" role="switch" <?= $status ?> data-id="<?= $row['id'] ?>">
+                                    </div>
+                                </td>
+                                <td class="action-item">
+                                    <a href="javascript:void(0);" data-bs-toggle="dropdown">
+                                        <i class="isax isax-more"></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <?php if (check_is_access_new("edit_tax") == 1) { ?>
+                                        <li>
+                                            <a href="javascript:void(0);" class="dropdown-item edit-tax-rate" 
+                                            data-id="<?= $row['id'] ?>"
+                                            data-name="<?= htmlspecialchars($row['name']) ?>"
+                                            data-rate="<?= htmlspecialchars($row['rate']) ?>">
+                                            <i class="isax isax-edit me-2"></i>Edit
+                                            </a>
+                                        </li>
+                                        <?php } ?>
+                                        <?php if (check_is_access_new("delete_tax") == 1) { ?>
+                                        <li>
+                                            <a href="javascript:void(0);" class="dropdown-item delete-tax-rate" 
+                                            data-id="<?= $row['id'] ?>">
+                                            <i class="isax isax-trash me-2"></i>Delete
+                                            </a>
+                                        </li>
+                                        <?php } ?>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <?php } ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
