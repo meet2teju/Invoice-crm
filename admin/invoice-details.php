@@ -117,10 +117,10 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
                 <?php endif; ?>
 				<!-- start row -->
 				<div class="row">
-					<div class="col-md-10 mx-auto">
+					<div class="col-md-12 mx-auto">
 						<div>
 							<div class="d-flex align-items-center justify-content-between flex-wrap row-gap-3 mb-3">
-								<h6><a href="invoices.php"><i class="isax isax-arrow-left me-2"></i>Invoice</a></h6>
+								<h6>Invoice Detail</h6>
 								<div class="d-flex align-items-center flex-wrap row-gap-3">
 									<a href="javascript:void(0);" onclick="downloadAsPDF(event)" class="btn btn-outline-white d-inline-flex align-items-center me-3">Download PDF</a>
 									<a href="process/action_send_invoice_email.php?invoice_id=<?= $invoiceId ?>" 
@@ -146,7 +146,6 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 										</div>
 										<div class="d-flex align-items-center justify-content-between border-bottom flex-wrap mb-3 pb-2 position-relative z-1">
 											<div class="mb-3">
-												<h4 class="mb-1">Invoice</h4>
 												<div class="d-flex align-items-center flex-wrap row-gap-3">
 													<div class="me-4">
 														<!-- <h6 class="fs-14 fw-semibold mb-1">Dreams Technologies Pvt Ltd.,</h6> -->
@@ -280,9 +279,9 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 													<div>
 														<h6 class="mb-2">Bank Details</h6>
 														<div>
-															<p class="mb-1">Bank Name :  <span class="text-dark"><?= htmlspecialchars($bank['bank_name']??'') ?></span></p>
-															<p class="mb-1">Account Number :  <span class="text-dark"> <?= htmlspecialchars($bank['account_number']??'') ?></span></p>
-															<p class="mb-1">IFSC Code :  <span class="text-dark"><?= htmlspecialchars($bank['ifsc_code']??'') ?></span></p>
+															<p class="mb-1">Bank Name :  <span class="text-dark"><?= htmlspecialchars($bank['bank_name']) ?></span></p>
+															<p class="mb-1">Account Number :  <span class="text-dark"> <?= htmlspecialchars($bank['account_number']) ?></span></p>
+															<p class="mb-1">IFSC Code :  <span class="text-dark"><?= htmlspecialchars($bank['ifsc_code']) ?></span></p>
 															<p class="mb-0">Payment Reference :  <span class="text-dark">INV-20250220-001</span></p>
 														</div>
 													</div>

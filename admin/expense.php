@@ -98,6 +98,14 @@ $result = mysqli_query($conn, $query);
             <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3 mb-3">
                 <div><h6>Expenses</h6></div>
                 <div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
+                    <div class="table-search d-flex align-items-center mb-0">
+                        <div class="search-input">
+                            <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
+                        </div>
+                    </div>
+                    <a class="btn btn-outline-white fw-normal d-inline-flex align-items-center" href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#customcanvas">
+                        <i class="isax isax-filter me-1"></i>Filter
+                    </a>
                     <?php if (check_is_access_new("add_expense") == 1) { ?> 
                     <div>
                         <a href="add-expense.php" class="btn btn-primary d-flex align-items-center">
@@ -138,14 +146,14 @@ $result = mysqli_query($conn, $query);
 <div class="mb-3">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div class="d-flex align-items-center flex-wrap gap-2">
-            <div class="table-search d-flex align-items-center mb-0">
+            <!-- <div class="table-search d-flex align-items-center mb-0">
                 <div class="search-input">
                     <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
                 </div>
             </div>
             <a class="btn btn-outline-white fw-normal d-inline-flex align-items-center" href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#customcanvas">
                 <i class="isax isax-filter me-1"></i>Filter
-            </a>
+            </a> -->
             
             <!-- Display Active Filters -->
             <?php 

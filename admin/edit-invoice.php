@@ -71,98 +71,93 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
 
                 <!-- Start row  -->
                 <div class="row">
-                    <div class="col-md-11 mx-auto">
+                    <div class="col-md-12 mx-auto">
                         <div>
                             <!-- <div class="d-flex align-items-center justify-content-between mb-3">
                                 <h6><a href="invoices.php"><i class="isax isax-arrow-left me-2"></i>Invoice</a></h6>
                                 <a href="invoice-details.php" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
                             </div> -->
                             <div class="d-flex align-items-center justify-content-between mb-3">
-    <h6><a href="invoices.php"><i class="isax isax-arrow-left me-2"></i>Invoice</a></h6>
-    <a href="invoice-details.php?id=<?= $invoice_id ?>" class="btn btn-outline-white d-inline-flex align-items-center">
-        <i class="isax isax-eye me-1"></i>Preview
-    </a>
-</div>
+                                <h6>Edit Invoice</h6>
+                                <a href="invoice-details.php?id=<?= $invoice_id ?>" class="btn btn-outline-white d-inline-flex align-items-center">
+                                    <i class="isax isax-eye me-1"></i>Preview
+                                </a>
+                            </div>
                             <div class="card">
                                 <div class="card-body">
-                                    <h6 class="mb-3">Invoice Details</h6>
                                     <form action="process/action_edit_invoice.php" method="POST" enctype="multipart/form-data" id="form">
                                            <input type="hidden" name="id" value="<?= $invoice_id ?>">
                                         <div class="border-bottom mb-3 pb-1">
-                                            <!-- start row -->
-                                            <div class="row justify-content-between">
-                                                <div class="col-xl-5 col-lg-7">
-                                                    <div class="row gx-3">
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Client Name<span class="text-danger">*</span></label>
-                                                                 <select class="form-select select2" name="client_id" id="client_id" >
-                                                                <option value="">Select Client</option>
-                                                               <?php while ($client = mysqli_fetch_assoc($clients)) {
-                                                                $selected = ($client['id'] == $row['client_id']) ? 'selected' : '';
-                                                                echo "<option value='{$client['id']}' $selected>{$client['first_name']}</option>";
-                                                            } ?> 
-                                                            </select>
-                                                                   <span class="text-danger error-text" id="clientname_error"></span>
-
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Reference Name</label>
-                                                                <input type="text" class="form-control" name="reference_name" id="reference_name" value="<?= htmlspecialchars($row['reference_name']) ?>">
-                                                            </div>
-                                                              <div class="mb-3">
-                                                                <label class="form-label">Order Number</label>
-                                                                <input type="number" class="form-control" name="order_number" value="<?= htmlspecialchars($row['order_number']) ?>">
-                                                            </div>
-                                                            
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Invoice Number</label>
-                                                                <input type="text" class="form-control" name="invoice_id" value="<?= htmlspecialchars($row['invoice_id']) ?>" readonly >
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Salesperson<span class="text-danger">*</span></label>
-                                                                 <select class="form-select select2" name="user_id" id="user_id">
-                                                                <option value="">Select Salesperson</option>
-                                                                <?php 
-                                                                // Reset users pointer and loop through
-                                                                mysqli_data_seek($users, 0);
-                                                                while ($user = mysqli_fetch_assoc($users)) {
-                                                                    $selected = ($user['id'] == $row['user_id']) ? 'selected' : '';
-                                                                    echo "<option value='{$user['id']}' $selected>{$user['name']}</option>";
-                                                                } ?>
-                                                            </select>
-                                                            <span class="text-danger error-text" id="username_error"></span>
-
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-12">
-                                                            <label class="form-label">Invoice Date<span class="text-danger">*</span></label>
-                                                            <div class="input-group position-relative mb-3">
-                                                                <input type="text" class="form-control datepicker"id="invoice_date" name="invoice_date" value="<?= htmlspecialchars($row['invoice_date']) ?>">
-                                                                <span class="input-icon-addon fs-16 text-gray-9">
-																	<i class="isax isax-calendar-2"></i>
-																</span>
-                                                            </div>
-                                                            <span class="text-danger error-text" id="invoice_date_error"></span>
-                                                        </div>
-                                                     <div class="col-lg-12">
-                                                            <label class="form-label">Invoice Due Date<span class="text-danger">*</span></label>
-                                                            <div class="input-group position-relative mb-3">
-                                                                <input type="text" class="form-control datepicker" id="due_date" name="due_date" value="<?= htmlspecialchars($row['due_date']) ?>">
-                                                                <span class="input-icon-addon fs-16 text-gray-9">
-																	<i class="isax isax-calendar-2"></i>
-																</span>
-                                                            </div>
-                                                            <span class="text-danger error-text" id="invoice_due_error"></span> 
-                                                        </div>
-                                                    </div>
-                                                </div><!-- end col -->
-                                           
+                                          <div class="row gx-3">
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                  <label class="form-label">Client Name<span class="text-danger">*</span></label>
+                                                    <select class="form-select select2" name="client_id" id="client_id" >
+                                                  <option value="">Select Client</option>
+                                                  <?php while ($client = mysqli_fetch_assoc($clients)) {
+                                                  $selected = ($client['id'] == $row['client_id']) ? 'selected' : '';
+                                                  echo "<option value='{$client['id']}' $selected>{$client['first_name']}</option>";
+                                              } ?> 
+                                              </select>
+                                              <span class="text-danger error-text" id="clientname_error"></span>
+                                              </div>
                                             </div>
-                                            <!-- end row -->
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                  <label class="form-label">Reference Name</label>
+                                                  <input type="text" class="form-control" name="reference_name" id="reference_name" value="<?= htmlspecialchars($row['reference_name']) ?>">
+                                              </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                <label class="form-label">Order Number</label>
+                                                <input type="number" class="form-control" name="order_number" value="<?= htmlspecialchars($row['order_number']) ?>">
+                                              </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                  <label class="form-label">Invoice Number</label>
+                                                  <input type="text" class="form-control" name="invoice_id" value="<?= htmlspecialchars($row['invoice_id']) ?>" readonly >
+                                              </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                  <label class="form-label">Salesperson<span class="text-danger">*</span></label>
+                                                    <select class="form-select select2" name="user_id" id="user_id">
+                                                  <option value="">Select Salesperson</option>
+                                                  <?php 
+                                                  // Reset users pointer and loop through
+                                                  mysqli_data_seek($users, 0);
+                                                  while ($user = mysqli_fetch_assoc($users)) {
+                                                      $selected = ($user['id'] == $row['user_id']) ? 'selected' : '';
+                                                      echo "<option value='{$user['id']}' $selected>{$user['name']}</option>";
+                                                  } ?>
+                                                </select>
+                                                <span class="text-danger error-text" id="username_error"></span>
 
+                                              </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <label class="form-label">Invoice Date<span class="text-danger">*</span></label>
+                                                <div class="input-group position-relative mb-3">
+                                                    <input type="text" class="form-control datepicker"id="invoice_date" name="invoice_date" value="<?= htmlspecialchars($row['invoice_date']) ?>">
+                                                    <span class="input-icon-addon fs-16 text-gray-9">
+                                                      <i class="isax isax-calendar-2"></i>
+                                                    </span>
+                                                </div>
+                                                <span class="text-danger error-text" id="invoice_date_error"></span>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                              <label class="form-label">Invoice Due Date<span class="text-danger">*</span></label>
+                                              <div class="input-group position-relative mb-3">
+                                                  <input type="text" class="form-control datepicker" id="due_date" name="due_date" value="<?= htmlspecialchars($row['due_date']) ?>">
+                                                  <span class="input-icon-addon fs-16 text-gray-9">
+                                                    <i class="isax isax-calendar-2"></i>
+                                                  </span>
+                                              </div>
+                                              <span class="text-danger error-text" id="invoice_due_error"></span> 
+                                            </div>
+                                          </div>
                                         </div>
                                         <div class="border-bottom mb-3">
                                             <div class="row">
@@ -483,457 +478,7 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
 	<?php include 'layouts/vendor-scripts.php'; ?>
 <!-- Additional JS for datepicker -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-      <!-- <script>
-        // Initialize datepicker
-        $(document).ready(function() {
-            $('.datepicker').flatpickr({
-                dateFormat: "Y-m-d",
-                allowInput: true,
-                defaultDate: new Date(),
-                clickOpens: true
-            });
-            
-            // Initialize select2
-            $('.select2').select2({
-                theme: 'bootstrap-5'
-            });
-          });
-            </script>
-<script>
-$(document).ready(function() {
-
-  /* =========================
-     Helpers: format / unformat
-  ========================== */
-  function formatCurrency(value) {
-  const n = parseFloat(value);
-  if (isNaN(n)) return '';
-  return `$ ${n.toFixed(2)}`;
-}
-  function formatPercent(value) {
-    const n = parseFloat(value);
-    if (isNaN(n)) return '';
-    return `${n.toFixed(2)}%`;
-  }
-  function unformat(value) {
-    const n = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
-    return isNaN(n) ? 0 : n;
-  }
-
-  /* =========================
-     Allow only text (no digits)
-  ========================== */
-  $('#reference_name').on('input', function () {
-    this.value = this.value.replace(/[0-9]/g, '');
-  });
-
- $('#shipping-charge').on('input', function () {
-    let val = this.value.replace(/[^0-9.]/g, ''); 
-    let parts = val.split('.');
-    if (parts.length > 2) {
-        val = parts[0] + '.' + parts[1]; // keep only first decimal point
-    }
-    this.value = val;
-});
-  /* =========================
-     Fetch client billing & shipping info
-  ========================== */
-  // $('#client_id').on('change', function() {
-  //   const clientId = $(this).val();
-  //   if (clientId) {
-  //     $.ajax({
-  //       url: 'process/fetch_client_full_info.php',
-  //       type: 'POST',
-  //       data: { client_id: clientId },
-  //       dataType: 'json',
-  //       success: response => {
-  //         $('#client_info_block').html(response.billing_html);
-  //         $('#shipping_info_block').html(response.shipping_html);
-  //       }
-  //     });
-  //   } else {
-  //     $('#client_info_block, #shipping_info_block').empty();
-  //   }
-  // });
-/* =========================
-   Fetch client billing & shipping info
-========================== */
-function fetchClientInfo(clientId) {
-    if (clientId) {
-        $.ajax({
-            url: 'process/fetch_client_full_info.php',
-            type: 'POST',
-            data: { client_id: clientId },
-            dataType: 'json',
-            success: response => {
-                $('#client_info_block').html(response.billing_html);
-                $('#shipping_info_block').html(response.shipping_html);
-            }
-        });
-    } else {
-        $('#client_info_block, #shipping_info_block').empty();
-    }
-}
-
-// On client change
-$('#client_id').on('change', function() {
-    fetchClientInfo($(this).val());
-});
-
-// On page load (for edit)
-const selectedClientId = $('#client_id').val();
-if (selectedClientId) {
-    fetchClientInfo(selectedClientId);
-}
-
-  /* =========================
-     FORM VALIDATION + Clean values on submit
-  ========================== */
-  $('#form').on('submit', function(e) {
-    let isValid = true;
-    $('.error-text').text('');
-    let firstErrorTab = null;
-
-    if (!$('#client_id').val()) {
-      $('#clientname_error').text('Client is required.');
-      isValid = false;
-    }
-    if (!$('#invoice_date').val()) {
-      $('#invoice_date_error').text('Invoice Date is required.');
-      isValid = false;
-    }
-    if (!$('#user_id').val()) {
-      $('#username_error').text('Salesperson is required.');
-      isValid = false;
-    }
-    if (!$('#due_date').val()) {
-      $('#invoice_due_error').text('Due Date is required.');
-      isValid = false;
-    }
-    if (!$('#bank_id').val()) {
-      $('#invoice_account_error').text('Account is required.');
-      isValid = false;
-      firstErrorTab = firstErrorTab || '#bank';
-    }
-    if (!$('.add-tbody tr').length) {
-      $('#product_error').text('Please add at least one product or service');
-      isValid = false;
-    }
-
-    if (!isValid) {
-      e.preventDefault();
-      if (firstErrorTab) {
-        $('a[data-bs-toggle="tab"][data-bs-target="' + firstErrorTab + '"]').tab('show');
-      }
-      $('html, body').animate({ scrollTop: $('.error-text:visible').first().offset().top - 100 }, 500);
-      return;
-    }
-
-    // ✅ Before submit: strip formatting so PHP gets clean numbers
-    $('.selling-price').each(function(){
-      const num = $(this).data('value') ?? unformat($(this).val());
-      $(this).val(parseFloat(num).toFixed(2));
-    });
-    $('.tax-rate').each(function(){
-      const num = $(this).data('value') ?? unformat($(this).val());
-      $(this).val(num); // percent as plain number (no %)
-    });
-    $('.amount').each(function(){
-      const num = $(this).data('value') ?? unformat($(this).val());
-      $(this).val(parseFloat(num).toFixed(2));
-    });
-
-    const shipNum = $('#shipping-charge').data('value') ?? unformat($('#shipping-charge').val());
-    $('#shipping-charge').val(parseFloat(shipNum).toFixed(2));
-  });
-
-  /* =========================
-     Upload label
-  ========================== */
-  $('#document-upload').on('change', function() {
-    const files = this.files;
-    const label = files.length === 1 ? files[0].name : (files.length > 1 ? `${files.length} files selected` : '');
-    $('#file-count-label').text(label);
-  });
-
-  /* =========================
-     Items dropdown utilities
-  ========================== */
-  function loadItems(type, target) {
-    $.post('process/get_productcategories_by_type.php', { item_type: type }, data => {
-      if (target) target.html(data);
-      updateItemDropdowns();
-    });
-  }
-
-  function updateItemDropdowns() {
-    let selectedItems = [];
-    $('.item-select').each(function() {
-      let val = $(this).val();
-      if (val) selectedItems.push(val);
-    });
-
-    $('.item-select').each(function() {
-      let currentVal = $(this).val();
-      $(this).find('option').each(function() {
-        if ($(this).val() && selectedItems.includes($(this).val()) && $(this).val() !== currentVal) {
-          $(this).hide();
-        } else {
-          $(this).show();
-        }
-      });
-    });
-  }
-
-  /* =========================
-     Format behaviors for currency/percent inputs
-  ========================== */
-  function attachCurrencyBehavior(selector, onChangeCallback) {
-    // Focus -> show raw number
-    $(document).on('focus', selector, function(){
-      const raw = $(this).data('value');
-      $(this).val(raw !== undefined ? raw : unformat($(this).val()));
-    });
-    // Blur -> store & show $xx.xx
-    $(document).on('blur', selector, function(){
-      const num = unformat($(this).val());
-      $(this).data('value', num).val(formatCurrency(num));
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-    // Input -> recalc live
-    $(document).on('input', selector, function(){
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-  }
-
-  function attachPercentBehavior(selector, onChangeCallback) {
-    $(document).on('focus', selector, function(){
-      const raw = $(this).data('value');
-      $(this).val(raw !== undefined ? raw : unformat($(this).val()));
-    });
-    $(document).on('blur', selector, function(){
-      const num = unformat($(this).val());
-      $(this).data('value', num).val(formatPercent(num));
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-    $(document).on('input', selector, function(){
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-  }
-
-  // Apply to line-item fields
-  attachCurrencyBehavior('.selling-price', function($el){
-    calculateRow($el.closest('tr'));
-  });
-  attachPercentBehavior('.tax-rate', function($el){
-    calculateRow($el.closest('tr'));
-  });
-
-  // Apply to shipping charge
-  // ⚠️ If your input is type="number", it will still COUNT but won't show "$".
-  // To display "$", make it type="text".
-  attachCurrencyBehavior('#shipping-charge', function(){
-    calculateSummary();
-  });
-
-  // Initialize shipping field formatting on load
-  (function initShipping(){
-    const $ship = $('#shipping-charge');
-    if ($ship.length) {
-      const initVal = unformat($ship.val());
-      $ship.data('value', initVal);
-      // Only show $ if input type allows text
-      if ($ship.attr('type') !== 'number') {
-        $ship.val(formatCurrency(initVal));
-      } else {
-        $ship.val(initVal.toFixed(2)); // keep numeric visible
-      }
-    }
-  })();
-
-  /* =========================
-     Item events
-  ========================== */
-  $(document).on('change', '.item-select', function() {
-    const $row = $(this).closest('tr');
-    const option = $(this).find('option:selected');
-
-    if (option.val()) {
-      const price = parseFloat(option.data('price')) || 0;
-      const unit = option.data('unit') || '';
-      const unitId = option.data('unit-id') || '';
-      const tax = parseFloat(option.data('tax')) || 0;
-      const taxName = option.data('tax-name') || 'No Tax';
-      const taxId = option.data('tax-id') || '';
-
-      $row.find('.unit-name').val(unit);
-      $row.find('.unit-id').val(unitId);
-      $row.find('.tax-id').val(taxId);
-      $row.find('.tax-name').val(taxName);
-
-      $row.find('.selling-price').data('value', price).val(formatCurrency(price));
-      $row.find('.tax-display').val(taxName + ' (' + formatPercent(tax) + ')').data('value', tax);
-
-      calculateRow($row);
-    } else {
-      resetRow($row);
-    }
-
-    updateItemDropdowns();
-  });
-
-  $(document).on('input', '.quantity', function() {
-    calculateRow($(this).closest('tr'));
-  });
-
-  $(document).on('click', '.remove-table', function(e) {
-    e.preventDefault();
-    $(this).closest('tr').remove();
-    calculateSummary();
-    updateItemDropdowns();
-  });
-
-  /* =========================
-     Calculations
-  ========================== */
-  function calculateRow($row) {
-    const qty  = unformat($row.find('.quantity').val());
-    const price = $row.find('.selling-price').data('value') || 0;
-    const tax   = $row.find('.tax-display').data('value') || 0;
-
-    const lineSubtotal = qty * price;
-    const lineTax = lineSubtotal * (tax / 100);
-    const lineTotal = lineSubtotal + lineTax;
-
-    $row.find('.amount-display').val(formatCurrency(lineTotal));
-    $row.find('.amount-storage').val(lineTotal.toFixed(2));
-    calculateSummary();
-  }
-
-  function getShippingCharge() {
-    const $ship = $('#shipping-charge');
-    if (!$ship.length) return 0;
-    // Prefer stored numeric if available
-    const stored = $ship.data('value');
-    if (stored !== undefined) return parseFloat(stored) || 0;
-    // Fallback: parse current field
-    return unformat($ship.val());
-  }
-
-// function calculateSummary() {
-//   let sub = 0, taxGroups = {}, grandTotal = 0;
-
-//   $('.add-tbody tr').each(function() {
-//     const p = $(this).find('.selling-price').data('value') || 0;
-//     const q = unformat($(this).find('.quantity').val());
-//     const t = $(this).find('.tax-display').data('value') || 0;
-//     const taxName = $(this).find('.tax-name').val() || 'Tax';
-
-//     const lineSubtotal = p * q;
-//     const lineTax = (lineSubtotal * t / 100);
-//     const lineTotal = lineSubtotal + lineTax;
-
-//     sub += lineSubtotal;
-//     grandTotal += lineTotal;
-
-//     if (t > 0) {
-//       const taxKey = taxName + ' (' + t + '%)';
-//       if (!taxGroups[taxKey]) taxGroups[taxKey] = 0;
-//       taxGroups[taxKey] += lineTax;
-//     }
-//   });
-
-//   // Shipping
-//   const shippingCharge = getShippingCharge();
-//   let taxHtml = "";
-
-//   $.each(taxGroups, function(taxName, amount) {
-//     taxHtml += `
-//       <div class="d-flex align-items-center justify-content-between mb-2">
-//         <h6 class="fs-14 fw-semibold">${taxName}</h6>
-//         <h6 class="fs-14 fw-semibold">${formatCurrency(amount)}</h6>
-//       </div>`;
-//   });
-
-//   $('.tax-details').html(taxHtml);
-
-//   const totalAll = grandTotal + shippingCharge;
-
-//   $('#subtotal-amount').text(formatCurrency(sub));
-//   $('#total-amount').text(formatCurrency(totalAll));
-
-//   // Hidden numeric fields for backend
-//   $('#subtotal-amount-field').val(sub.toFixed(2));
-//   $('#tax-amount-field').val(Object.values(taxGroups).reduce((a,b)=>a+b,0).toFixed(2));
-//   $('#total-amount-field').val(totalAll.toFixed(2));
-// }
-
-function calculateSummary() {
-  let sub = 0, grandTotal = 0, totalTax = 0;
-  let taxHtml = "";
-
-  $('.add-tbody tr').each(function(index) {
-    const p = $(this).find('.selling-price').data('value') || 0;
-    const q = unformat($(this).find('.quantity').val());
-    const t = $(this).find('.tax-display').data('value') || 0;
-    const taxName = $(this).find('.tax-name').val() || 'Tax';
-
-    const lineSubtotal = p * q;
-    const lineTax = (lineSubtotal * t / 100);
-    const lineTotal = lineSubtotal + lineTax;
-
-    sub += lineSubtotal;
-    grandTotal += lineTotal;
-    totalTax += lineTax;
-
-    if (t > 0 && lineTax > 0) {
-      taxHtml += `
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h6 class="fs-14 fw-semibold">${taxName} (${t}%)</h6>
-          <h6 class="fs-14 fw-semibold">${formatCurrency(lineTax)}</h6>
-        </div>`;
-    }
-  });
-
-  // Shipping
-  const shippingCharge = getShippingCharge();
-  const totalAll = grandTotal + shippingCharge;
-
-  // Fill DOM
-  $('.tax-details').html(taxHtml);
-  $('#subtotal-amount').text(formatCurrency(sub));
-  $('#total-amount').text(formatCurrency(totalAll));
-
-  // Hidden numeric fields for backend
-  $('#subtotal-amount-field').val(sub.toFixed(2));
-  $('#tax-amount-field').val(totalTax.toFixed(2));
-  $('#total-amount-field').val(totalAll.toFixed(2));
-}
-
-
-  function resetRow($row) {
-    $row.find('.quantity').val(1);
-    $row.find('.unit-name, .selling-price, .tax-rate, .amount, .tax-name').val('').removeData('value');
-    $row.find('.unit-id, .tax-id').val('');
-    calculateSummary();
-  }
-
-  // Initial pass
-  updateItemDropdowns();
-  calculateSummary();
-});
-</script>
-
-<script>
-    $(document).ready(function () {
-        // === Allow only text (no digits) ===
-        $('#reference_name').on('input', function () {
-            this.value = this.value.replace(/[0-9]/g, '');
-        });
-    });
-</script> -->
-
-<script>
+   <script>
 $(document).ready(function() {
 
   /* =========================
@@ -1396,5 +941,6 @@ $(document).ready(function() {
         });
     });
 </script>
+
 </body>
 </html>

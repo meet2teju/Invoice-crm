@@ -31,120 +31,115 @@ include '../config/config.php';
 
                 <!-- Start row  -->
                 <div class="row">
-                    <div class="col-md-11 mx-auto">
+                    <div class="col-md-12 mx-auto">
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-3">
-                                <h6><a href="expense.php"><i class="isax isax-arrow-left me-2"></i>Expense</a></h6>
+                                <h6>Add Expense</h6>
                                 <a href="expense-details.php" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
                             </div>
                             <div class="card">
                                 <div class="card-body">
-                                    <h6 class="mb-3">Expense Details</h6>
                                     <form action="process/action_add_expense.php" method="POST" enctype="multipart/form-data" id="form">
                                      <input type="hidden" name="user_id" value="<?php echo $_SESSION['crm_user_id'] ?? 1; ?>">
 
                                     <div class="border-bottom mb-3 pb-1">
-                                            <!-- start row -->
-                                            <div class="row justify-content-between">
-                                                <div class="col-xl-5 col-lg-7">
-                                                    <div class="row gx-3">
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Expense Category <span class="text-danger">*</span></label>
-                                                                <select class="form-select select2" name="ecategory_id" id="category_id">
-                                                                    <option value="">Select Category</option>
-                                                                    <?php
-                                                                   
-                                                                    $query = "SELECT id, name FROM expense_category WHERE is_deleted = 0";
-                                                                    $result = mysqli_query($conn, $query);
-
-                                                                    while ($row = mysqli_fetch_assoc($result)) {
-                                                                        echo '<option value="' . $row['id'] . '">' . htmlspecialchars($row['name']) . '</option>';
-                                                                    }
-                                                                    ?>
-                                                                </select>
-                                                                <span class="text-danger error-text" id="category_error"></span>
-                                                            </div>
-
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Title</label>
-                                                                <input type="text" class="form-control" name="title" id="title">
-                                                                <span class="text-danger error-text" id="title_error"></span>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Client Name</label>
-                                                                <select class="form-select select2" name="client_id" id="client_id">
-                                                                    <option value="">Select Client</option>
-                                                                    <?php                                                         
-                                                                        $result = mysqli_query($conn, "
-                                                                            SELECT * FROM client 
-                                                                            WHERE id IN (
-                                                                                SELECT DISTINCT client_id 
-                                                                                FROM invoice 
-                                                                                WHERE client_id IS NOT NULL
-                                                                            )
-                                                                        ");                                                                   
-                                                                         while ($row = mysqli_fetch_assoc($result)) {
-                                                                        echo '<option value="' . $row['id'] . '">' . $row['first_name'] . ' ' . ($row['last_name'] ?? '') . '</option>';
-                                                                    }
-                                                                    ?>  
-                                                                </select>
-                                                                <span class="text-danger error-text" id="clientname_error"></span>
-                                                            </div>
-                                                        </div>
+                                        <div class="row gx-3">
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Expense Category <span class="text-danger">*</span></label>
+                                                    <select class="form-select select2" name="ecategory_id" id="category_id">
+                                                        <option value="">Select Category</option>
+                                                        <?php
                                                         
-                                                       <!-- <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Invoice Number</label>
-                                                                <input type="text" class="form-control" name="invoice_id" id="invoice_id" readonly>
-                                                            </div>
-                                                        </div> -->
+                                                        $query = "SELECT id, name FROM expense_category WHERE is_deleted = 0";
+                                                        $result = mysqli_query($conn, $query);
 
-                                                        
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Expense Date<span class="text-danger">*</span></label>
-                                                                <div class="input-group position-relative">
-                                                                    <input type="text" class="form-control datepicker" id="expense_date" name="date">
-                                                                    <span class="input-group-text">
-                                                                        <i class="isax isax-calendar-2"></i>
-                                                                    </span>
-                                                                </div>
-                                                        <span class="text-danger error-text" id="expense_date_error"></span>
+                                                        while ($row = mysqli_fetch_assoc($result)) {
+                                                            echo '<option value="' . $row['id'] . '">' . htmlspecialchars($row['name']) . '</option>';
+                                                        }
+                                                        ?>
+                                                    </select>
+                                                    <span class="text-danger error-text" id="category_error"></span>
+                                                </div>
 
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Amount<span class="text-danger">*</span></label>
-                                                                <input type="text" class="form-control" name="amount" id="amount">
-                                                                <span class="text-danger error-text" id="amount_error"></span>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div class="col-12">
-                                                            <div class="mb-3">
-                                                                <label for="description" class="form-label">Description</label>
-                                                                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-12">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Upload Document</label>
-                                                                <input type="file" class="form-control" name="document[]" id="expense_document" multiple>
-                                                            </div>
-                                                        </div>
-
-                                                    </div>
-                                                </div><!-- end col -->
                                             </div>
-                                            <!-- end row -->
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Title</label>
+                                                    <input type="text" class="form-control" name="title" id="title">
+                                                    <span class="text-danger error-text" id="title_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Client Name</label>
+                                                    <select class="form-select select2" name="client_id" id="client_id">
+                                                        <option value="">Select Client</option>
+                                                        <?php                                                         
+                                                            $result = mysqli_query($conn, "
+                                                                SELECT * FROM client 
+                                                                WHERE id IN (
+                                                                    SELECT DISTINCT client_id 
+                                                                    FROM invoice 
+                                                                    WHERE client_id IS NOT NULL
+                                                                )
+                                                            ");                                                                   
+                                                                while ($row = mysqli_fetch_assoc($result)) {
+                                                            echo '<option value="' . $row['id'] . '">' . $row['first_name'] . ' ' . ($row['last_name'] ?? '') . '</option>';
+                                                        }
+                                                        ?>  
+                                                    </select>
+                                                    <span class="text-danger error-text" id="clientname_error"></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Invoice Number</label>
+                                                    <input type="text" class="form-control" name="invoice_id" id="invoice_id" readonly>
+                                                </div>
+                                            </div> -->
+
+                                            
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Expense Date<span class="text-danger">*</span></label>
+                                                    <div class="input-group position-relative">
+                                                        <input type="text" class="form-control datepicker" id="expense_date" name="date">
+                                                        <span class="input-group-text">
+                                                            <i class="isax isax-calendar-2"></i>
+                                                        </span>
+                                                    </div>
+                                            <span class="text-danger error-text" id="expense_date_error"></span>
+
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Amount<span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" name="amount" id="amount">
+                                                    <span class="text-danger error-text" id="amount_error"></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload Document</label>
+                                                    <input type="file" class="form-control" name="document[]" id="expense_document" multiple>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-12">
+                                                <div class="mb-3">
+                                                    <label for="description" class="form-label">Description</label>
+                                                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                                                </div>
+                                            </div>
+                                            
+
                                         </div>
+                                    </div>
                                         
 
                                         <div class="d-flex align-items-center justify-content-between">

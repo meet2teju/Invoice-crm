@@ -22,11 +22,19 @@
 <?php endif; ?>
 
                 <!-- Page Header -->
-                <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3">
                     <div>
                         <h6>Category</h6>
                     </div>
+
                     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
+                        <div class="table-search d-flex align-items-center mb-0">
+                            <div class="search-input position-relative">
+                                <a href="javascript:void(0);" class="btn-searchset">
+                                    <i class="isax isax-search-normal fs-12"></i>
+                                </a>
+                            </div>
+                        </div>
                         <a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#add_modal">
                             <i class="isax isax-add-circle5 me-1"></i>New Category
                         </a>
@@ -41,13 +49,13 @@
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                         <div class="d-flex align-items-center flex-wrap gap-2">
                             <!-- Search Input -->
-                            <div class="table-search d-flex align-items-center mb-0">
+                            <!-- <div class="table-search d-flex align-items-center mb-0">
                                 <div class="search-input position-relative">
                                     <a href="javascript:void(0);" class="btn-searchset">
                                         <i class="isax isax-search-normal fs-12"></i>
                                     </a>
                                 </div>
-                            </div>
+                            </div> -->
 
                             <!-- Delete Button -->
                            <a href="#" class="btn btn-outline-danger delete-multiple d-none">

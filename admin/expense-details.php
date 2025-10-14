@@ -64,7 +64,6 @@ $documents = mysqli_query($conn, "SELECT * FROM expense_document WHERE expense_i
             </div>
 
             <div class="card p-3">
-                <h5>Expense Info</h5>
                 <table class="table table-bordered">
                     <tr><th>Title</th><td><?= $expense['title'] ?></td></tr>
                     <tr><th>Category</th><td><?= $expense['category_name'] ?></td></tr>

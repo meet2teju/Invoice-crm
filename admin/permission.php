@@ -31,12 +31,7 @@ include '../config/config.php';
                 <!-- Page Header -->
                 <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3 mb-3">
                     <div>
-                        <h6>
-                            <a href="roles-permissions.php">
-								<i class="isax isax-arrow-left me-1"></i>
-								Roles
-							</a>
-                        </h6>
+                        <h6>Roles</h6>
                     </div>
                     <?php
                     
@@ -72,7 +67,7 @@ include '../config/config.php';
                     </div>
                 </div>
                 <!-- End Page Header -->
-                       <span style="font-size:20px; color:black; font-weight:bold"><?= $selectedRoleName ?>&nbsp;&nbsp;Role</span>
+                       <!-- <span style="font-size:20px; color:black; font-weight:bold"><?= $selectedRoleName ?>&nbsp;&nbsp;Role</span> -->
                      
                 <!-- Start Table List -->
                 <form method="POST" action="process/action_permision_access.php"> <!-- Wrap entire accordion in a form -->

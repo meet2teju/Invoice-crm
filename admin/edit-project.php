@@ -65,7 +65,7 @@ while ($row = mysqli_fetch_assoc($client_result)) {
             <div class="content content-two">
                 <!-- Page Header -->
             <div class="d-flex align-items-center justify-content-between mb-3">
-    <h6><a href="projects.php"><i class="isax isax-arrow-left me-2"></i> Projects</a></h6>
+    <h6>Edit Projects</a></h6>
     <a href="project-details.php?id=<?= $project_id ?>" class="btn btn-outline-white d-inline-flex align-items-center">
         <i class="isax isax-eye me-1"></i>Preview
     </a>
@@ -79,8 +79,6 @@ while ($row = mysqli_fetch_assoc($client_result)) {
                         <div class="card-body">
                             <!-- Project Details Section -->
                             <div class="mb-4">
-                                <h5 class="mb-3">Project Details</h5>
-                                
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Project Name <span class="text-danger">*</span></label>

@@ -42,117 +42,112 @@ $documents = mysqli_query($conn, "SELECT * FROM expense_document WHERE expense_i
     <div class="page-wrapper">
         <div class="content">
             <div class="row">
-                <div class="col-md-11 mx-auto">
+                <div class="col-md-12 mx-auto">
                     <div>
                         <div class="d-flex align-items-center justify-content-between mb-3">
-                            <h6><a href="expense.php"><i class="isax isax-arrow-left me-2"></i>Expense</a></h6>
+                            <h6>Edit Expense</h6>
                             <a href="" class="btn btn-outline-white d-inline-flex align-items-center">
                                 <i class="isax isax-eye me-1"></i>Preview
                             </a>
                         </div>
                         <div class="card">
                             <div class="card-body">
-                                <h6 class="mb-3">Edit Expense</h6>
                                 <form action="process/action_edit_expense.php" method="POST" enctype="multipart/form-data" id="form">
                                     <input type="hidden" name="id" value="<?= $expense['id'] ?>">
                                     <div class="border-bottom mb-3 pb-1">
-                                        <div class="row justify-content-between">
-                                            <div class="col-xl-5 col-lg-7">
-                                                <div class="row gx-3">
-                                                    <div class="col-md-6">
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Expense Category <span class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="ecategory_id" id="category_id">
-                                                                <option value="">Select Category</option>
-                                                                <?php
-                                                                $catResult = mysqli_query($conn, "SELECT id, name FROM expense_category WHERE is_deleted = 0");
-                                                                while ($row = mysqli_fetch_assoc($catResult)) {
-                                                                    $selected = ($expense['ecategory_id'] == $row['id']) ? 'selected' : '';
-                                                                    echo '<option value="' . $row['id'] . '" ' . $selected . '>' . htmlspecialchars($row['name']) . '</option>';
-                                                                }
-                                                                ?>
-                                                            </select>
-                                                            <span class="text-danger error-text" id="category_error"></span>
-                                                        </div>
+                                        <div class="row gx-3">
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Expense Category <span class="text-danger">*</span></label>
+                                                    <select class="form-select select2" name="ecategory_id" id="category_id">
+                                                        <option value="">Select Category</option>
+                                                        <?php
+                                                        $catResult = mysqli_query($conn, "SELECT id, name FROM expense_category WHERE is_deleted = 0");
+                                                        while ($row = mysqli_fetch_assoc($catResult)) {
+                                                            $selected = ($expense['ecategory_id'] == $row['id']) ? 'selected' : '';
+                                                            echo '<option value="' . $row['id'] . '" ' . $selected . '>' . htmlspecialchars($row['name']) . '</option>';
+                                                        }
+                                                        ?>
+                                                    </select>
+                                                    <span class="text-danger error-text" id="category_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Title</label>
+                                                    <input type="text" class="form-control" name="title" id="title" value="<?= htmlspecialchars($expense['title']) ?>">
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Client Name</label>
+                                                    <select class="form-select select2" name="client_id" id="client_id">
+                                                        <option value="">Select Client</option>
+                                                        <?php
+                                                        $clientResult = mysqli_query($conn, "SELECT id, first_name, last_name FROM client");
+                                                        while ($row = mysqli_fetch_assoc($clientResult)) {
+                                                            $selected = ($expense['client_id'] == $row['id']) ? 'selected' : '';
+                                                            echo '<option value="' . $row['id'] . '" ' . $selected . '>' . $row['first_name'] . ' ' . ($row['last_name'] ?? '') . '</option>';
+                                                        }
+                                                        ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <!-- <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Invoice Number</label>
+                                                    <input type="text" class="form-control" name="invoice_id" id="invoice_id" value="<?= htmlspecialchars($expense['invoice_id']) ?>" readonly>
+                                                </div>
+                                            </div> -->
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Expense Date <span class="text-danger">*</span></label>
+                                                    <div class="input-group position-relative">
+                                                        <input type="text" class="form-control datepicker" id="expense_date" name="date" value="<?= htmlspecialchars($expense['date']) ?>">
+                                                        <span class="input-group-text"><i class="isax isax-calendar-2"></i></span>
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Title</label>
-                                                            <input type="text" class="form-control" name="title" id="title" value="<?= htmlspecialchars($expense['title']) ?>">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Client Name</label>
-                                                            <select class="form-select select2" name="client_id" id="client_id">
-                                                                <option value="">Select Client</option>
-                                                                <?php
-                                                                $clientResult = mysqli_query($conn, "SELECT id, first_name, last_name FROM client");
-                                                                while ($row = mysqli_fetch_assoc($clientResult)) {
-                                                                    $selected = ($expense['client_id'] == $row['id']) ? 'selected' : '';
-                                                                    echo '<option value="' . $row['id'] . '" ' . $selected . '>' . $row['first_name'] . ' ' . ($row['last_name'] ?? '') . '</option>';
-                                                                }
-                                                                ?>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <!-- <div class="col-md-6">
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Invoice Number</label>
-                                                            <input type="text" class="form-control" name="invoice_id" id="invoice_id" value="<?= htmlspecialchars($expense['invoice_id']) ?>" readonly>
-                                                        </div>
-                                                    </div> -->
-                                                    <div class="col-md-6">
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Expense Date <span class="text-danger">*</span></label>
-                                                            <div class="input-group position-relative">
-                                                                <input type="text" class="form-control datepicker" id="expense_date" name="date" value="<?= htmlspecialchars($expense['date']) ?>">
-                                                                <span class="input-group-text"><i class="isax isax-calendar-2"></i></span>
+                                                    <span class="text-danger error-text" id="expense_date_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" name="amount" id="amount" value="<?= htmlspecialchars($expense['amount']) ?>">
+                                                    <span class=" text-danger error-text" id="amount_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="mb-3">
+                                                    <label for="description" class="form-label">Description</label>
+                                                    <textarea class="form-control" id="description" name="description" rows="3"><?= htmlspecialchars($expense['description']) ?></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 mb-3">
+                                                <label class="form-label">Existing Documents</label>
+                                                <ul>
+                                                    <?php while ($doc = mysqli_fetch_assoc($documents)): ?>
+                                                        <li id="doc-<?= $doc['id'] ?>">
+                                                            <a href="../uploads/<?= htmlspecialchars($doc['document']) ?>" target="_blank"><?= htmlspecialchars($doc['document']) ?></a>
+                                                            <div class="mt-1">
+                                                                <label class="btn btn-sm btn-outline-primary btn-icon" title="Replace">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                    <input type="file" class="d-none replace-doc" 
+                                                                        data-doc-id="<?= $doc['id']; ?>" 
+                                                                        data-old-name="<?= htmlspecialchars($doc['document']); ?>">
+                                                                </label>
+                                                                <button type="button" class="btn btn-sm btn-outline-danger btn-icon delete-doc" 
+                                                                        data-doc-id="<?= $doc['id']; ?>">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
                                                             </div>
-                                                            <span class="text-danger error-text" id="expense_date_error"></span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Amount <span class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" name="amount" id="amount" value="<?= htmlspecialchars($expense['amount']) ?>">
-                                                            <span class=" text-danger error-text" id="amount_error"></span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <div class="mb-3">
-                                                            <label for="description" class="form-label">Description</label>
-                                                            <textarea class="form-control" id="description" name="description" rows="3"><?= htmlspecialchars($expense['description']) ?></textarea>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-12 mb-3">
-                                                        <label class="form-label">Existing Documents</label>
-                                                        <ul>
-                                                            <?php while ($doc = mysqli_fetch_assoc($documents)): ?>
-                                                                <li id="doc-<?= $doc['id'] ?>">
-                                                                    <a href="../uploads/<?= htmlspecialchars($doc['document']) ?>" target="_blank"><?= htmlspecialchars($doc['document']) ?></a>
-                                                                    <div class="mt-1">
-                                                                        <label class="btn btn-sm btn-outline-primary btn-icon" title="Replace">
-                                                                            <i class="bi bi-pencil"></i>
-                                                                            <input type="file" class="d-none replace-doc" 
-                                                                                data-doc-id="<?= $doc['id']; ?>" 
-                                                                                data-old-name="<?= htmlspecialchars($doc['document']); ?>">
-                                                                        </label>
-                                                                        <button type="button" class="btn btn-sm btn-outline-danger btn-icon delete-doc" 
-                                                                                data-doc-id="<?= $doc['id']; ?>">
-                                                                            <i class="bi bi-trash"></i>
-                                                                        </button>
-                                                                    </div>
-                                                                </li>
-                                                            <?php endwhile; ?>
-                                                        </ul>
-                                                    </div>
-                                                    <div class="col-md-12">
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Upload New Document</label>
-                                                            <input type="file" class="form-control" name="document[]" id="expense_document" multiple>
-                                                        </div>
-                                                    </div>
+                                                        </li>
+                                                    <?php endwhile; ?>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Upload New Document</label>
+                                                    <input type="file" class="form-control" name="document[]" id="expense_document" multiple>
                                                 </div>
                                             </div>
                                         </div>

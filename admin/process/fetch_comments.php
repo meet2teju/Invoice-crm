@@ -6,9 +6,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $task_id = intval($_POST['task_id']);
     $current_user_id = isset($_SESSION['crm_user_id']) ? intval($_SESSION['crm_user_id']) : 0;
     
-    // Debug: Check session user ID
-    error_log("Current User ID: " . $current_user_id);
-    
     $comments_query = "
         SELECT c.*, u.name as user_name, u.profile_img,
                (SELECT COUNT(*) FROM project_task_comment_files WHERE comment_id = c.id) as file_count
@@ -22,14 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (mysqli_num_rows($comments_result) === 0) {
         echo '<div class="text-center text-muted py-3">No comments yet. Be the first to comment!</div>';
-        return;
+        exit;
     }
     
     while ($comment = mysqli_fetch_assoc($comments_result)) {
         $is_owner = ($comment['user_id'] == $current_user_id);
-        
-        // Debug: Check comment ownership
-        error_log("Comment ID: " . $comment['id'] . ", Comment User ID: " . $comment['user_id'] . ", Is Owner: " . ($is_owner ? 'Yes' : 'No'));
         ?>
         <div class="comment-box" id="comment-<?php echo $comment['id']; ?>">
             <div class="comment-user">
@@ -50,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                     
                     <!-- Edit/Delete buttons -->
-                    <?php if ($is_owner): ?>
-                        <div class="comment-actions" style="display: inline-flex; gap: 5px; margin-left: 10px;">
+                    <!-- <?php if ($is_owner): ?>
+                        <div class="comment-actions">
                             <button type="button" class="btn btn-sm btn-outline-primary" 
                                     onclick="editComment(<?php echo $comment['id']; ?>, `<?php echo addslashes($comment['comment_text']); ?>`)">
                                 <i class="isax isax-edit me-1"></i>Edit
@@ -61,7 +55,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <i class="isax isax-trash me-1"></i>Delete
                             </button>
                         </div>
-                    <?php endif; ?>
+                    <?php endif; ?> -->
+                    <!-- Edit/Delete buttons -->
+<?php if ($is_owner): ?>
+    <div class="comment-actions">
+        <button type="button" class="btn btn-sm btn-outline-primary edit-comment-btn" 
+                data-comment-id="<?php echo $comment['id']; ?>"
+                data-comment-text="<?php echo htmlspecialchars($comment['comment_text'], ENT_QUOTES); ?>">
+            <i class="isax isax-edit me-1"></i>Edit
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger delete-comment-btn" 
+                data-comment-id="<?php echo $comment['id']; ?>">
+            <i class="isax isax-trash me-1"></i>Delete
+        </button>
+    </div>
+<?php endif; ?>
                 </div>
             </div>
             

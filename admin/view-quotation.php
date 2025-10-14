@@ -83,9 +83,9 @@ if (!empty($quotation['client_id'])) {
     <div class="page-wrapper">
         <div class="content content-two">
             <div class="row">
-                <div class="col-md-10 mx-auto">
+                <div class="col-md-12 mx-auto">
                     <div class="d-flex align-items-center justify-content-between flex-wrap row-gap-3 mb-3">
-                        <h6><a href="quotations.php"><i class="isax isax-arrow-left me-2"></i>Quotation</a></h6>
+                        <h6>Quotation Detail</h6>
                         <div class="d-flex align-items-center flex-wrap row-gap-3">
                             <a href="javascript:void(0);" onclick="downloadQuotationAsPDF(event)" class="btn btn-outline-white d-inline-flex align-items-center me-3">
                                 <i class="isax isax-document-download me-1"></i>Download PDF
@@ -111,20 +111,7 @@ if (!empty($quotation['client_id'])) {
 
                     <div class="card" id="downloadpdf">
                         <div class="card-body">
-                            <div class="bg-light p-4 rounded position-relative mb-3">
-                                <div class="position-absolute top-0 end-0 z-0">
-                                    <!-- Background design element -->
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between border-bottom flex-wrap mb-3 pb-2 position-relative z-1">
-                                    <div class="mb-3">
-                                        <h4 class="mb-1">Quotation</h4>
-                                        <div class="d-flex align-items-center flex-wrap row-gap-3">
-                                            <div class="me-4">
-                                                <!-- Company info can go here -->
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="bg-light rounded position-relative mb-3">
 
                                 <!-- start row -->
                                 <div class="row gy-3 position-relative z-1">

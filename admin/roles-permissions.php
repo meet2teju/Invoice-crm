@@ -24,6 +24,15 @@
                     <div><h6>Roles & Permission</h6></div>
                     
                     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
+                        <div class="table-search d-flex align-items-center mb-0">
+                            <div class="search-input">
+                                <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
+                            </div>
+                            
+                            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                                <i class="fa-regular fa-trash-can me-1"></i>Delete
+                            </a>
+                        </div>
                         <div class="dropdown">
                             <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
                                 <i class="isax isax-export-1 me-1"></i>Export
@@ -46,15 +55,15 @@
                 </div>
                 
                 <div class="table-responsive">
-                    <div class="table-search d-flex align-items-center mb-0">
+                    <!-- <div class="table-search d-flex align-items-center mb-0">
                         <div class="search-input">
                             <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
                         </div>
-                         <!-- Multiple Delete Button (Hidden by default) -->
+                         
                         <a href="#" class="btn btn-outline-danger delete-multiple d-none">
                             <i class="fa-regular fa-trash-can me-1"></i>Delete
                         </a>
-                    </div><br>
+                    </div> -->
                      
                     <table class="table table-nowrap datatable">
                         <thead class="table-light">

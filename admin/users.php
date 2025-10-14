@@ -104,11 +104,20 @@ $users = mysqli_query($conn, $query);
                 <?php endif; ?>
 
                 <!-- Page Header -->
-                <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3">
                     <div>
                         <h6>Users</h6>
                     </div>
                     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
+                        <div class="table-search d-flex align-items-center mb-0">
+                            <div class="search-input">
+                                <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
+                            </div>
+                        </div>
+                        
+                        <a class="btn btn-outline-white fw-normal d-inline-flex align-items-center" href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#customcanvas">
+                            <i class="isax isax-filter me-1"></i>Filter
+                        </a>
                         <div class="dropdown">
                             <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
                                 <i class="isax isax-export-1 me-1"></i>Export
@@ -201,7 +210,7 @@ $users = mysqli_query($conn, $query);
 <div class="mb-3">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div class="d-flex align-items-center flex-wrap gap-2">
-            <div class="table-search d-flex align-items-center mb-0">
+            <!-- <div class="table-search d-flex align-items-center mb-0">
                 <div class="search-input">
                     <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
                 </div>
@@ -209,7 +218,7 @@ $users = mysqli_query($conn, $query);
             
             <a class="btn btn-outline-white fw-normal d-inline-flex align-items-center" href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#customcanvas">
                 <i class="isax isax-filter me-1"></i>Filter
-            </a>
+            </a> -->
             
             <!-- Display Active Filters -->
             <?php 

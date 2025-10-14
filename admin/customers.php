@@ -113,11 +113,19 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
     <?php unset($_SESSION['message'], $_SESSION['message_type']); ?>
 <?php endif; ?>
 
-                <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3">
                     <div>
                         <h6>Clients</h6>
                     </div>
                     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
+                        <div class="table-search d-flex align-items-center mb-0">
+                            <div class="search-input">
+                                <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
+                            </div>
+                        </div>
+                        <a class="btn btn-outline-white fw-normal d-inline-flex align-items-center" href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#customcanvas">
+                            <i class="isax isax-filter me-1"></i>Filter
+                        </a>
                        <!-- Export Dropdown -->
                <div class="dropdown d-inline-block me-2">
                 <a href="#" class="btn btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
@@ -179,14 +187,14 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
 <div class="mb-3">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div class="d-flex align-items-center flex-wrap gap-2">
-            <div class="table-search d-flex align-items-center mb-0">
+            <!-- <div class="table-search d-flex align-items-center mb-0">
                 <div class="search-input">
                     <a href="javascript:void(0);" class="btn-searchset"><i class="isax isax-search-normal fs-12"></i></a>
                 </div>
             </div>
             <a class="btn btn-outline-white fw-normal d-inline-flex align-items-center" href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#customcanvas">
                 <i class="isax isax-filter me-1"></i>Filter
-            </a>
+            </a> -->
             
             <!-- Display Active Filters -->
             <?php 

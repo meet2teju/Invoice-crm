@@ -65,59 +65,63 @@ $contacts_result = mysqli_query($conn, $contacts_query);
 
         <div class="content">
             <div class="row">
-                <div class="col-md-10 mx-auto">
+                <div class="col-md-12 mx-auto">
                     <div>
                         <div class="d-flex align-items-center justify-content-between mb-3">
-                            <h6><a href="customers.php"><i class="isax isax-arrow-left me-2"></i>Client</a></h6>
+                            <h6>Edit Client</h6>
                             <a href="#" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
                         </div>
 
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="mb-3">Edit Client</h5>
                                 <form id="form" action="process/action_edit_client.php" method="POST" enctype="multipart/form-data" id="form">
                                     <input type="hidden" name="client_id" value="<?php echo $clientid; ?>">
                                     <!-- In your edit form -->
                                     <input type="hidden" name="existing_image" value="<?php echo $row['customer_image']; ?>">
 
                                     <div class="mb-3">
-                                        <div class="d-flex align-items-center">
-                                            <!-- <div id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
-                                                <?php if (!empty($row['customer_image'])): ?>
-                                                    <img src="../uploads/<?php echo $row['customer_image']; ?>" class="avatar avatar-xl" alt="Customer Image">
-                                                <?php else: ?>
-                                                    <i class="isax isax-image text-primary fs-24"></i>
-                                                <?php endif; ?>
-                                            </div> -->
-                                            <div id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">
-    <?php if (!empty($row['customer_image'])): ?>
-        <img src="../uploads/<?php echo $row['customer_image']; ?>" class="avatar avatar-xl" alt="Customer Image" style="width: 100%; height: 100%; object-fit: cover;">
-    <?php else: ?>
-        <i class="isax isax-image text-primary fs-24"></i>
-    <?php endif; ?>
-</div>
-                                            <div class="d-inline-flex flex-column align-items-start">
-                                                <div class="drag-upload-btn btn btn-sm btn-primary position-relative mb-2">
-                                                    <i class="isax isax-image me-1"></i>Upload Image
-                                                    <input type="file" class="form-control image-sign" name="customer_image" id="add_image" accept="image/*">
-                                                </div>
-                                                <span id="add_image_error" class="text-danger error-text"></span>
-                                                <span class="text-gray-9">JPG or PNG format, not exceeding 5MB.</span>
-                                            </div>
-                                        </div>
-                                        <label class="form-label">Client Type</label>
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="form-check me-3">
-                                                    <input class="form-check-input" type="radio" name="client_type" value="1" <?= ($row['client_type'] == 1) ? 'checked' : '' ?>>
-                                                    <label class="form-check-label">Business</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="client_type" value="0" <?= ($row['client_type'] == 0) ? 'checked' : '' ?>>
-                                                    <label class="form-check-label">Individual</label>
-                                                </div>
-                                            </div>
-
                                         <div class="row gx-3">
+                                            <div class="col-lg-6 col-md-6">
+                                                <div class="d-flex align-items-center mb-3">
+                                                    <!-- <div id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
+                                                        <?php if (!empty($row['customer_image'])): ?>
+                                                            <img src="../uploads/<?php echo $row['customer_image']; ?>" class="avatar avatar-xl" alt="Customer Image">
+                                                        <?php else: ?>
+                                                            <i class="isax isax-image text-primary fs-24"></i>
+                                                        <?php endif; ?>
+                                                    </div> -->
+                                                    <div id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                                        <?php if (!empty($row['customer_image'])): ?>
+                                                            <img src="../uploads/<?php echo $row['customer_image']; ?>" class="avatar avatar-xl" alt="Customer Image" style="width: 100%; height: 100%; object-fit: cover;">
+                                                        <?php else: ?>
+                                                            <i class="isax isax-image text-primary fs-24"></i>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div class="d-inline-flex flex-column align-items-start">
+                                                        <div class="drag-upload-btn btn btn-sm btn-primary position-relative mb-2">
+                                                            <i class="isax isax-image me-1"></i>Upload Image
+                                                            <input type="file" class="form-control image-sign" name="customer_image" id="add_image" accept="image/*">
+                                                        </div>
+                                                        <span id="add_image_error" class="text-danger error-text"></span>
+                                                        <span class="text-gray-9">JPG or PNG format, not exceeding 5MB.</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Client Type</label>
+                                                    <div class="d-flex align-items-center mb-3">
+                                                        <div class="form-check me-3">
+                                                            <input class="form-check-input" type="radio" name="client_type" value="1" <?= ($row['client_type'] == 1) ? 'checked' : '' ?>>
+                                                            <label class="form-check-label">Business</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="client_type" value="0" <?= ($row['client_type'] == 0) ? 'checked' : '' ?>>
+                                                            <label class="form-check-label">Individual</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <div class="col-lg-4 col-md-6">
                                                 <div class="mb-3">
                                                     <label class="form-label">Salutation<span class="text-danger ms-1">*</span></label>
@@ -403,20 +407,7 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                                 <label class="form-label">Address Line 2</label>
                                                                 <input type="text" class="form-control" id="shipping_address2" name="shipping_address2" value="<?php echo htmlspecialchars($addressrow['shipping_address2']); ?>">
                                                             </div>
-                                                            <!-- <div class="col-md-6 mb-3">
-                                                                <label class="form-label">Country<span class="text-danger ms-1">*</span></label>
-                                                                <select class="select" id="shipping_country" name="shipping_country" onchange="getStates(this.value, 'shipping_state')">
-                                                                    <option value="">Select Country</option>
-                                                                    <?php 
-                                                                    mysqli_data_seek($country_result, 0);
-                                                                    while ($country = mysqli_fetch_assoc($country_result)) {
-                                                                        $selected = ($country['id'] == $row['shipping_country']) ? 'selected' : '';
-                                                                        echo "<option value='{$country['id']}' $selected>{$country['name']}</option>";
-                                                                    } ?>
-                                                                </select>
-                                                                 <span id="shipping_country_error" class="text-danger error-text"></span>
-                                                            </div> -->
-                                                            <div class="col-md-6 mb-3">
+                                                          <div class="col-md-6 mb-3">
     <label class="form-label">Country<span class="text-danger ms-1">*</span></label>
     <select class="select" id="shipping_country" name="shipping_country" onchange="getStates(this.value, 'shipping_state')">
         <option value="">Select Country</option>

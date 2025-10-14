@@ -2429,7 +2429,152 @@ foreach ($assigned_users as $user) {
         });
     });
     </script>
+<script>
+    // Global functions for comment actions
+window.editComment = function(commentId, commentText) {
+    console.log('Editing comment:', commentId, commentText);
+    
+    // Set editing mode
+    document.getElementById('editing_comment_id').value = commentId;
+    
+    // Set the comment content in the editor
+    if (commentQuill) {
+        commentQuill.root.innerHTML = commentText;
+    }
+    
+    // Clear existing files when editing
+    commentFiles = [];
+    updateCommentFilePreview();
+    
+    // Change button text to "Update Comment"
+    document.getElementById('submitComment').textContent = 'Update Comment';
+    
+    // Scroll to comment editor
+    document.querySelector('.comment-input-container').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+    
+    // Update button state
+    updateCommentButtonState();
+};
 
+window.deleteComment = function(commentId) {
+    console.log('Deleting comment:', commentId);
+    
+    if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+        return;
+    }
+    
+    $.ajax({
+        url: 'process/action_comment.php',
+        type: 'POST',
+        data: {
+            action: 'delete_comment',
+            comment_id: commentId,
+            user_id: <?php echo $_SESSION['crm_user_id'] ?? 1; ?>
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', 'Comment deleted successfully');
+                // Remove the comment from the DOM
+                $('#comment-' + commentId).remove();
+                
+                // Check if there are any comments left
+                if ($('#existingComments .comment-box').length === 0) {
+                    $('#existingComments').html('<div class="text-center text-muted py-3">No comments yet. Be the first to comment!</div>');
+                }
+            } else {
+                showAlert('error', response.message || 'Error deleting comment');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX Error:', xhr.responseText);
+            showAlert('error', 'Error deleting comment: ' + error);
+        }
+    });
+};
+</script>
+<script>
+    // Handle edit comment button clicks using event delegation
+$(document).on('click', '.edit-comment-btn', function() {
+    const commentId = $(this).data('comment-id');
+    const commentText = $(this).data('comment-text');
+    editComment(commentId, commentText);
+});
+
+// Handle delete comment button clicks using event delegation
+$(document).on('click', '.delete-comment-btn', function() {
+    const commentId = $(this).data('comment-id');
+    deleteComment(commentId);
+});
+
+// Update the global editComment function to handle HTML content properly
+window.editComment = function(commentId, commentText) {
+    console.log('Editing comment:', commentId);
+    
+    // Set editing mode
+    document.getElementById('editing_comment_id').value = commentId;
+    
+    // Set the comment content in the editor
+    if (commentQuill) {
+        commentQuill.root.innerHTML = commentText;
+    }
+    
+    // Clear existing files when editing
+    commentFiles = [];
+    updateCommentFilePreview();
+    
+    // Change button text to "Update Comment"
+    document.getElementById('submitComment').textContent = 'Update Comment';
+    
+    // Scroll to comment editor
+    document.querySelector('.comment-input-container').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+    
+    // Update button state
+    updateCommentButtonState();
+};
+
+// Update the global deleteComment function
+window.deleteComment = function(commentId) {
+    console.log('Deleting comment:', commentId);
+    
+    if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+        return;
+    }
+    
+    $.ajax({
+        url: 'process/action_comment.php',
+        type: 'POST',
+        data: {
+            action: 'delete_comment',
+            comment_id: commentId,
+            user_id: <?php echo $_SESSION['crm_user_id'] ?? 1; ?>
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', 'Comment deleted successfully');
+                // Remove the comment from the DOM
+                $('#comment-' + commentId).remove();
+                
+                // Check if there are any comments left
+                if ($('#existingComments .comment-box').length === 0) {
+                    $('#existingComments').html('<div class="text-center text-muted py-3">No comments yet. Be the first to comment!</div>');
+                }
+            } else {
+                showAlert('error', response.message || 'Error deleting comment');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX Error:', xhr.responseText);
+            showAlert('error', 'Error deleting comment: ' + error);
+        }
+    });
+};
+</script>
 </body>
 
 </html>

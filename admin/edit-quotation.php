@@ -61,90 +61,95 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
         <div class="page-wrapper">
             <div class="content">
                 <div class="row">
-                    <div class="col-md-11 mx-auto">
+                    <div class="col-md-12 mx-auto">
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-3">
-                                <h6><a href="quotations.php"><i class="isax isax-arrow-left me-2"></i> Quotations</a></h6>
+                                <h6>Edit Quotations</h6>
                                 <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
                             </div>
                             <div class="card">
                                 <div class="card-body">
-                                    <h6 class="mb-3">Quotation Details</h6>
                                     <form action="process/action_edit_quotation.php" method="POST" enctype="multipart/form-data" id="form">
                                     <input type="hidden" name="id" value="<?= $quotation_id ?>">   
                                     <div class="border-bottom mb-3 pb-1">
-                                            <div class="row justify-content-between">
-                                                <div class="col-xl-5 col-lg-7">
-                                                    <div class="row gx-3">
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label">Client Name <span class="text-danger">*</span></label>
-                                                            <select class="form-select select2" name="client_id" id="client_id" >
-                                                                <option value="">Select Client</option>
-                                                               <?php while ($client = mysqli_fetch_assoc($clients)) {
-                                                                $selected = ($client['id'] == $row['client_id']) ? 'selected' : '';
-                                                                echo "<option value='{$client['id']}' $selected>{$client['first_name']}</option>";
-                                                            } ?> 
-                                                            </select>
-                                                            <span class="text-danger error-text" id="clientname_error"></span>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Quotation ID</label>
-                                                                <input type="text" class="form-control" name="quotation_id" value="<?= htmlspecialchars($row['quotation_id']) ?>" readonly>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Reference Name</label>
-                                                                <input type="text" class="form-control" name="reference_name" id="reference_name" value="<?= htmlspecialchars($row['reference_name']) ?>">
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-12">
-                                                            <label class="form-label">Quotation Date<span class="text-danger">*</span></label>
-                                                            <div class="input-group position-relative mb-3">
-                                                                <input type="text" class="form-control datepicker" id="quotation_date" placeholder="dd/mm/yyyy" name="quotation_date" value="<?= htmlspecialchars($row['quotation_date']) ?>">
-                                                                <span class="input-icon-addon fs-16 text-gray-9">
-                                                                    <i class="isax isax-calendar-2"></i>
-                                                                </span>
-                                                            </div>
-                                                           <span class="text-danger error-text" id="quotation_date_error"></span>
-
-                                                        </div>
-                                                        <div class="col-lg-12">
-                                                            <label class="form-label">Expire Date<span class="text-danger">*</span></label>
-                                                            <div class="input-group position-relative mb-3">
-                                                                <input type="text" class="form-control datepicker" placeholder="dd/mm/yyyy" name="expiry_date" value="<?= htmlspecialchars($row['expiry_date']) ?>">
-                                                                <span class="input-icon-addon fs-16 text-gray-9">
-                                                                    <i class="isax isax-calendar-2"></i>
-                                                                </span>
-                                                            </div>
-                                                            <span class="text-danger error-text" id="expiry_date_error"></span>
-                                                        </div>
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label">Salesperson </label>
-                                                            <select class="form-select select2" name="user_id" id="user_id">
-                                                                <option value="">Select Salesperson</option>
-                                                                <?php while ($user = mysqli_fetch_assoc($users)) {
-                                                                $selected = ($user['id'] == $row['user_id']) ? 'selected' : '';
-                                                                echo "<option value='{$user['id']}' $selected>{$user['name']}</option>";
-                                                            } ?>
-                                                            </select>
-                                                            <span class="text-danger error-text" id="username_error"></span>
-                                                        </div>
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label">Project Name </label>
-                                                            <select class="form-select select2" name="project_id" id="project_id">
-                                                                <option value="">Select Project</option>
-                                                               <?php while ($project = mysqli_fetch_assoc($projects)) {
-                                                                $selected = ($project['id'] == $row['project_id']) ? 'selected' : '';
-                                                                echo "<option value='{$project['id']}' $selected>{$project['project_name']}</option>";
-                                                            } ?> 
-                                                            </select>
-                                                            <span class="text-danger error-text" id="projectname_error"></span>
-                                                        </div>
-                                                    </div>
+                                        <div class="row gx-3">
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                  <label class="form-label">Client Name <span class="text-danger">*</span></label>
+                                                  <select class="form-select select2" name="client_id" id="client_id" >
+                                                      <option value="">Select Client</option>
+                                                    <?php while ($client = mysqli_fetch_assoc($clients)) {
+                                                      $selected = ($client['id'] == $row['client_id']) ? 'selected' : '';
+                                                      echo "<option value='{$client['id']}' $selected>{$client['first_name']}</option>";
+                                                  } ?> 
+                                                  </select>
+                                                  <span class="text-danger error-text" id="clientname_error"></span>
                                                 </div>
                                             </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Quotation ID</label>
+                                                    <input type="text" class="form-control" name="quotation_id" value="<?= htmlspecialchars($row['quotation_id']) ?>" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Reference Name</label>
+                                                    <input type="text" class="form-control" name="reference_name" id="reference_name" value="<?= htmlspecialchars($row['reference_name']) ?>">
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                <label class="form-label">Quotation Date<span class="text-danger">*</span></label>
+                                                <div class="input-group position-relative mb-3">
+                                                    <input type="text" class="form-control datepicker" id="quotation_date" placeholder="dd/mm/yyyy" name="quotation_date" value="<?= htmlspecialchars($row['quotation_date']) ?>">
+                                                    <span class="input-icon-addon fs-16 text-gray-9">
+                                                        <i class="isax isax-calendar-2"></i>
+                                                    </span>
+                                                </div>
+                                                <span class="text-danger error-text" id="quotation_date_error"></span>
+                                              </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                <label class="form-label">Expire Date<span class="text-danger">*</span></label>
+                                                <div class="input-group position-relative mb-3">
+                                                    <input type="text" class="form-control datepicker" placeholder="dd/mm/yyyy" name="expiry_date" value="<?= htmlspecialchars($row['expiry_date']) ?>">
+                                                    <span class="input-icon-addon fs-16 text-gray-9">
+                                                        <i class="isax isax-calendar-2"></i>
+                                                    </span>
+                                                </div>
+                                                <span class="text-danger error-text" id="expiry_date_error"></span>
+                                              </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                <label class="form-label">Salesperson </label>
+                                                <select class="form-select select2" name="user_id" id="user_id">
+                                                    <option value="">Select Salesperson</option>
+                                                    <?php while ($user = mysqli_fetch_assoc($users)) {
+                                                    $selected = ($user['id'] == $row['user_id']) ? 'selected' : '';
+                                                    echo "<option value='{$user['id']}' $selected>{$user['name']}</option>";
+                                                } ?>
+                                                </select>
+                                                <span class="text-danger error-text" id="username_error"></span>
+                                              </div>
+                                            </div>
+                                            <div class="col-lg-4 col-md-6">
+                                              <div class="mb-3">
+                                                <label class="form-label">Project Name </label>
+                                                <select class="form-select select2" name="project_id" id="project_id">
+                                                    <option value="">Select Project</option>
+                                                    <?php while ($project = mysqli_fetch_assoc($projects)) {
+                                                    $selected = ($project['id'] == $row['project_id']) ? 'selected' : '';
+                                                    echo "<option value='{$project['id']}' $selected>{$project['project_name']}</option>";
+                                                } ?> 
+                                                </select>
+                                                <span class="text-danger error-text" id="projectname_error"></span>
+                                              </div>
+                                            </div>
+                                        </div>
+
                                         </div>
 
                                         <div class="border-bottom mb-3">
