@@ -27043,7 +27043,7 @@ input[type=password]::-ms-clear {
 }
 .rounded-trash:hover {
   background: #EF1E1E;
-  color: var(var(--cf-white));
+  color: #fff;
 }
 .rounded-trash.trash-top {
   position: absolute;

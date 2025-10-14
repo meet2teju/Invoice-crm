@@ -328,7 +328,7 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                                             <div>
                                                 <a href="javascript:void(0);" class="d-inline-flex align-items-center add-invoice-data"><i class="isax isax-add-circle5 text-primary me-1"></i>Add New</a>
                                             </div>
-                                        </div>
+                                        
                                         <div class="border-bottom mb-3">
                                             <!-- start row -->
                                             <div class="row">

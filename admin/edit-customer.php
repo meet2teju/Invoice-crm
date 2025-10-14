@@ -485,7 +485,7 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                                <button type="button" class="btn btn-outline-primary mt-2" onclick="addContactRow()">
+                                                <button type="button" class="btn btn-outline-primary mt-2 mb-3" onclick="addContactRow()">
                                                     + Add Contact Person
                                                 </button>
                                             </div>

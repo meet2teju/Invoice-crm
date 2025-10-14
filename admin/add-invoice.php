@@ -45,7 +45,7 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
 
                 <!-- Start row  -->
                 <div class="row">
-                    <div class="col-md-11 mx-auto">
+                    <div class="col-md-12 mx-auto">
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <h6>Add Invoice</h6>

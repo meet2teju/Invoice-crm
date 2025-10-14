@@ -91,7 +91,7 @@ $activitiesResult = mysqli_query($conn, $activitiesQuery);
                 <!-- Page Header -->
                 <div class="d-flex d-block align-items-center justify-content-between flex-wrap gap-3 mb-3">
                     <div>
-                        <h6><a href="customers.php"><i class="isax isax-arrow-left fs-16 me-2"></i>Clients</a></h6>
+                        <h6>Clients Detail</h6>
                     </div>
                     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap gap-2">
                         <div class="dropdown">

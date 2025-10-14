@@ -115,45 +115,50 @@ $country_codes = [
 
         <div class="content">
             <div class="row">
-                <div class="col-md-10 mx-auto">
+                <div class="col-md-12 mx-auto">
                     <div>
                         <div class="d-flex align-items-center justify-content-between mb-3">
-                            <h6><a href="customers.php"><i class="isax isax-arrow-left me-2"></i>Clients</a></h6>
+                            <h6>Add Client</h6>
                             <a href="#" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
                         </div>
 
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="mb-3">Add Client</h5>
                                 <form action="process/action_add_client.php" method="POST" enctype="multipart/form-data" id="form" >
                                 <input type="hidden" name="user_id" value="<?php echo $_SESSION['crm_user_id'] ?? 1; ?>">
 
                                     <div class="mb-3">
-                                        <div class="d-flex align-items-center">
-                                            <div  id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
-                                                <i class="isax isax-image text-primary fs-24"></i>
-                                            </div>
-                                            <div class="d-inline-flex flex-column align-items-start">
-                                                <div class="drag-upload-btn btn btn-sm btn-primary position-relative mb-2">
-                                                    <i class="isax isax-image me-1"></i>Upload Image
-                                                    <input type="file" class="form-control image-sign" name="customer_image" id="add_image" accept="image/*" multiple="">
-                                                </div>
-                                                <span id="add_image_error" class="text-danger error-text"></span>
-                                                <span class="text-gray-9">JPG or PNG format, not exceeding 5MB.</span>
-                                            </div>
-                                        </div>
-                                        <label class="form-label">Client Type</label>
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="form-check me-3">
-                                                    <input class="form-check-input" type="radio" name="client_type" value="1" checked>
-                                                    <label class="form-check-label">Business</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="client_type" value="0">
-                                                    <label class="form-check-label">Individual</label>
-                                                </div>
-                                            </div>
                                         <div class="row gx-3">
+                                            <div class="col-lg-6 col-md-6">
+                                                <div class="d-flex align-items-center mb-3">
+                                                    <div  id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
+                                                        <i class="isax isax-image text-primary fs-24"></i>
+                                                    </div>
+                                                    <div class="d-inline-flex flex-column align-items-start">
+                                                        <div class="drag-upload-btn btn btn-sm btn-primary position-relative mb-2">
+                                                            <i class="isax isax-image me-1"></i>Upload Image
+                                                            <input type="file" class="form-control image-sign" name="customer_image" id="add_image" accept="image/*" multiple="">
+                                                        </div>
+                                                        <span id="add_image_error" class="text-danger error-text"></span>
+                                                        <span class="text-gray-9">JPG or PNG format, not exceeding 5MB.</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6 col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Client Type</label>
+                                                    <div class="d-flex align-items-center mb-3">
+                                                        <div class="form-check me-3">
+                                                            <input class="form-check-input" type="radio" name="client_type" value="1" checked>
+                                                            <label class="form-check-label">Business</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="client_type" value="0">
+                                                            <label class="form-check-label">Individual</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <div class="col-lg-4 col-md-6">
                                                 <div class="mb-3">
                                                     <label class="form-label">Salutation<span class="text-danger ms-1">*</span></label>
@@ -457,12 +462,12 @@ $country_codes = [
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                                <button type="button" class="btn btn-outline-primary mt-2" onclick="addContactRow()">
+                                                <button type="button" class="btn btn-outline-primary mt-2 mb-3" onclick="addContactRow()">
                                                     <i class="isax isax-add"></i> Add Contact Person
                                                 </button>
                                             </div>
 
-                                           
+                                            <!-- Bank Details Tab -->
                                          <div class="tab-pane fade" id="bankTab" role="tabpanel">
                                                 <h6 class="mb-3">Banking Details</h6>
                                                 <div class="row gx-3">

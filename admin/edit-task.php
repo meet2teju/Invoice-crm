@@ -884,15 +884,14 @@ foreach ($assigned_users as $user) {
 
                 <!-- Start row  -->
                 <div class="row">
-                    <div class="col-md-11 mx-auto">
+                    <div class="col-md-12 mx-auto">
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-3">
-                                <h6><a href="project-tasks.php"><i class="isax isax-arrow-left me-2"></i>Tasks</a></h6>
+                                <h6>Edit Task</h6>
                                 <a href="project-tasks.php" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
                             </div>
                             <div class="card">
                                 <div class="card-body">
-                                    <h6 class="mb-3">Edit Task Details</h6>
                                     <form action="process/action_edit_task.php" method="POST" id="form" enctype="multipart/form-data">
                                         <input type="hidden" name="task_id" value="<?php echo $task_id; ?>">
                                         <input type="hidden" name="user_id" value="<?php echo $_SESSION['crm_user_id'] ?? 1; ?>">
@@ -1073,7 +1072,7 @@ foreach ($assigned_users as $user) {
             </div>
 
             <!-- File Attachment Field -->
-            <div class="col-12">
+            <div class="col-12 mt-3">
                 <div class="mb-3">
                     <label class="form-label">Attachments</label>
                     <div class="file-upload-container" id="fileUploadContainer">
@@ -1125,7 +1124,7 @@ foreach ($assigned_users as $user) {
 <!-- end row -->
 
 
-                                        <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
                                             <button type="button" class="btn btn-outline-white" onclick="window.location.href='project-tasks.php'">Cancel</button>
                                             <button type="submit" class="btn btn-primary">Update Task</button>
                                         </div>
