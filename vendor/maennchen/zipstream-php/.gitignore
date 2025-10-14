@@ -10,3 +10,4 @@
 /.phpunit.cache
 /tools
 /vendor
+/uploads

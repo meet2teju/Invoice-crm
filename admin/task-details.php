@@ -74,6 +74,639 @@ $created_date = !empty($task['created_at']) ? date('d-m-Y', strtotime($task['cre
 <head>
     <?php include 'layouts/title-meta.php'; ?>
     <?php include 'layouts/head-css.php'; ?>
+    
+    <!-- Quill.js Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    
+    <style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    .timeline-content {
+        padding-bottom: 10px;
+    }
+    .timeline-item:not(:last-child) .timeline-content {
+        border-left: 2px solid #e9ecef;
+        padding-left: 20px;
+        margin-left: -20px;
+    }
+
+    /* Attachment Styles */
+    .attachment-item {
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    .attachment-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .attachment-icon {
+        flex-shrink: 0;
+    }
+    .attachment-details {
+        min-width: 0;
+    }
+    .attachment-name {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    .attachment-meta {
+        font-size: 12px;
+    }
+    .attachment-actions .btn {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    /* Rich Text Content Styles - Preserving existing design */
+    .rich-text-content {
+        font-family: inherit;
+        line-height: 1.6;
+        color: #495057;
+    }
+
+    .rich-text-content p {
+        margin-bottom: 1rem;
+    }
+
+    .rich-text-content h1,
+    .rich-text-content h2,
+    .rich-text-content h3,
+    .rich-text-content h4,
+    .rich-text-content h5,
+    .rich-text-content h6 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        color: #343a40;
+    }
+
+    .rich-text-content h1 { font-size: 2rem; }
+    .rich-text-content h2 { font-size: 1.75rem; }
+    .rich-text-content h3 { font-size: 1.5rem; }
+    .rich-text-content h4 { font-size: 1.25rem; }
+    .rich-text-content h5 { font-size: 1.1rem; }
+    .rich-text-content h6 { font-size: 1rem; }
+
+    .rich-text-content ul,
+    .rich-text-content ol {
+        margin-bottom: 1rem;
+        padding-left: 2rem;
+    }
+
+    .rich-text-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .rich-text-content blockquote {
+        border-left: 4px solid #0d6efd;
+        padding-left: 1rem;
+        margin-left: 0;
+        margin-right: 0;
+        margin-bottom: 1rem;
+        font-style: italic;
+        color: #6c757d;
+    }
+
+    .rich-text-content code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.875em;
+        color: #e83e8c;
+    }
+
+    .rich-text-content pre {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+
+    .rich-text-content pre code {
+        background: none;
+        padding: 0;
+        color: inherit;
+    }
+
+    .rich-text-content table {
+        width: 100%;
+        margin-bottom: 1rem;
+        border-collapse: collapse;
+    }
+
+    .rich-text-content table th,
+    .rich-text-content table td {
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+        text-align: left;
+    }
+
+    .rich-text-content table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .rich-text-content img {
+        max-width: 90px !important;
+        height: auto !important;
+        display: block;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        cursor: zoom-in;
+        transition: transform 0.2s ease;
+    }
+
+    .rich-text-content img:hover {
+        transform: scale(1.02);
+    }
+
+    .rich-text-content a {
+        color: #0d6efd;
+        text-decoration: none;
+    }
+
+    .rich-text-content a:hover {
+        text-decoration: underline;
+    }
+
+    .rich-text-content strong {
+        font-weight: 600;
+    }
+
+    .rich-text-content em {
+        font-style: italic;
+    }
+
+    .rich-text-content u {
+        text-decoration: underline;
+    }
+
+    .rich-text-content s {
+        text-decoration: line-through;
+    }
+
+    /* Ensure the content fits within your existing design */
+    .rich-text-content {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    /* Scrollbar styling for the description box */
+    .rich-text-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .rich-text-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    .rich-text-content::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+
+    .rich-text-content::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* Image Zoom Modal Styles */
+    .image-zoom-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .image-zoom-content {
+        max-width: 90%;
+        max-height: 90%;
+        position: relative;
+    }
+
+    .image-zoom-content img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .image-zoom-close {
+        position: absolute;
+        top: -40px;
+        right: 0;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 30px;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .image-zoom-close:hover {
+        color: #ff6b6b;
+    }
+
+    .image-zoom-nav {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        transform: translateY(-50%);
+    }
+
+    .image-zoom-prev,
+    .image-zoom-next {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        font-size: 24px;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 50%;
+        margin: 0 20px;
+        transition: background 0.3s ease;
+    }
+
+    .image-zoom-prev:hover,
+    .image-zoom-next:hover {
+        background: rgba(255, 255, 255, 0.4);
+    }
+
+    .image-counter {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-size: 16px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 5px 15px;
+        border-radius: 20px;
+    }
+
+    /* Comment Section Styles */
+    .comment-section {
+        margin-top: 20px;
+        border-top: 1px solid #dee2e6;
+        padding-top: 20px;
+    }
+
+    .comment-tabs {
+        display: flex;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .comment-tab {
+        padding: 12px 16px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+
+    .comment-tab.active {
+        color: #0d6efd;
+        border-bottom-color: #0d6efd;
+    }
+
+    .comment-tab:hover {
+        color: #0d6efd;
+    }
+
+    .comment-box {
+        background-color: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 15px;
+    }
+
+    .comment-user {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 14px;
+        margin-right: 10px;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: #495057;
+        font-size: 14px;
+    }
+
+    .comment-time {
+        font-size: 12px;
+        color: #6c757d;
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .comment-text {
+        color: #495057;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .comment-input-container {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 15px;
+    }
+
+    /* Quill Rich Text Editor Styles for Comments */
+    .comment-rich-text-editor-container {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+
+    #commentEditor {
+        height: 150px;
+        font-family: inherit;
+        font-size: 14px;
+    }
+
+    .comment-ql-toolbar.ql-snow {
+        border: none !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        background: #f8f9fa !important;
+        border-radius: 4px 4px 0 0 !important;
+    }
+
+    .comment-ql-container.ql-snow {
+        border: none !important;
+        border-radius: 0 0 4px 4px !important;
+        font-family: inherit !important;
+        font-size: 14px !important;
+    }
+
+    .comment-ql-editor {
+        padding: 12px 15px !important;
+        color: #495057 !important;
+        line-height: 1.5 !important;
+    }
+
+    .comment-ql-editor.ql-blank::before {
+        color: #6c757d !important;
+        font-style: italic !important;
+        font-size: 14px !important;
+    }
+
+    /* Comment Editor Image Styles */
+    #commentEditor .ql-editor img {
+        max-width: 400px !important;
+        height: auto !important;
+        display: block;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        cursor: zoom-in;
+        transition: transform 0.2s ease;
+    }
+
+    #commentEditor .ql-editor img:hover {
+        transform: scale(1.02);
+    }
+
+    .comment-attachment-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .attach-files-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .attach-files-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0;
+        font-size: 14px;
+    }
+
+    .attach-files-button {
+        background: none;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 6px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #495057;
+        transition: all 0.3s ease;
+    }
+
+    .attach-files-button:hover {
+        background-color: #f8f9fa;
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+
+    .attach-files-button i {
+        font-size: 14px;
+    }
+
+    .comment-file-preview {
+        margin-top: 10px;
+    }
+
+    .comment-file-preview-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+        font-size: 13px;
+    }
+
+    .comment-file-preview-item:hover {
+        background-color: #f8f9fa;
+        border-color: #0d6efd;
+    }
+
+    .comment-file-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+
+    .comment-file-name {
+        font-weight: 500;
+        margin-right: 8px;
+        color: #495057;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .comment-file-size {
+        color: #6c757d;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .remove-comment-file {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .remove-comment-file:hover {
+        background-color: #f8d7da;
+        transform: scale(1.1);
+    }
+
+    .comment-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 15px;
+        gap: 8px;
+    }
+
+    .btn-cancel-comment {
+        background-color: transparent;
+        border: 1px solid #6c757d;
+        color: #6c757d;
+        padding: 8px 20px;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .btn-cancel-comment:hover {
+        background-color: #f8f9fa;
+    }
+
+    .btn-comment {
+        background-color: #0d6efd;
+        border: 1px solid #0d6efd;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .btn-comment:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
+
+    .btn-comment:disabled {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    /* Comment action buttons */
+    .comment-time .comment-actions {
+        display: inline-flex;
+        gap: 5px;
+        margin-left: 10px;
+    }
+
+    .comment-time .btn-sm {
+        padding: 2px 8px;
+        font-size: 11px;
+    }
+
+    /* File type badges for comment attachments */
+    .file-type-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-image {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .badge-pdf {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .badge-doc {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .badge-other {
+        background-color: #6c757d;
+        color: white;
+    }
+    </style>
 </head>
 <body>
 <div class="main-wrapper">
@@ -215,6 +848,56 @@ $created_date = !empty($task['created_at']) ? date('d-m-Y', strtotime($task['cre
                             </div>
                         </div>
                         <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comment Section -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="comment-section">
+                        <!-- Comment Tabs -->
+                        <div class="comment-tabs">
+                            <label>Comments</label>
+                        </div>
+                        
+                        <!-- Existing Comments Display -->
+                        <div id="existingComments" class="mb-3">
+                            <!-- Comments will be loaded here via AJAX -->
+                        </div>
+                        
+                        <!-- Comment Input with Rich Text Editor -->
+                        <div class="comment-input-container">
+                            <!-- Hidden field for editing existing comment -->
+                            <input type="hidden" id="editing_comment_id" value="">
+                            
+                            <!-- Rich Text Editor -->
+                            <div class="comment-rich-text-editor-container">
+                                <div id="commentEditor"></div>
+                            </div>
+                            
+                            <!-- Comment Attachment Section -->
+                            <div class="comment-attachment-section">
+                                <div class="attach-files-container">
+                                    <span class="attach-files-label">Attach Files (Images, Documents, Archives)</span>
+                                    <button type="button" class="attach-files-button" id="attachFilesButton">
+                                        <i class="isax isax-document-upload"></i>
+                                        Attach Files (Images, PDF, Excel, Word, etc.)
+                                    </button>
+                                </div>
+                                
+                                <div class="comment-file-preview" id="commentFilePreview"></div>
+                            </div>
+                            
+                            <!-- Hidden file input for attachments -->
+                            <input type="file" class="comment-file-input" id="comment_attachments" name="comment_attachments[]" multiple 
+                                   accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.zip,.rar,.7z" style="display: none;">
+                            
+                            <div class="comment-actions">
+                                <button type="button" class="btn-cancel-comment" id="cancelComment">Cancel</button>
+                                <button type="button" class="btn-comment" id="submitComment">Add Comment</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -477,298 +1160,505 @@ $created_date = !empty($task['created_at']) ? date('d-m-Y', strtotime($task['cre
 
 <?php include 'layouts/vendor-scripts.php'; ?>
 
-<style>
-.timeline {
-    position: relative;
-    padding-left: 30px;
-}
-.timeline-item {
-    position: relative;
-    margin-bottom: 20px;
-}
-.timeline-marker {
-    position: absolute;
-    left: -30px;
-    top: 0;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-}
-.timeline-content {
-    padding-bottom: 10px;
-}
-.timeline-item:not(:last-child) .timeline-content {
-    border-left: 2px solid #e9ecef;
-    padding-left: 20px;
-    margin-left: -20px;
-}
-
-/* Attachment Styles */
-.attachment-item {
-    transition: all 0.3s ease;
-    height: 100%;
-}
-.attachment-item:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
-}
-.attachment-icon {
-    flex-shrink: 0;
-}
-.attachment-details {
-    min-width: 0;
-}
-.attachment-name {
-    font-size: 14px;
-    margin-bottom: 4px;
-}
-.attachment-meta {
-    font-size: 12px;
-}
-.attachment-actions .btn {
-    font-size: 12px;
-    padding: 4px 8px;
-}
-
-/* Rich Text Content Styles - Preserving existing design */
-.rich-text-content {
-    font-family: inherit;
-    line-height: 1.6;
-    color: #495057;
-}
-
-.rich-text-content p {
-    margin-bottom: 1rem;
-}
-
-.rich-text-content h1,
-.rich-text-content h2,
-.rich-text-content h3,
-.rich-text-content h4,
-.rich-text-content h5,
-.rich-text-content h6 {
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
-    color: #343a40;
-}
-
-.rich-text-content h1 { font-size: 2rem; }
-.rich-text-content h2 { font-size: 1.75rem; }
-.rich-text-content h3 { font-size: 1.5rem; }
-.rich-text-content h4 { font-size: 1.25rem; }
-.rich-text-content h5 { font-size: 1.1rem; }
-.rich-text-content h6 { font-size: 1rem; }
-
-.rich-text-content ul,
-.rich-text-content ol {
-    margin-bottom: 1rem;
-    padding-left: 2rem;
-}
-
-.rich-text-content li {
-    margin-bottom: 0.5rem;
-}
-
-.rich-text-content blockquote {
-    border-left: 4px solid #0d6efd;
-    padding-left: 1rem;
-    margin-left: 0;
-    margin-right: 0;
-    margin-bottom: 1rem;
-    font-style: italic;
-    color: #6c757d;
-}
-
-.rich-text-content code {
-    background-color: #f8f9fa;
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.25rem;
-    font-size: 0.875em;
-    color: #e83e8c;
-}
-
-.rich-text-content pre {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 0.375rem;
-    overflow-x: auto;
-    margin-bottom: 1rem;
-}
-
-.rich-text-content pre code {
-    background: none;
-    padding: 0;
-    color: inherit;
-}
-
-.rich-text-content table {
-    width: 100%;
-    margin-bottom: 1rem;
-    border-collapse: collapse;
-}
-
-.rich-text-content table th,
-.rich-text-content table td {
-    padding: 0.75rem;
-    border: 1px solid #dee2e6;
-    text-align: left;
-}
-
-.rich-text-content table th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-}
-
-.rich-text-content img {
-    max-width: 400px !important;
-    height: auto !important;
-    display: block;
-    margin: 10px 0;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    cursor: zoom-in;
-    transition: transform 0.2s ease;
-}
-
-.rich-text-content img:hover {
-    transform: scale(1.02);
-}
-
-.rich-text-content a {
-    color: #0d6efd;
-    text-decoration: none;
-}
-
-.rich-text-content a:hover {
-    text-decoration: underline;
-}
-
-.rich-text-content strong {
-    font-weight: 600;
-}
-
-.rich-text-content em {
-    font-style: italic;
-}
-
-.rich-text-content u {
-    text-decoration: underline;
-}
-
-.rich-text-content s {
-    text-decoration: line-through;
-}
-
-/* Ensure the content fits within your existing design */
-.rich-text-content {
-    max-height: 500px;
-    overflow-y: auto;
-}
-
-/* Scrollbar styling for the description box */
-.rich-text-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.rich-text-content::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-}
-
-.rich-text-content::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
-}
-
-.rich-text-content::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-
-/* Image Zoom Modal Styles */
-.image-zoom-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 9999;
-    justify-content: center;
-    align-items: center;
-}
-
-.image-zoom-content {
-    max-width: 90%;
-    max-height: 90%;
-    position: relative;
-}
-
-.image-zoom-content img {
-    max-width: 100%;
-    max-height: 100%;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
-.image-zoom-close {
-    position: absolute;
-    top: -40px;
-    right: 0;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 30px;
-    cursor: pointer;
-    padding: 5px;
-}
-
-.image-zoom-close:hover {
-    color: #ff6b6b;
-}
-
-.image-zoom-nav {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    transform: translateY(-50%);
-}
-
-.image-zoom-prev,
-.image-zoom-next {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    font-size: 24px;
-    padding: 10px 15px;
-    cursor: pointer;
-    border-radius: 50%;
-    margin: 0 20px;
-    transition: background 0.3s ease;
-}
-
-.image-zoom-prev:hover,
-.image-zoom-next:hover {
-    background: rgba(255, 255, 255, 0.4);
-}
-
-.image-counter {
-    position: absolute;
-    bottom: -40px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-size: 16px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 5px 15px;
-    border-radius: 20px;
-}
-</style>
+<!-- Quill.js Text Editor -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <script>
+// Comment functionality variables
+let commentQuill;
+let commentFiles = [];
+let commentEditorImages = [];
+let currentCommentImageIndex = 0;
+
+// Initialize Comment Rich Text Editor with Image Support
+function initCommentEditor() {
+    commentQuill = new Quill('#commentEditor', {
+        theme: 'snow',
+        placeholder: 'Add Comment...',
+        modules: {
+            toolbar: {
+                container: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'image'],
+                    ['clean']
+                ],
+                handlers: {
+                    'image': commentImageHandler
+                }
+            }
+        },
+        formats: [
+            'bold', 'italic', 'underline',
+            'list', 'bullet',
+            'link', 'image'
+        ]
+    });
+    
+    // Update comment button state when editor content changes
+    commentQuill.on('text-change', function() {
+        updateCommentButtonState();
+    });
+
+    // Custom image handler for comment editor
+    function commentImageHandler() {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async function() {
+            const file = input.files[0];
+            if (file) {
+                // Check file size (max 5MB for images)
+                if (file.size > 5 * 1024 * 1024) {
+                    showAlert('error', 'Image size should be less than 5MB');
+                    return;
+                }
+
+                // Create a temporary image to get dimensions
+                const img = new Image();
+                const objectUrl = URL.createObjectURL(file);
+                
+                img.onload = function() {
+                    // Resize image if it's too large
+                    const maxWidth = 400;
+                    const maxHeight = 300;
+                    let { width, height } = img;
+
+                    if (width > maxWidth || height > maxHeight) {
+                        const ratio = Math.min(maxWidth / width, maxHeight / height);
+                        width *= ratio;
+                        height *= ratio;
+                    }
+
+                    // Create canvas for resizing
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Draw resized image
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert to blob
+                    canvas.toBlob(function(blob) {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onload = function() {
+                            const base64data = reader.result;
+                            
+                            // Get current selection
+                            const range = commentQuill.getSelection(true);
+                            
+                            // Insert the image
+                            commentQuill.insertEmbed(range.index, 'image', base64data);
+                            
+                            // Move cursor after the image
+                            commentQuill.setSelection(range.index + 1);
+                            
+                            // Clean up
+                            URL.revokeObjectURL(objectUrl);
+                        };
+                    }, 'image/jpeg', 0.8);
+                };
+
+                img.src = objectUrl;
+            }
+        };
+    }
+
+    // Add click event listener to images in comment editor for zoom
+    commentQuill.root.addEventListener('click', function(e) {
+        if (e.target.tagName === 'IMG') {
+            openCommentImageZoom(e.target.src);
+        }
+    });
+}
+
+// Initialize comment section
+function initCommentSection() {
+    const cancelBtn = document.getElementById('cancelComment');
+    const commentBtn = document.getElementById('submitComment');
+    const commentFileInput = document.getElementById('comment_attachments');
+    const attachFilesButton = document.getElementById('attachFilesButton');
+    
+    // Handle attach files button click
+    attachFilesButton.addEventListener('click', function() {
+        commentFileInput.click();
+    });
+    
+    // Handle cancel button
+    cancelBtn.addEventListener('click', function() {
+        resetCommentForm();
+    });
+    
+    // Handle comment file selection
+    commentFileInput.addEventListener('change', function(e) {
+        handleCommentFiles(e.target.files);
+    });
+    
+    function handleCommentFiles(files) {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = [
+            // Images
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp',
+            // Documents
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/csv',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain',
+            // Archives
+            'application/zip',
+            'application/x-rar-compressed',
+            'application/x-7z-compressed'
+        ];
+        
+        // Also allow by file extension for better compatibility
+        const allowedExtensions = [
+            'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp',
+            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'txt',
+            'zip', 'rar', '7z'
+        ];
+        
+        for (let file of files) {
+            // Check file size
+            if (file.size > maxSize) {
+                showAlert('error', `File "${file.name}" is too large. Maximum size is 10MB.`);
+                continue;
+            }
+            
+            // Get file extension
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            
+            // Check file type and extension
+            if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                showAlert('error', `File type not supported for "${file.name}". Supported formats: Images, PDF, DOC, DOCX, XLS, XLSX, CSV, PPT, PPTX, TXT, ZIP, RAR, 7Z.`);
+                continue;
+            }
+            
+            // Add file to comment files
+            commentFiles.push(file);
+        }
+        
+        updateCommentFilePreview();
+        updateCommentButtonState();
+    }
+    
+    function updateCommentFilePreview() {
+        const commentFilePreview = document.getElementById('commentFilePreview');
+        
+        commentFilePreview.innerHTML = '';
+        
+        if (commentFiles.length === 0) {
+            return;
+        }
+        
+        commentFiles.forEach((file, index) => {
+            const fileSize = formatFileSize(file.size);
+            const fileType = getCommentFileType(file);
+            const fileIcon = getCommentFileIcon(file);
+            const badgeClass = getCommentFileBadgeClass(file);
+            
+            const filePreviewItem = document.createElement('div');
+            filePreviewItem.className = 'comment-file-preview-item';
+            filePreviewItem.innerHTML = `
+                <div class="comment-file-info">
+                    <i class="${fileIcon} me-2" style="color: #6c757d;"></i>
+                    <span class="comment-file-name">${file.name}</span>
+                    <span class="comment-file-size ms-2">${fileSize}</span>
+                    <span class="file-type-badge ${badgeClass} ms-2">${fileType}</span>
+                </div>
+                <button type="button" class="remove-comment-file" onclick="removeCommentFile(${index})">
+                    <i class="isax isax-close-circle"></i>
+                </button>
+            `;
+            commentFilePreview.appendChild(filePreviewItem);
+        });
+    }
+    
+    function updateCommentButtonState() {
+        const hasText = commentQuill.getText().trim().length > 0;
+        const hasFiles = commentFiles.length > 0;
+        commentBtn.disabled = !(hasText || hasFiles);
+    }
+    
+    // Handle comment button
+    commentBtn.addEventListener('click', function() {
+        submitComment();
+    });
+}
+
+// Helper functions for file type detection
+function getCommentFileType(file) {
+    if (file.type.startsWith('image/')) return 'IMAGE';
+    if (file.type === 'application/pdf') return 'PDF';
+    if (file.type.includes('word') || file.type.includes('document')) return 'DOC';
+    if (file.type.includes('excel') || file.type.includes('spreadsheet')) return 'XLS';
+    if (file.type === 'text/csv') return 'CSV';
+    if (file.type.includes('powerpoint') || file.type.includes('presentation')) return 'PPT';
+    if (file.type === 'text/plain') return 'TXT';
+    if (file.type.includes('zip') || file.type.includes('rar') || file.type.includes('7z')) return 'ARCHIVE';
+    
+    // Fallback to file extension
+    const ext = file.name.split('.').pop().toUpperCase();
+    return ext || 'FILE';
+}
+
+function getCommentFileIcon(file) {
+    if (file.type.startsWith('image/')) return 'isax isax-gallery';
+    if (file.type === 'application/pdf') return 'isax isax-document-text';
+    if (file.type.includes('word') || file.type.includes('document')) return 'isax isax-document-text';
+    if (file.type.includes('excel') || file.type.includes('spreadsheet')) return 'isax isax-table';
+    if (file.type === 'text/csv') return 'isax isax-table';
+    if (file.type.includes('powerpoint') || file.type.includes('presentation')) return 'isax isax-presention-chart';
+    if (file.type === 'text/plain') return 'isax isax-document-text';
+    if (file.type.includes('zip') || file.type.includes('rar') || file.type.includes('7z')) return 'isax isax-archive';
+    return 'isax isax-document';
+}
+
+function getCommentFileBadgeClass(file) {
+    if (file.type.startsWith('image/')) return 'badge-image';
+    if (file.type === 'application/pdf') return 'badge-pdf';
+    if (file.type.includes('word') || file.type.includes('document')) return 'badge-doc';
+    if (file.type.includes('excel') || file.type.includes('spreadsheet')) return 'badge-doc';
+    if (file.type === 'text/csv') return 'badge-doc';
+    if (file.type.includes('powerpoint') || file.type.includes('presentation')) return 'badge-doc';
+    if (file.type === 'text/plain') return 'badge-other';
+    if (file.type.includes('zip') || file.type.includes('rar') || file.type.includes('7z')) return 'badge-other';
+    return 'badge-other';
+}
+
+// Edit comment function
+function editComment(commentId, commentText) {
+    // Set editing mode
+    document.getElementById('editing_comment_id').value = commentId;
+    commentQuill.root.innerHTML = commentText;
+    
+    // Clear existing files when editing
+    commentFiles = [];
+    updateCommentFilePreview();
+    
+    // Change button text to "Update Comment"
+    document.getElementById('submitComment').textContent = 'Update Comment';
+    
+    // Scroll to comment editor
+    document.querySelector('.comment-input-container').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+    
+    // Update button state
+    updateCommentButtonState();
+}
+
+// Delete comment function
+function deleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+        return;
+    }
+    
+    $.ajax({
+        url: 'process/action_comment.php',
+        type: 'POST',
+        data: {
+            action: 'delete_comment',
+            comment_id: commentId,
+            user_id: <?php echo $_SESSION['crm_user_id'] ?? 1; ?>
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', 'Comment deleted successfully');
+                // Remove the comment from the DOM
+                $('#comment-' + commentId).remove();
+                
+                // Check if there are any comments left
+                if ($('#existingComments .comment-box').length === 0) {
+                    $('#existingComments').html('<div class="text-center text-muted py-3">No comments yet. Be the first to comment!</div>');
+                }
+            } else {
+                showAlert('error', response.message || 'Error deleting comment');
+            }
+        },
+        error: function(xhr, status, error) {
+            showAlert('error', 'Error deleting comment: ' + error);
+        }
+    });
+}
+
+// Submit comment function
+function submitComment() {
+    const commentText = commentQuill.getText().trim();
+    const commentHTML = commentQuill.root.innerHTML;
+    const editingCommentId = document.getElementById('editing_comment_id').value;
+    const taskId = <?php echo $task_id; ?>;
+    
+    if (!commentText && commentFiles.length === 0) {
+        showAlert('error', 'Please enter a comment or attach files');
+        return;
+    }
+    
+    // Create FormData for AJAX request
+    const formData = new FormData();
+    formData.append('comment_text', commentHTML);
+    formData.append('task_id', taskId);
+    formData.append('user_id', <?php echo $_SESSION['crm_user_id'] ?? 1; ?>);
+    
+    if (editingCommentId) {
+        formData.append('comment_id', editingCommentId);
+        formData.append('action', 'update_comment');
+    } else {
+        formData.append('action', 'add_comment');
+    }
+    
+    // Append files
+    commentFiles.forEach((file, index) => {
+        formData.append(`comment_files[]`, file);
+    });
+    
+    // Show loading state
+    const commentBtn = document.getElementById('submitComment');
+    const originalText = commentBtn.textContent;
+    commentBtn.textContent = 'Saving...';
+    commentBtn.disabled = true;
+    
+    // Send AJAX request
+    $.ajax({
+        url: 'process/action_comment.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', editingCommentId ? 'Comment updated successfully' : 'Comment added successfully');
+                resetCommentForm();
+                loadComments(); // Reload comments
+            } else {
+                showAlert('error', response.message || 'Error saving comment');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX Error:', xhr.responseText);
+            showAlert('error', 'Error saving comment: ' + error);
+        },
+        complete: function() {
+            commentBtn.textContent = originalText;
+            commentBtn.disabled = false;
+        }
+    });
+}
+
+// Reset comment form
+function resetCommentForm() {
+    commentQuill.setText('');
+    commentFiles = [];
+    updateCommentFilePreview();
+    document.getElementById('submitComment').disabled = true;
+    document.getElementById('editing_comment_id').value = '';
+    document.getElementById('submitComment').textContent = 'Add Comment';
+}
+
+// Remove comment file
+function removeCommentFile(index) {
+    commentFiles.splice(index, 1);
+    updateCommentFilePreview();
+    updateCommentButtonState();
+}
+
+// Load existing comments
+function loadComments() {
+    const taskId = <?php echo $task_id; ?>;
+    
+    $.ajax({
+        url: 'process/fetch_comments.php',
+        type: 'POST',
+        data: { task_id: taskId },
+        success: function(response) {
+            $('#existingComments').html(response);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading comments:', error);
+            $('#existingComments').html('<div class="text-center text-muted py-3">Error loading comments</div>');
+        }
+    });
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Show alert function
+function showAlert(type, message) {
+    const alertClass = type === 'error' ? 'alert-danger' : 
+                     type === 'warning' ? 'alert-warning' : 
+                     type === 'success' ? 'alert-success' : 'alert-info';
+    
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            <i class="isax isax-${type === 'error' ? 'danger' : type} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    $('.comment-tabs').after(alertHtml);
+    
+    // Auto remove alert after 5 seconds
+    setTimeout(() => {
+        $('.alert').alert('close');
+    }, 5000);
+}
+
+// Image zoom functionality for comment editor
+function openCommentImageZoom(src) {
+    // Get all images from comment editor
+    commentEditorImages = Array.from(commentQuill.root.querySelectorAll('img')).map(img => img.src);
+    currentCommentImageIndex = commentEditorImages.indexOf(src);
+    
+    if (currentCommentImageIndex === -1) return;
+    
+    const modal = document.getElementById('descImageZoomModal');
+    const zoomedImage = document.getElementById('descZoomedImage');
+    const imageCounter = document.getElementById('descImageCounter');
+    
+    zoomedImage.src = src;
+    updateCommentImageCounter();
+    
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function navigateCommentImage(direction) {
+    currentCommentImageIndex += direction;
+    
+    if (currentCommentImageIndex < 0) {
+        currentCommentImageIndex = commentEditorImages.length - 1;
+    } else if (currentCommentImageIndex >= commentEditorImages.length) {
+        currentCommentImageIndex = 0;
+    }
+    
+    const zoomedImage = document.getElementById('descZoomedImage');
+    zoomedImage.src = commentEditorImages[currentCommentImageIndex];
+    updateCommentImageCounter();
+}
+
+function updateCommentImageCounter() {
+    const imageCounter = document.getElementById('descImageCounter');
+    imageCounter.textContent = `${currentCommentImageIndex + 1} / ${commentEditorImages.length}`;
+}
+
 // Image zoom functionality for description images
 let descImages = [];
 let currentDescImageIndex = 0;
@@ -851,9 +1741,39 @@ function updateDescImageCounter() {
     imageCounter.textContent = `${currentDescImageIndex + 1} / ${descImages.length}`;
 }
 
-// Initialize description image zoom when page loads
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize everything when page loads
+$(document).ready(function() {
+    // Initialize comment editor and section
+    initCommentEditor();
+    initCommentSection();
+    
+    // Initialize image zoom for both description and comments
     initDescImageZoom();
+    
+    // Load existing comments
+    loadComments();
+});
+
+// Global functions for comment actions
+window.editComment = function(commentId, commentText) {
+    editComment(commentId, commentText);
+};
+
+window.deleteComment = function(commentId) {
+    deleteComment(commentId);
+};
+
+// Handle edit comment button clicks using event delegation
+$(document).on('click', '.edit-comment-btn', function() {
+    const commentId = $(this).data('comment-id');
+    const commentText = $(this).data('comment-text');
+    editComment(commentId, commentText);
+});
+
+// Handle delete comment button clicks using event delegation
+$(document).on('click', '.delete-comment-btn', function() {
+    const commentId = $(this).data('comment-id');
+    deleteComment(commentId);
 });
 </script>
 

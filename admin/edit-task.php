@@ -413,7 +413,7 @@ foreach ($assigned_users as $user) {
 
 /* Image size constraints in editor */
 .ql-editor img {
-    max-width: 400px !important;
+    max-width: 90px !important;
     height: auto !important;
     display: block;
     margin: 10px 0;
@@ -725,12 +725,18 @@ foreach ($assigned_users as $user) {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 10px 12px;
     background: white;
     border: 1px solid #dee2e6;
-    border-radius: 4px;
-    margin-bottom: 6px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
     font-size: 13px;
+}
+
+.comment-file-preview-item:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
 }
 
 .comment-file-info {
@@ -743,11 +749,16 @@ foreach ($assigned_users as $user) {
     font-weight: 500;
     margin-right: 8px;
     color: #495057;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .comment-file-size {
     color: #6c757d;
     font-size: 11px;
+    white-space: nowrap;
 }
 
 .remove-comment-file {
@@ -755,13 +766,15 @@ foreach ($assigned_users as $user) {
     border: none;
     color: #dc3545;
     cursor: pointer;
-    font-size: 14px;
-    padding: 2px 6px;
-    border-radius: 3px;
+    font-size: 16px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
 }
 
 .remove-comment-file:hover {
     background-color: #f8d7da;
+    transform: scale(1.1);
 }
 
 .comment-actions {
@@ -820,6 +833,35 @@ foreach ($assigned_users as $user) {
 .comment-time .btn-sm {
     padding: 2px 8px;
     font-size: 11px;
+}
+
+/* File type badges for comment attachments */
+.file-type-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-image {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-pdf {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-doc {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.badge-other {
+    background-color: #6c757d;
+    color: white;
 }
     </style>
 </head>
@@ -1008,10 +1050,10 @@ foreach ($assigned_users as $user) {
                         <!-- Comment Attachment Section -->
                         <div class="comment-attachment-section">
                             <div class="attach-files-container">
-                                <span class="attach-files-label">Attach Files</span>
+                                <span class="attach-files-label">Attach Files (Images, Documents, Archives)</span>
                                 <button type="button" class="attach-files-button" id="attachFilesButton">
                                     <i class="isax isax-document-upload"></i>
-                                    Attach Files
+                                    Attach Files (Images, PDF, Excel, Word, etc.)
                                 </button>
                             </div>
                             
@@ -1019,7 +1061,8 @@ foreach ($assigned_users as $user) {
                         </div>
                         
                         <!-- Hidden file input for attachments -->
-                        <input type="file" class="comment-file-input" id="comment_attachments" name="comment_attachments[]" multiple accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" style="display: none;">
+                        <input type="file" class="comment-file-input" id="comment_attachments" name="comment_attachments[]" multiple 
+                               accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.zip,.rar,.7z" style="display: none;">
                         
                         <div class="comment-actions">
                             <button type="button" class="btn-cancel-comment" id="cancelComment">Cancel</button>
@@ -1419,15 +1462,29 @@ foreach ($assigned_users as $user) {
             function handleCommentFiles(files) {
                 const maxSize = 10 * 1024 * 1024; // 10MB
                 const allowedTypes = [
-                    'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+                    // Images
+                    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp',
+                    // Documents
                     'application/pdf',
                     'application/msword',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'application/vnd.ms-excel',
                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'text/csv',
                     'application/vnd.ms-powerpoint',
                     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                    'text/plain'
+                    'text/plain',
+                    // Archives
+                    'application/zip',
+                    'application/x-rar-compressed',
+                    'application/x-7z-compressed'
+                ];
+                
+                // Also allow by file extension for better compatibility
+                const allowedExtensions = [
+                    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp',
+                    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'txt',
+                    'zip', 'rar', '7z'
                 ];
                 
                 for (let file of files) {
@@ -1437,9 +1494,12 @@ foreach ($assigned_users as $user) {
                         continue;
                     }
                     
-                    // Check file type
-                    if (!allowedTypes.includes(file.type)) {
-                        showAlert('error', `File type not supported for "${file.name}".`);
+                    // Get file extension
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    
+                    // Check file type and extension
+                    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                        showAlert('error', `File type not supported for "${file.name}". Supported formats: Images, PDF, DOC, DOCX, XLS, XLSX, CSV, PPT, PPTX, TXT, ZIP, RAR, 7Z.`);
                         continue;
                     }
                     
@@ -1462,12 +1522,18 @@ foreach ($assigned_users as $user) {
                 
                 commentFiles.forEach((file, index) => {
                     const fileSize = formatFileSize(file.size);
+                    const fileType = getCommentFileType(file);
+                    const fileIcon = getCommentFileIcon(file);
+                    const badgeClass = getCommentFileBadgeClass(file);
+                    
                     const filePreviewItem = document.createElement('div');
                     filePreviewItem.className = 'comment-file-preview-item';
                     filePreviewItem.innerHTML = `
                         <div class="comment-file-info">
+                            <i class="${fileIcon} me-2" style="color: #6c757d;"></i>
                             <span class="comment-file-name">${file.name}</span>
-                            <span class="comment-file-size">${fileSize}</span>
+                            <span class="comment-file-size ms-2">${fileSize}</span>
+                            <span class="file-type-badge ${badgeClass} ms-2">${fileType}</span>
                         </div>
                         <button type="button" class="remove-comment-file" onclick="removeCommentFile(${index})">
                             <i class="isax isax-close-circle"></i>
@@ -1487,6 +1553,46 @@ foreach ($assigned_users as $user) {
             commentBtn.addEventListener('click', function() {
                 submitComment();
             });
+        }
+
+        // Helper functions for file type detection
+        function getCommentFileType(file) {
+            if (file.type.startsWith('image/')) return 'IMAGE';
+            if (file.type === 'application/pdf') return 'PDF';
+            if (file.type.includes('word') || file.type.includes('document')) return 'DOC';
+            if (file.type.includes('excel') || file.type.includes('spreadsheet')) return 'XLS';
+            if (file.type === 'text/csv') return 'CSV';
+            if (file.type.includes('powerpoint') || file.type.includes('presentation')) return 'PPT';
+            if (file.type === 'text/plain') return 'TXT';
+            if (file.type.includes('zip') || file.type.includes('rar') || file.type.includes('7z')) return 'ARCHIVE';
+            
+            // Fallback to file extension
+            const ext = file.name.split('.').pop().toUpperCase();
+            return ext || 'FILE';
+        }
+
+        function getCommentFileIcon(file) {
+            if (file.type.startsWith('image/')) return 'isax isax-gallery';
+            if (file.type === 'application/pdf') return 'isax isax-document-text';
+            if (file.type.includes('word') || file.type.includes('document')) return 'isax isax-document-text';
+            if (file.type.includes('excel') || file.type.includes('spreadsheet')) return 'isax isax-table';
+            if (file.type === 'text/csv') return 'isax isax-table';
+            if (file.type.includes('powerpoint') || file.type.includes('presentation')) return 'isax isax-presention-chart';
+            if (file.type === 'text/plain') return 'isax isax-document-text';
+            if (file.type.includes('zip') || file.type.includes('rar') || file.type.includes('7z')) return 'isax isax-archive';
+            return 'isax isax-document';
+        }
+
+        function getCommentFileBadgeClass(file) {
+            if (file.type.startsWith('image/')) return 'badge-image';
+            if (file.type === 'application/pdf') return 'badge-pdf';
+            if (file.type.includes('word') || file.type.includes('document')) return 'badge-doc';
+            if (file.type.includes('excel') || file.type.includes('spreadsheet')) return 'badge-doc';
+            if (file.type === 'text/csv') return 'badge-doc';
+            if (file.type.includes('powerpoint') || file.type.includes('presentation')) return 'badge-doc';
+            if (file.type === 'text/plain') return 'badge-other';
+            if (file.type.includes('zip') || file.type.includes('rar') || file.type.includes('7z')) return 'badge-other';
+            return 'badge-other';
         }
 
         // Edit comment function
@@ -2574,6 +2680,7 @@ window.deleteComment = function(commentId) {
         }
     });
 };
+
 </script>
 </body>
 
