@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             FROM project_task_comments c
             LEFT JOIN login u ON c.user_id = u.id
             LEFT JOIN user_role ur ON u.role_id = ur.id
-            WHERE c.task_id = '$task_id'
+            WHERE c.task_id = '$task_id' AND c.is_deleted = 0
         ";
         
-        // Role-based filtering
+        // Role-based filtering for comment visibility
         if ($current_role_id != 1) { // If not admin
             // Show comments from:
             // 1. The current user
@@ -78,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $profile_img = $comment['profile_img'];
             $user_role_id = $comment['user_role_id'];
             $role_name = $comment['role_name'];
+            $comment_user_id = $comment['user_id'];
             
             // Get user initials for avatar
             $initials = '';
@@ -115,18 +116,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="comment-time">
                         <?php echo $created_at; ?>
                         
-                        <!-- Edit/Delete buttons - only show for comment owner or admin -->
-                        <?php if ($comment['user_id'] == $current_user_id || $current_role_id == 1): ?>
+                        <!-- Edit/Delete buttons -->
+                        <?php 
+                        // Show edit button if:
+                        // 1. User owns the comment OR
+                        // 2. User is admin (can edit any comment)
+                        $show_edit_button = ($comment_user_id == $current_user_id || $current_role_id == 1);
+                        
+                        // Show delete button if:
+                        // 1. User owns the comment OR
+                        // 2. User is admin (can delete any comment)
+                        $show_delete_button = ($comment_user_id == $current_user_id || $current_role_id == 1);
+                        ?>
+                        
+                        <?php if ($show_edit_button || $show_delete_button): ?>
                             <div class="comment-actions">
-                                <button type="button" class="btn btn-sm btn-outline-primary edit-comment-btn" 
-                                        data-comment-id="<?php echo $comment_id; ?>"
-                                        data-comment-text="<?php echo htmlspecialchars($comment_text); ?>">
-                                    <i class="isax isax-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger delete-comment-btn" 
-                                        data-comment-id="<?php echo $comment_id; ?>">
-                                    <i class="isax isax-trash"></i>
-                                </button>
+                                <?php if ($show_edit_button): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-comment-btn" 
+                                            data-comment-id="<?php echo $comment_id; ?>"
+                                            data-comment-text="<?php echo htmlspecialchars($comment_text); ?>">
+                                        <i class="isax isax-edit"></i>
+                                    </button>
+                                <?php endif; ?>
+                                
+                                <?php if ($show_delete_button): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-comment-btn" 
+                                            data-comment-id="<?php echo $comment_id; ?>">
+                                        <i class="isax isax-trash"></i>
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                     </div>

@@ -7,10 +7,12 @@ header('Content-Type: application/json');
 
 // Debug session
 error_log("Session User ID: " . ($_SESSION['crm_user_id'] ?? 'Not set'));
+error_log("Session Role ID: " . ($_SESSION['role_id'] ?? 'Not set'));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $user_id = isset($_SESSION['crm_user_id']) ? intval($_SESSION['crm_user_id']) : 0;
+    $user_role_id = isset($_SESSION['role_id']) ? intval($_SESSION['role_id']) : 0;
     
     // Initialize response array
     $response = ['success' => false, 'message' => 'Unknown action'];
@@ -92,23 +94,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $comment_id = intval($_POST['comment_id']);
             $comment_text = mysqli_real_escape_string($conn, $_POST['comment_text']);
             
-            // First, check if the comment belongs to the current user
+            // First, check if the comment exists
             $check_query = "SELECT user_id FROM project_task_comments WHERE id = '$comment_id' AND is_deleted = 0";
             $check_result = mysqli_query($conn, $check_query);
             
             if (mysqli_num_rows($check_result) === 0) {
-                throw new Exception("Comment not found or you don't have permission to edit it");
+                throw new Exception("Comment not found");
             }
             
             $comment_data = mysqli_fetch_assoc($check_result);
-            if ($comment_data['user_id'] != $user_id) {
+            
+            // Check permission: Admin can edit any comment, users can only edit their own
+            if ($user_role_id != 1 && $comment_data['user_id'] != $user_id) {
                 throw new Exception("You don't have permission to edit this comment");
             }
             
-            // Update comment text
-            $update_query = "UPDATE project_task_comments 
-                           SET comment_text = '$comment_text', updated_at = NOW() 
-                           WHERE id = '$comment_id' AND user_id = '$user_id'";
+            // Build update query based on permissions
+            if ($user_role_id == 1) {
+                // Admin can update any comment
+                $update_query = "UPDATE project_task_comments 
+                               SET comment_text = '$comment_text', updated_at = NOW() 
+                               WHERE id = '$comment_id'";
+            } else {
+                // User can only update their own comments
+                $update_query = "UPDATE project_task_comments 
+                               SET comment_text = '$comment_text', updated_at = NOW() 
+                               WHERE id = '$comment_id' AND user_id = '$user_id'";
+            }
             
             if (mysqli_query($conn, $update_query)) {
                 // Handle new file uploads for the updated comment
@@ -164,25 +176,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
         } elseif ($action === 'delete_comment') {
             // Delete comment (soft delete)
+            // ALLOW: Admin to delete any comment, Users to delete only their own comments
             $comment_id = intval($_POST['comment_id']);
-            $user_id = intval($_POST['user_id']);
             
-            // First, check if the comment belongs to the current user
+            // First, check if the comment exists
             $check_query = "SELECT user_id FROM project_task_comments WHERE id = '$comment_id' AND is_deleted = 0";
             $check_result = mysqli_query($conn, $check_query);
             
             if (mysqli_num_rows($check_result) === 0) {
-                throw new Exception("Comment not found or you don't have permission to delete it");
+                throw new Exception("Comment not found");
             }
             
             $comment_data = mysqli_fetch_assoc($check_result);
-            if ($comment_data['user_id'] != $user_id) {
+            
+            // Check permission: Admin can delete any comment, users can only delete their own
+            if ($user_role_id != 1 && $comment_data['user_id'] != $user_id) {
                 throw new Exception("You don't have permission to delete this comment");
             }
             
-            $delete_query = "UPDATE project_task_comments 
-                           SET is_deleted = 1 
-                           WHERE id = '$comment_id' AND user_id = '$user_id'";
+            // Build delete query based on permissions
+            if ($user_role_id == 1) {
+                // Admin can delete any comment
+                $delete_query = "UPDATE project_task_comments 
+                               SET is_deleted = 1 
+                               WHERE id = '$comment_id'";
+            } else {
+                // User can only delete their own comments
+                $delete_query = "UPDATE project_task_comments 
+                               SET is_deleted = 1 
+                               WHERE id = '$comment_id' AND user_id = '$user_id'";
+            }
             
             if (mysqli_query($conn, $delete_query)) {
                 $response = ['success' => true, 'message' => 'Comment deleted successfully'];
