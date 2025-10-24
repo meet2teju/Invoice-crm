@@ -39,36 +39,6 @@ $documents = mysqli_query($conn, "SELECT id, document FROM invoice_document WHER
 // Radio precheck
 $is_product = ($row['item_type'] == 1) ? 'checked' : '';
 $is_service = ($row['item_type'] == 0) ? 'checked' : '';
-
-// Get project and task data for pre-selection
-$project_id = $row['project_id'] ?? 0;
-$task_ids = [];
-if ($project_id > 0) {
-    // First check if invoice_tasks table exists, if not create it
-    $check_table = mysqli_query($conn, "SHOW TABLES LIKE 'invoice_tasks'");
-    if (mysqli_num_rows($check_table) == 0) {
-        $create_table = "CREATE TABLE invoice_tasks (
-            id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            invoice_id INT(11) NOT NULL,
-            task_id INT(11) NOT NULL,
-            org_id BIGINT(20) NULL,
-            is_deleted TINYINT(1) DEFAULT 0,
-            created_by BIGINT(20) NULL,
-            updated_by BIGINT(20) NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )";
-        mysqli_query($conn, $create_table);
-    }
-    
-    $task_query = "SELECT task_id FROM invoice_tasks WHERE invoice_id = $invoice_id AND is_deleted = 0";
-    $task_result = mysqli_query($conn, $task_query);
-    if ($task_result) {
-        while ($task = mysqli_fetch_assoc($task_result)) {
-            $task_ids[] = $task['task_id'];
-        }
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -103,6 +73,10 @@ if ($project_id > 0) {
                 <div class="row">
                     <div class="col-md-12 mx-auto">
                         <div>
+                            <!-- <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h6><a href="invoices.php"><i class="isax isax-arrow-left me-2"></i>Invoice</a></h6>
+                                <a href="invoice-details.php" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
+                            </div> -->
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <h6>Edit Invoice</h6>
                                 <a href="invoice-details.php?id=<?= $invoice_id ?>" class="btn btn-outline-white d-inline-flex align-items-center">
@@ -126,42 +100,6 @@ if ($project_id > 0) {
                                               } ?> 
                                               </select>
                                               <span class="text-danger error-text" id="clientname_error"></span>
-                                              </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                              <div class="mb-3">
-                                                <label class="form-label">Project<span class="text-danger">*</span></label>
-                                                <select class="form-select select2" name="project_id" id="project_id" <?= $project_id ? '' : 'disabled' ?>>
-                                                  <option value="">Select Project</option>
-                                                  <?php
-                                                  if ($row['client_id']) {
-                                                      $client_projects = mysqli_query($conn, "SELECT * FROM project WHERE client_id = {$row['client_id']} AND is_deleted = 0");
-                                                      while ($project = mysqli_fetch_assoc($client_projects)) {
-                                                          $selected = ($project['id'] == $project_id) ? 'selected' : '';
-                                                          echo "<option value='{$project['id']}' $selected>{$project['project_name']}</option>";
-                                                      }
-                                                  }
-                                                  ?>
-                                                </select>
-                                                <span class="text-danger error-text" id="project_error"></span>
-                                              </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                              <div class="mb-3">
-                                                <label class="form-label">Tasks<span class="text-danger">*</span></label>
-                                                <select class="form-select select2" name="task_id[]" id="task_id" multiple="multiple" <?= $project_id ? '' : 'disabled' ?>>
-                                                  <option value="">Select Tasks</option>
-                                                  <?php
-                                                  if ($project_id) {
-                                                      $project_tasks = mysqli_query($conn, "SELECT * FROM project_task WHERE project_id = $project_id AND is_deleted = 0 AND status_id = 3");
-                                                      while ($task = mysqli_fetch_assoc($project_tasks)) {
-                                                          $selected = in_array($task['id'], $task_ids) ? 'selected' : '';
-                                                          echo "<option value='{$task['id']}' $selected>{$task['task_name']} ({$task['hour']} hours)</option>";
-                                                      }
-                                                  }
-                                                  ?>
-                                                </select>
-                                                <span class="text-danger error-text" id="task_error"></span>
                                               </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6">
@@ -490,7 +428,7 @@ if ($project_id > 0) {
                                                     <div class="mb-3">
                                                         <div class="d-flex align-items-center justify-content-between mb-3">
                                                             <h6 class="fs-14 fw-semibold">Amount</h6>
-                                                            <h6 class="fs-14 fw-semibold" id="subtotal-amount">$ <?= number_format($row['amount'] ?? 0, 2) ?></h6>
+                                                            <h6 class="fs-14 fw-semibold" id="subtotal-amount"><?= $row['amount'] ?? ''?></h6>
                                                         </div>
                                                        <div class="tax-details mb-3">
                                                             <!-- JS will populate tax per rate here -->
@@ -501,7 +439,7 @@ if ($project_id > 0) {
                                                         </div>
                                                         <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
                                                             <h6>Total</h6>
-                                                            <h6 id="total-amount">$ <?= number_format($row['total_amount'] ?? 0, 2) ?></h6>
+                                                            <h6 id="total-amount"><?= $row['total_amount'] ??'' ?></h6>
                                                         </div>
                                                     </div>
                                                 </div><!-- end col -->
@@ -542,158 +480,6 @@ if ($project_id > 0) {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
    <script>
 $(document).ready(function() {
-
-  /* =========================
-     Project and Task Selection
-  ========================== */
-  // When client changes
-  $('#client_id').on('change', function() {
-    const clientId = $(this).val();
-    
-    if (clientId) {
-      // Enable and load projects
-      $('#project_id').prop('disabled', false).html('<option value="">Loading projects...</option>');
-      $('#task_id').prop('disabled', true).html('<option value="">Select Tasks</option>');
-      
-      $.ajax({
-        url: 'process/get_projects_by_client.php',
-        type: 'POST',
-        data: { client_id: clientId },
-        success: function(data) {
-          $('#project_id').html(data);
-        },
-        error: function() {
-          $('#project_id').html('<option value="">Error loading projects</option>');
-        }
-      });
-    } else {
-      $('#project_id, #task_id').prop('disabled', true);
-      $('#project_id').html('<option value="">Select Project</option>');
-      $('#task_id').html('<option value="">Select Tasks</option>');
-    }
-  });
-
-  // When project changes
-  $('#project_id').on('change', function() {
-    const projectId = $(this).val();
-    
-    if (projectId) {
-      // Enable and load tasks
-      $('#task_id').prop('disabled', false).html('<option value="">Loading tasks...</option>');
-      
-      $.ajax({
-        url: 'process/get_tasks_by_project.php',
-        type: 'POST',
-        data: { project_id: projectId },
-        success: function(data) {
-          $('#task_id').html(data);
-          // Re-initialize select2 for multi-select
-          $('#task_id').select2({
-            placeholder: "Select Tasks",
-            allowClear: true
-          });
-        },
-        error: function() {
-          $('#task_id').html('<option value="">Error loading tasks</option>');
-        }
-      });
-    } else {
-      $('#task_id').prop('disabled', true).html('<option value="">Select Tasks</option>');
-    }
-  });
-
-  // When tasks are selected
-  $('#task_id').on('change', function() {
-    const selectedTasks = $(this).val();
-    
-    if (selectedTasks && selectedTasks.length > 0) {
-      // Clear existing task rows first (but keep product rows if any)
-      $('.add-tbody tr').each(function() {
-        const $row = $(this);
-        const productId = $row.find('input[name="product_id[]"]').val();
-        if (productId && productId.toString().startsWith('task_')) {
-          $row.remove();
-        }
-      });
-      
-      // Set item type to Service when tasks are selected
-      $('#Radio-service').prop('checked', true).trigger('change');
-      
-      // Load details for each selected task
-      let processedTasks = 0;
-      selectedTasks.forEach(function(taskId) {
-        if (taskId) {
-          $.ajax({
-            url: 'process/get_task_details.php',
-            type: 'POST',
-            data: { task_id: taskId },
-            dataType: 'json',
-            success: function(response) {
-              if (response.success) {
-                // Add task as an invoice item
-                const rowId = 'row_task_' + taskId;
-                const newRow = `
-                <tr id="${rowId}">
-                    <td>
-                        <input type="text" class="form-control" value="${response.task_name}" readonly>
-                        <input type="hidden" name="product_id[]" value="task_${taskId}">
-                        <input type="hidden" name="item_type[]" value="0">
-                    </td>
-                    <td>
-                        <input type="number" class="form-control quantity" name="quantity[]" value="${response.hours}" min="1" readonly>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control unit-name" value="Hours" readonly>
-                        <input type="hidden" class="unit-id" name="unit_id[]" value="0">
-                    </td>
-                    <td>
-                        <input type="text" class="form-control selling-price" name="selling_price[]" value="${response.rate_per_hour}" data-value="${response.rate_per_hour}" readonly>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control tax-display" value="0.00%" data-value="0" readonly>
-                        <input type="hidden" class="tax-id" name="tax_id[]" value="0">
-                        <input type="hidden" class="tax-name" value="">
-                    </td>
-                    <td>
-                        <input type="text" class="form-control amount-display" value="${response.total_amount}" data-value="${response.total_amount}" readonly>
-                        <input type="hidden" class="amount-storage" name="amount[]" value="${response.total_amount}">
-                    </td>
-                    <td>
-                        <a href="javascript:void(0);" class="remove-table"><i class="isax isax-trash text-danger"></i></a>
-                    </td>
-                </tr>`;
-                
-                $('.add-tbody').append(newRow);
-                
-                processedTasks++;
-                // Update summary after all tasks are processed
-                if (processedTasks === selectedTasks.length) {
-                  calculateSummary();
-                }
-              }
-            },
-            error: function() {
-              console.log('Error loading task details for task ID: ' + taskId);
-              processedTasks++;
-              if (processedTasks === selectedTasks.length) {
-                calculateSummary();
-              }
-            }
-          });
-        }
-      });
-    } else {
-      // If no tasks selected, remove all task rows
-      $('.add-tbody tr').each(function() {
-        const $row = $(this);
-        const productId = $row.find('input[name="product_id[]"]').val();
-        if (productId && productId.toString().startsWith('task_')) {
-          $row.remove();
-        }
-      });
-      calculateSummary();
-    }
-  });
 
   /* =========================
      Helpers: format / unformat
@@ -1024,14 +810,6 @@ $(document).ready(function() {
 
     if (!$('#client_id').val()) {
       $('#clientname_error').text('Client is required.');
-      isValid = false;
-    }
-    if (!$('#project_id').val()) {
-      $('#project_error').text('Project is required.');
-      isValid = false;
-    }
-    if (!$('#task_id').val() || $('#task_id').val().length === 0) {
-      $('#task_error').text('At least one task is required.');
       isValid = false;
     }
     if (!$('#invoice_date').val()) {

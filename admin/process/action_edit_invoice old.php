@@ -42,7 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
     try {
         // === Sanitize Inputs ===
         $client_id       = dbInt($_POST['client_id'] );
-        $project_id      = dbInt($_POST['project_id'] ?? 0);
         $reference_name  = dbString($conn, $_POST['reference_name'] ?? '');
         $invoice_date    = dbString($conn, $_POST['invoice_date'] );
         $due_date        = dbString($conn, $_POST['due_date'] );
@@ -56,9 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         $shipping_charge = dbFloat($_POST['shipping_charge'] ?? 0);
         $total_amount    = dbFloat($_POST['total_amount'] ?? 0);
 
-        // Handle task IDs
-        $task_ids = isset($_POST['task_id']) && is_array($_POST['task_id']) ? $_POST['task_id'] : [];
-
         // --- Handle bank_id properly ---
         if (!empty($_POST['bank_id']) && is_numeric($_POST['bank_id'])) {
             $bank_id_sql = (int) $_POST['bank_id'];
@@ -67,7 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         // === 1. Update invoice main record ===
         $update_invoice = "UPDATE invoice SET
             client_id = '$client_id',
-            project_id = '$project_id',
             reference_name = '$reference_name',
             invoice_date = '$invoice_date',
             due_date = '$due_date',
@@ -87,42 +82,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             throw new Exception("Failed to update invoice: " . mysqli_error($conn));
         }
 
-        // === 2. Update invoice tasks ===
-        // Mark old tasks as deleted
-        $mark_tasks_deleted = "UPDATE invoice_tasks SET is_deleted = 1 WHERE invoice_id = '$invoice_id'";
-        if (!mysqli_query($conn, $mark_tasks_deleted)) {
-            throw new Exception("Failed to mark old tasks as deleted: " . mysqli_error($conn));
-        }
-
-        // Insert new tasks
-        foreach ($task_ids as $task_id) {
-            $task_id = dbInt($task_id);
-            if ($task_id > 0) {
-                $check_task = "SELECT id FROM invoice_tasks WHERE invoice_id = '$invoice_id' AND task_id = '$task_id' LIMIT 1";
-                $task_exists = mysqli_query($conn, $check_task);
-
-                if ($task_exists && mysqli_num_rows($task_exists) > 0) {
-                    $update_task = "UPDATE invoice_tasks SET is_deleted = 0 WHERE invoice_id = '$invoice_id' AND task_id = '$task_id'";
-                    if (!mysqli_query($conn, $update_task)) {
-                        throw new Exception("Failed to update task: " . mysqli_error($conn));
-                    }
-                } else {
-                    $insert_task = "INSERT INTO invoice_tasks (invoice_id, task_id, created_by, updated_by) 
-                                    VALUES ('$invoice_id', '$task_id', '$currentUserId', '$currentUserId')";
-                    if (!mysqli_query($conn, $insert_task)) {
-                        throw new Exception("Failed to insert task: " . mysqli_error($conn));
-                    }
-                }
-            }
-        }
-
-        // === 3. Mark old items deleted ===
+        // === 2. Mark old items deleted ===
         $mark_deleted = "UPDATE invoice_item SET is_deleted = 1 WHERE invoice_id = '$invoice_id'";
         if (!mysqli_query($conn, $mark_deleted)) {
             throw new Exception("Failed to mark old items as deleted: " . mysqli_error($conn));
         }
 
-        // === 4. Insert/update invoice items ===
+        // === 3. Insert/update invoice items ===
         if (!empty($_POST['product_id']) && is_array($_POST['product_id'])) {
             foreach ($_POST['product_id'] as $index => $product_id) {
                 $product_id = dbInt($product_id);
@@ -169,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             }
         }
 
-        // === 5. Handle document uploads ===
+        // === 4. Handle document uploads ===
         if (!empty($_FILES['document']['name'][0])) {
             foreach ($_FILES['document']['tmp_name'] as $key => $tmpName) {
                 if (!empty($_FILES['document']['name'][$key])) {
@@ -196,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             }
         }
 
-        // === 6. Commit transaction ===
+        // === 5. Commit transaction ===
         mysqli_commit($conn);
         $_SESSION['message'] = "Invoice updated successfully!";
         $_SESSION['message_type'] = "success";

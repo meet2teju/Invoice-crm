@@ -77,24 +77,6 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
                                             </div>
                                             <div class="col-lg-4 col-md-6">
                                               <div class="mb-3">
-                                                <label class="form-label">Project<span class="text-danger">*</span></label>
-                                                <select class="form-select select2" name="project_id" id="project_id" disabled>
-                                                  <option value="">Select Project</option>
-                                                </select>
-                                                <span class="text-danger error-text" id="project_error"></span>
-                                              </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                              <div class="mb-3">
-                                                <label class="form-label">Tasks<span class="text-danger">*</span></label>
-                                                <select class="form-select select2" name="task_id[]" id="task_id" multiple="multiple" disabled>
-                                                  <option value="">Select Tasks</option>
-                                                </select>
-                                                <span class="text-danger error-text" id="task_error"></span>
-                                              </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                              <div class="mb-3">
                                                   <label class="form-label">Reference Name</label>
                                                   <input type="text" class="form-control" name="reference_name" id="reference_name">
                                               </div>
@@ -333,137 +315,6 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
 $(document).ready(function() {
-
-  /* =========================
-     Project and Task Selection
-  ========================== */
-  // When client changes
-  $('#client_id').on('change', function() {
-    const clientId = $(this).val();
-    
-    if (clientId) {
-      // Enable and load projects
-      $('#project_id').prop('disabled', false).html('<option value="">Loading projects...</option>');
-      $('#task_id').prop('disabled', true).html('<option value="">Select Tasks</option>');
-      
-      $.ajax({
-        url: 'process/get_projects_by_client.php',
-        type: 'POST',
-        data: { client_id: clientId },
-        success: function(data) {
-          $('#project_id').html(data);
-        },
-        error: function() {
-          $('#project_id').html('<option value="">Error loading projects</option>');
-        }
-      });
-    } else {
-      $('#project_id, #task_id').prop('disabled', true);
-      $('#project_id').html('<option value="">Select Project</option>');
-      $('#task_id').html('<option value="">Select Tasks</option>');
-    }
-  });
-
-  // When project changes
-  $('#project_id').on('change', function() {
-    const projectId = $(this).val();
-    
-    if (projectId) {
-      // Enable and load tasks
-      $('#task_id').prop('disabled', false).html('<option value="">Loading tasks...</option>');
-      
-      $.ajax({
-        url: 'process/get_tasks_by_project.php',
-        type: 'POST',
-        data: { project_id: projectId },
-        success: function(data) {
-          $('#task_id').html(data);
-          // Initialize select2 for multi-select
-          $('#task_id').select2({
-            placeholder: "Select Tasks",
-            allowClear: true
-          });
-        },
-        error: function() {
-          $('#task_id').html('<option value="">Error loading tasks</option>');
-        }
-      });
-    } else {
-      $('#task_id').prop('disabled', true).html('<option value="">Select Tasks</option>');
-    }
-  });
-
-  // When tasks are selected
-  $('#task_id').on('change', function() {
-    const selectedTasks = $(this).val();
-    
-    if (selectedTasks && selectedTasks.length > 0) {
-      // Clear existing rows first
-      $('.add-tbody').empty();
-      
-      // Set item type to Service when tasks are selected
-      $('#Radio-service').prop('checked', true).trigger('change');
-      
-      // Load details for each selected task
-      selectedTasks.forEach(function(taskId) {
-        if (taskId) {
-          $.ajax({
-            url: 'process/get_task_details.php',
-            type: 'POST',
-            data: { task_id: taskId },
-            dataType: 'json',
-            success: function(response) {
-              if (response.success) {
-                // Add task as an invoice item using your existing row structure
-                const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                const newRow = `
-                <tr id="${rowId}">
-                    <td>
-                        <input type="text" class="form-control" value="${response.task_name}" readonly>
-                        <input type="hidden" name="item_id[]" value="${taskId}">
-                        <input type="hidden" name="item_type[]" value="0">
-                        <input type="hidden" class="unit-id" name="unit_id[]" value="0">
-                        <input type="hidden" class="tax-id" name="tax_id[]" value="0">
-                        <input type="hidden" class="tax-name" name="tax_name[]" value="">
-                    </td>
-                    <td>
-                        <input type="number" class="form-control quantity" name="quantity[]" value="${response.hours}" min="1" readonly>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control unit-name" name="unit_name[]" value="Hours" readonly>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control selling-price" name="selling_price[]" value="${response.rate_per_hour}" data-value="${response.rate_per_hour}" readonly>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control tax-rate" name="tax_rate[]" value="0" data-value="0" readonly>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control amount" name="amount[]" value="${response.total_amount}" data-value="${response.total_amount}" readonly>
-                    </td>
-                    <td>
-                        <a href="javascript:void(0);" class="remove-table"><i class="isax isax-trash text-danger"></i></a>
-                    </td>
-                </tr>`;
-                
-                $('.add-tbody').append(newRow);
-                
-                // Update summary
-                calculateSummary();
-              }
-            },
-            error: function() {
-              console.log('Error loading task details for task ID: ' + taskId);
-            }
-          });
-        }
-      });
-    } else {
-      // If no tasks selected, clear the items table
-      $('.add-tbody').empty();
-      calculateSummary();
-    }
-  });
 
   /* =========================
      Helpers: format / unformat
@@ -797,14 +648,6 @@ $(document).ready(function() {
       $('#clientname_error').text('Client is required.');
       isValid = false;
     }
-    if (!$('#project_id').val()) {
-      $('#project_error').text('Project is required.');
-      isValid = false;
-    }
-    if (!$('#task_id').val() || $('#task_id').val().length === 0) {
-      $('#task_error').text('At least one task is required.');
-      isValid = false;
-    }
     if (!$('#invoice_date').val()) {
       $('#invoice_date_error').text('Invoice Date is required.');
       isValid = false;
@@ -907,4 +750,4 @@ $(document).ready(function() {
   </script>
 </body>
 
-</html>
+</html>        
