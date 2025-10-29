@@ -68,6 +68,12 @@ if ($project_id > 0) {
             $task_ids[] = $task['task_id'];
         }
     }
+    
+    // FIX: Update radio button selection based on tasks
+    if (!empty($task_ids)) {
+        $is_service = 'checked';
+        $is_product = '';
+    }
 }
 ?>
 
@@ -153,7 +159,8 @@ if ($project_id > 0) {
                                                   <option value="">Select Tasks</option>
                                                   <?php
                                                   if ($project_id) {
-                                                      $project_tasks = mysqli_query($conn, "SELECT * FROM project_task WHERE project_id = $project_id AND is_deleted = 0 AND status_id = 3");
+                                                      // FIX: Removed status filter to show all tasks
+                                                      $project_tasks = mysqli_query($conn, "SELECT * FROM project_task WHERE project_id = $project_id AND is_deleted = 0");
                                                       while ($task = mysqli_fetch_assoc($project_tasks)) {
                                                           $selected = in_array($task['id'], $task_ids) ? 'selected' : '';
                                                           echo "<option value='{$task['id']}' $selected>{$task['task_name']} ({$task['hour']} hours)</option>";
@@ -264,9 +271,11 @@ if ($project_id > 0) {
                                                     </div>
                                                 </div>
                                             </div>
+
 <div class="table-responsive rounded table-nowrap border-bottom-0 border mb-3">
     <table class="table mb-0 add-table">
-        <thead class="table-dark">
+        <thead class="table-dark" id="table-heading">
+            <!-- Dynamic headings will be inserted here by JavaScript -->
             <tr>
                 <th>Product/Service</th>
                 <th>Quantity</th>
@@ -289,7 +298,7 @@ if ($project_id > 0) {
                                 IFNULL(t.rate, 0) AS tax_rate,
                                 IFNULL(t.name, '') AS tax_name,
                                 IFNULL(t.id, 0) AS tax_id,
-                                IFNULL(p.selling_price, 0) AS selling_price,
+                                IFNULL(qi.selling_price, 0) AS item_selling_price,
                                 IFNULL(p.unit_id, 0) AS unit_id,
                                 IFNULL(p.item_type, 0) AS item_type
                             FROM invoice_item qi
@@ -301,8 +310,9 @@ if ($project_id > 0) {
             $item_result = mysqli_query($conn, $item_query);
 
             while ($item = mysqli_fetch_assoc($item_result)) {
+                // Use the selling price from invoice_item table
                 $qty      = (float)($item['quantity'] ?? 0);
-                $price    = (float)($item['selling_price'] ?? 0);
+                $price    = (float)($item['item_selling_price'] ?? 0);
                 $taxRate  = (float)($item['tax_rate'] ?? 0);
                 $taxName  = htmlspecialchars($item['tax_name'] ?? '');
                 $unitName = htmlspecialchars($item['unit_name'] ?? '');
@@ -360,7 +370,7 @@ if ($project_id > 0) {
                     <td>
                         <input type="text" class="form-control selling-price" 
                                name="selling_price[]" 
-                               value="<?= $price > 0 ? '$ ' . number_format($price, 2) : '' ?>" 
+                               value="<?= $price > 0 ? '$ ' . number_format($price, 2) : '$ 0.00' ?>" 
                                data-value="<?= $price ?>" readonly>
                     </td>
                     <td>
@@ -372,7 +382,8 @@ if ($project_id > 0) {
                     </td>
                     <td>
                         <input type="text" class="form-control amount-display" 
-                               value="<?= '$ ' . number_format($amount, 2) ?>" readonly>
+                               value="<?= '$ ' . number_format($amount, 2) ?>" 
+                               data-value="<?= $amount ?>" readonly>
                         <input type="hidden" class="amount-storage" name="amount[]" value="<?= $amount ?>">
                     </td>
                     <td>
@@ -542,6 +553,93 @@ if ($project_id > 0) {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
    <script>
 $(document).ready(function() {
+  // Initialize datepicker
+  $('.datepicker').flatpickr({
+    dateFormat: "Y-m-d",
+    allowInput: true,
+    defaultDate: new Date(),
+    clickOpens: true
+  });
+
+  /* =========================
+     Table Heading Management
+  ========================== */
+  function updateTableHeading(itemType) {
+    const $tableHead = $('#table-heading');
+    
+    if (itemType === '0') { // Service
+      $tableHead.html(`
+        <tr>
+          <th>Service</th>
+          <th>Hours</th>
+          <th>Unit</th>
+          <th>Hourly Price</th>
+          <th>Tax</th>
+          <th>Amount</th>
+          <th></th>
+        </tr>
+      `);
+    } else { // Product
+      $tableHead.html(`
+        <tr>
+          <th>Product/Service</th>
+          <th>Quantity</th>
+          <th>Unit</th>
+          <th>Selling Price</th>
+          <th>Tax</th>
+          <th>Amount</th>
+          <th></th>
+        </tr>
+      `);
+    }
+  }
+
+  // Initialize table heading based on current radio selection
+  const initialItemType = $('input[name="item_type"]:checked').val();
+  updateTableHeading(initialItemType);
+
+  // If tasks are pre-selected, ensure service radio is checked
+  const selectedTasks = $('#task_id').val();
+  if (selectedTasks && selectedTasks.length > 0) {
+      $('#Radio-service').prop('checked', true).trigger('change');
+  }
+
+  /* =========================
+     Initialize existing rows data
+  ========================== */
+  function initializeExistingRowsData() {
+    $('.add-tbody tr').each(function(index) {
+      const $row = $(this);
+      
+      // Selling Price
+      const $sellingPrice = $row.find('.selling-price');
+      let sellingPriceVal = $sellingPrice.attr('data-value');
+      if (!sellingPriceVal || sellingPriceVal === '0') {
+        sellingPriceVal = unformat($sellingPrice.val());
+      }
+      $sellingPrice.data('value', parseFloat(sellingPriceVal) || 0);
+      
+      // Tax Display
+      const $taxDisplay = $row.find('.tax-display');
+      let taxVal = $taxDisplay.attr('data-value');
+      if (!taxVal || taxVal === '0') {
+        taxVal = unformat($taxDisplay.val());
+      }
+      $taxDisplay.data('value', parseFloat(taxVal) || 0);
+      
+      // Amount Display
+      const $amountDisplay = $row.find('.amount-display');
+      let amountVal = $amountDisplay.attr('data-value');
+      if (!amountVal || amountVal === '0') {
+        amountVal = unformat($amountDisplay.val());
+      }
+      $amountDisplay.data('value', parseFloat(amountVal) || 0);
+      
+      // Quantity
+      const $quantity = $row.find('.quantity');
+      $quantity.data('value', parseFloat($quantity.val()) || 1);
+    });
+  }
 
   /* =========================
      Project and Task Selection
@@ -610,7 +708,7 @@ $(document).ready(function() {
       // Clear existing task rows first (but keep product rows if any)
       $('.add-tbody tr').each(function() {
         const $row = $(this);
-        const productId = $row.find('input[name="product_id[]"]').val();
+        const productId = $row.find('select[name="product_id[]"]').val();
         if (productId && productId.toString().startsWith('task_')) {
           $row.remove();
         }
@@ -686,7 +784,7 @@ $(document).ready(function() {
       // If no tasks selected, remove all task rows
       $('.add-tbody tr').each(function() {
         const $row = $(this);
-        const productId = $row.find('input[name="product_id[]"]').val();
+        const productId = $row.find('select[name="product_id[]"]').val();
         if (productId && productId.toString().startsWith('task_')) {
           $row.remove();
         }
@@ -700,28 +798,31 @@ $(document).ready(function() {
   ========================== */
   function formatCurrency(value) {
     const n = parseFloat(value);
-    if (isNaN(n)) return '';
+    if (isNaN(n)) return '$ 0.00';
     return `$ ${n.toFixed(2)}`;
   }
 
   function formatPercent(value) {
     const n = parseFloat(value);
-    if (isNaN(n)) return '';
+    if (isNaN(n)) return '0.00%';
     return `${n.toFixed(2)}%`;
   }
 
   function unformat(value) {
-    const n = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+    if (typeof value !== 'string') value = String(value);
+    const n = parseFloat(value.replace(/[^\d.-]/g, ''));
     return isNaN(n) ? 0 : n;
   }
 
   /* =========================
-     Radio button change handler - MUTUAL EXCLUSION
+     Radio button change handler
   ========================== */
   $(document).on('change', 'input[name="item_type"]', function() {
-    const selectedType = $(this).val(); // 1 for Product, 0 for Service
+    const selectedType = $(this).val();
     
-    // Update all existing dropdowns to match the selected type
+    // Update table heading based on selected type
+    updateTableHeading(selectedType);
+    
     updateAllItemDropdowns(selectedType);
   });
 
@@ -730,13 +831,11 @@ $(document).ready(function() {
       const currentVal = $(this).val();
       loadItems(itemType, $(this));
       
-      // Try to restore the previous selection if it exists in the new list
       if (currentVal) {
         setTimeout(() => {
           if ($(this).find('option[value="' + currentVal + '"]').length > 0) {
             $(this).val(currentVal).trigger('change');
           } else {
-            // If previous selection doesn't exist in new type, clear the row
             resetRow($(this).closest('tr'));
           }
         }, 100);
@@ -806,12 +905,12 @@ $(document).ready(function() {
             <input type="text" class="form-control selling-price" name="selling_price[]" readonly>
         </td>
         <td>
-            <input type="text" class="form-control tax-display" name="tax_rate[]" readonly>
+            <input type="text" class="form-control tax-display" readonly>
             <input type="hidden" class="tax-id" name="tax_id[]">
             <input type="hidden" class="tax-name" name="tax_name[]">
         </td>
         <td>
-            <input type="text" class="form-control amount-display" name="amount[]" readonly>
+            <input type="text" class="form-control amount-display" readonly>
             <input type="hidden" class="amount-storage" name="amount[]">
         </td>
         <td>
@@ -821,75 +920,9 @@ $(document).ready(function() {
     
     $('.add-tbody').append(newRow);
     
-    // Load appropriate items for this new row
     const $select = $('#' + rowId + ' .item-select');
     loadItems(itemType, $select);
   }
-
-  /* =========================
-     Format behaviors for currency/percent inputs
-  ========================== */
-  function attachCurrencyBehavior(selector, onChangeCallback) {
-    $(document).on('focus', selector, function(){
-      const raw = $(this).data('value');
-      $(this).val(raw !== undefined ? raw : unformat($(this).val()));
-    });
-    
-    $(document).on('blur', selector, function(){
-      const num = unformat($(this).val());
-      $(this).data('value', num).val(formatCurrency(num));
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-    
-    $(document).on('input', selector, function(){
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-  }
-
-  function attachPercentBehavior(selector, onChangeCallback) {
-    $(document).on('focus', selector, function(){
-      const raw = $(this).data('value');
-      $(this).val(raw !== undefined ? raw : unformat($(this).val()));
-    });
-    
-    $(document).on('blur', selector, function(){
-      const num = unformat($(this).val());
-      $(this).data('value', num).val(formatPercent(num));
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-    
-    $(document).on('input', selector, function(){
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-  }
-
-  // Apply to line-item fields
-  attachCurrencyBehavior('.selling-price', function($el){
-    calculateRow($el.closest('tr'));
-  });
-  
-  attachPercentBehavior('.tax-display', function($el){
-    calculateRow($el.closest('tr'));
-  });
-
-  // Apply to shipping charge
-  attachCurrencyBehavior('#shipping-charge', function(){
-    calculateSummary();
-  });
-
-  // Initialize shipping field formatting on load
-  (function initShipping(){
-    const $ship = $('#shipping-charge');
-    if ($ship.length) {
-      const initVal = unformat($ship.val());
-      $ship.data('value', initVal);
-      if ($ship.attr('type') !== 'number') {
-        $ship.val(formatCurrency(initVal));
-      } else {
-        $ship.val(initVal.toFixed(2));
-      }
-    }
-  })();
 
   /* =========================
      Item events
@@ -944,7 +977,7 @@ $(document).ready(function() {
      Calculations
   ========================== */
   function calculateRow($row) {
-    const qty  = unformat($row.find('.quantity').val());
+    const qty  = parseFloat($row.find('.quantity').val()) || 0;
     const price = $row.find('.selling-price').data('value') || 0;
     const tax   = $row.find('.tax-display').data('value') || 0;
 
@@ -957,53 +990,47 @@ $(document).ready(function() {
     calculateSummary();
   }
 
-  function getShippingCharge() {
-    const $ship = $('#shipping-charge');
-    if (!$ship.length) return 0;
-    const stored = $ship.data('value');
-    if (stored !== undefined) return parseFloat(stored) || 0;
-    return unformat($ship.val());
-  }
-
   function calculateSummary() {
     let sub = 0, grandTotal = 0, totalTax = 0;
-    let taxHtml = "";
+    let taxGroups = {};
 
     $('.add-tbody tr').each(function(index) {
-      const p = $(this).find('.selling-price').data('value') || 0;
-      const q = unformat($(this).find('.quantity').val());
-      const t = $(this).find('.tax-display').data('value') || 0;
+      const price = $(this).find('.selling-price').data('value') || 0;
+      const qty = parseFloat($(this).find('.quantity').val()) || 0;
+      const taxRate = $(this).find('.tax-display').data('value') || 0;
       const taxName = $(this).find('.tax-name').val() || 'Tax';
 
-      const lineSubtotal = p * q;
-      const lineTax = (lineSubtotal * t / 100);
+      const lineSubtotal = price * qty;
+      const lineTax = (lineSubtotal * taxRate / 100);
       const lineTotal = lineSubtotal + lineTax;
 
       sub += lineSubtotal;
       grandTotal += lineTotal;
       totalTax += lineTax;
 
-      if (t > 0 && lineTax > 0) {
-        taxHtml += `
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <h6 class="fs-14 fw-semibold">${taxName} (${t}%)</h6>
-            <h6 class="fs-14 fw-semibold">${formatCurrency(lineTax)}</h6>
-          </div>`;
+      if (taxRate > 0 && lineTax > 0) {
+        const taxKey = `${taxName} (${taxRate}%)`;
+        if (!taxGroups[taxKey]) taxGroups[taxKey] = 0;
+        taxGroups[taxKey] += lineTax;
       }
     });
 
-    const shippingCharge = getShippingCharge();
-    const totalAll = grandTotal + shippingCharge;
+    let taxHtml = "";
+    $.each(taxGroups, function(taxLabel, amount) {
+      taxHtml += `
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="fs-14 fw-semibold">${taxLabel}</h6>
+          <h6 class="fs-14 fw-semibold">${formatCurrency(amount)}</h6>
+        </div>`;
+    });
 
-    // Fill DOM
     $('.tax-details').html(taxHtml);
     $('#subtotal-amount').text(formatCurrency(sub));
-    $('#total-amount').text(formatCurrency(totalAll));
+    $('#total-amount').text(formatCurrency(grandTotal));
 
-    // Hidden numeric fields for backend
     $('#subtotal-amount-field').val(sub.toFixed(2));
     $('#tax-amount-field').val(totalTax.toFixed(2));
-    $('#total-amount-field').val(totalAll.toFixed(2));
+    $('#total-amount-field').val(grandTotal.toFixed(2));
   }
 
   function resetRow($row) {
@@ -1015,7 +1042,7 @@ $(document).ready(function() {
   }
 
   /* =========================
-     FORM VALIDATION + Clean values on submit
+     FORM VALIDATION
   ========================== */
   $('#form').on('submit', function(e) {
     let isValid = true;
@@ -1064,23 +1091,6 @@ $(document).ready(function() {
       $('html, body').animate({ scrollTop: $('.error-text:visible').first().offset().top - 100 }, 500);
       return;
     }
-
-    // Clean formatting before submit
-    $('.selling-price').each(function(){
-      const num = $(this).data('value') ?? unformat($(this).val());
-      $(this).val(parseFloat(num).toFixed(2));
-    });
-    $('.tax-display').each(function(){
-      const num = $(this).data('value') ?? unformat($(this).val());
-      $(this).val(num);
-    });
-    $('.amount-display').each(function(){
-      const num = $(this).data('value') ?? unformat($(this).val());
-      $(this).val(parseFloat(num).toFixed(2));
-    });
-
-    const shipNum = $('#shipping-charge').data('value') ?? unformat($('#shipping-charge').val());
-    $('#shipping-charge').val(parseFloat(shipNum).toFixed(2));
   });
 
   /* =========================
@@ -1110,6 +1120,7 @@ $(document).ready(function() {
     fetchClientInfo($(this).val());
   });
 
+  // Fetch client info on page load if client is selected
   const preselectedClient = $('#client_id').val();
   if (preselectedClient) {
     fetchClientInfo(preselectedClient);
@@ -1141,9 +1152,10 @@ $(document).ready(function() {
   });
 
   /* =========================
-     Initialize existing rows for edit page
+     Initialize on page load
   ========================== */
   // Initialize calculations for existing rows
+  initializeExistingRowsData();
   updateItemDropdowns();
   calculateSummary();
 });

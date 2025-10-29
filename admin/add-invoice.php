@@ -198,7 +198,8 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
 
                                             <div class="table-responsive rounded table-nowrap border-bottom-0 border mb-3">
                                                 <table class="table mb-0 add-table">
-                                                    <thead class="table-dark">
+                                                    <thead class="table-dark" id="table-heading">
+                                                        <!-- Dynamic headings will be inserted here by JavaScript -->
                                                         <tr>
                                                             <th>Product/Service</th>
                                                             <th>Quantity</th>
@@ -333,6 +334,46 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
 $(document).ready(function() {
+  // Initialize datepicker for invoice date fields
+  $('.datepicker').flatpickr({
+    dateFormat: "Y-m-d",
+    allowInput: true,
+    defaultDate: new Date(),
+    clickOpens: true
+  });
+
+  /* =========================
+     Table Heading Management
+  ========================== */
+  function updateTableHeading(itemType) {
+    const $tableHead = $('#table-heading');
+    
+    if (itemType === '0') { // Service
+      $tableHead.html(`
+        <tr>
+          <th>Service</th>
+          <th>Hours</th>
+          <th>Unit</th>
+          <th>Hourly Price</th>
+          <th>Tax (%)</th>
+          <th>Amount</th>
+          <th></th>
+        </tr>
+      `);
+    } else { // Product
+      $tableHead.html(`
+        <tr>
+          <th>Product/Service</th>
+          <th>Quantity</th>
+          <th>Unit</th>
+          <th>Selling Price</th>
+          <th>Tax (%)</th>
+          <th>Amount</th>
+          <th></th>
+        </tr>
+      `);
+    }
+  }
 
   /* =========================
      Project and Task Selection
@@ -490,6 +531,9 @@ $(document).ready(function() {
   ========================== */
   $(document).on('change', 'input[name="item_type"]', function() {
     const selectedType = $(this).val(); // 1 for Product, 0 for Service
+    
+    // Update table heading based on selected type
+    updateTableHeading(selectedType);
     
     // Update all existing dropdowns to match the selected type
     updateAllItemDropdowns(selectedType);
@@ -896,15 +940,18 @@ $(document).ready(function() {
   });
 
   /* =========================
-     Initialize first row
+     Initialize first row and table heading
   ========================== */
+  // Initialize table heading based on default selected radio (Product)
+  updateTableHeading('1');
+  
   // Add initial row based on default selected radio (Product)
   addNewRow();
 
   // Initial calculations
   calculateSummary();
 });
-  </script>
+</script>
 </body>
 
 </html>

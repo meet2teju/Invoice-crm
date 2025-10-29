@@ -25,6 +25,7 @@ if (!$invoice) {
 $invoiceId = $invoice['id'];
 $client_id = $invoice['client_id'];
 $bank_id = $invoice['bank_id'];
+$item_type = $invoice['item_type']; // Get item type from invoice
 
 // Fetch client only if client_id is valid
 $client = null;
@@ -195,18 +196,18 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
         <div class="bg-white rounded">
             <div class="d-flex align-items-center mb-1">
                 <div>
-                    <h6 class="fs-14 fw-semibold"><?= htmlspecialchars($company['name']) ?></h6>
+                    <h6 class="fs-14 fw-semibold"><?= htmlspecialchars($company['name'] ??'') ?></h6>
                 </div>
             </div>
-            <p class="mb-1"><?= htmlspecialchars($company['address']) ?></p>
+            <p class="mb-1"><?= htmlspecialchars($company['address'] ??'') ?></p>
             <p class="mb-1">
-                <?= htmlspecialchars($company['city_name']) ?>, 
-                <?= htmlspecialchars($company['state_name']) ?>, 
-                <?= htmlspecialchars($company['country_name']) ?>, 
-                <?= htmlspecialchars($company['zipcode']) ?>
+                <?= htmlspecialchars($company['city_name'] ??'') ?>, 
+                <?= htmlspecialchars($company['state_name'] ??'') ?>, 
+                <?= htmlspecialchars($company['country_name'] ??'') ?>, 
+                <?= htmlspecialchars($company['zipcode'] ??'') ?>
             </p>
-            <p class="mb-1">Phone : <?= htmlspecialchars($company['mobile_number']) ?></p>
-            <p class="mb-1">Email : <?= htmlspecialchars($company['email']) ?></p>
+            <p class="mb-1">Phone : <?= htmlspecialchars($company['mobile_number'] ??'') ?></p>
+            <p class="mb-1">Email : <?= htmlspecialchars($company['email'] ??'') ?></p>
         </div>
     </div>
 </div>
@@ -219,13 +220,13 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 														<div class="d-flex align-items-center mb-1">
 															
 															<div>
-																<h6 class="fs-14 fw-semibold"><?= htmlspecialchars($client['first_name']) ?></h6>
+																<h6 class="fs-14 fw-semibold"><?= htmlspecialchars($client['first_name'] ??'') ?></h6>
 															</div>
 														</div>
-														<p class="mb-1"><?= htmlspecialchars($client_address['billing_address1']) ?></p>
-														<p class="mb-1"><?= htmlspecialchars($client_address['city_name']) ?>, <?= htmlspecialchars($client_address['state_name']) ?>, <?= htmlspecialchars($client_address['country_name']) ?>, <?= htmlspecialchars($client_address['billing_pincode']) ?></p>
-														<p class="mb-1">Phone : <?= htmlspecialchars($client['phone_number']) ?></p>
-														<p class="mb-1">Email : <?= htmlspecialchars($client['email']) ?></p>
+														<p class="mb-1"><?= htmlspecialchars($client_address['billing_address1'] ??'') ?></p>
+														<p class="mb-1"><?= htmlspecialchars($client_address['city_name'] ??'') ?>, <?= htmlspecialchars($client_address['state_name'] ??'') ?>, <?= htmlspecialchars($client_address['country_name'] ??'') ?>, <?= htmlspecialchars($client_address['billing_pincode'] ??'') ?></p>
+														<p class="mb-1">Phone : <?= htmlspecialchars($client['phone_number'] ??'') ?></p>
+														<p class="mb-1">Email : <?= htmlspecialchars($client['email'] ??'') ?></p>
 														
 													</div>
 												</div>
@@ -238,22 +239,38 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 										<h6 class="mb-3">Product / Service Items</h6>
 										<div class="table-responsive rounded border-bottom-0 border table-nowrap">
 											<table class="table m-0">
-												<thead class="table-dark">
-													<tr>
-														<th>#</th>
-														<th>Product/Service</th>
-														<th>HSN code</th>
-														<th>Quantity</th>
-														<th>Unit</th>
-														<th>Selling Price</th>
-													
-														<th>Tax (%)</th>
-														<th>Amount</th>
-														
-													</tr>
+												<thead class="table-dark" id="table-heading">
+													<?php if ($item_type == 1): ?>
+														<!-- Product Headings -->
+														<tr>
+															<th>#</th>
+															<th>Product/Service</th>
+															<th>HSN code</th>
+															<th>Quantity</th>
+															<th>Unit</th>
+															<th>Selling Price</th>
+															<th>Tax (%)</th>
+															<th>Amount</th>
+														</tr>
+													<?php else: ?>
+														<!-- Service Headings -->
+														<tr>
+															<th>#</th>
+															<th>Service</th>
+															<th>HSN code</th>
+															<th>Hours</th>
+															<th>Unit</th>
+															<th>Hourly Price</th>
+															<th>Tax (%)</th>
+															<th>Amount</th>
+														</tr>
+													<?php endif; ?>
 												</thead>
 												<tbody>
-													 <?php $i = 1; while($item = mysqli_fetch_assoc($items_result)) { ?>
+													 <?php 
+													 $i = 1; 
+													 while($item = mysqli_fetch_assoc($items_result)) { 
+													 ?>
                                                 <tr>
                                                     <td><?= $i++ ?></td>
                                                     <td><?= htmlspecialchars($item['product_name']) ?></td>

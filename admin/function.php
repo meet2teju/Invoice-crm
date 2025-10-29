@@ -18,21 +18,51 @@ function check_is_access_new($mname, $utype = "") {
 }
 
 function numberToWords($number) {
+    // Convert to integer for array access
+    $number = intval(floatval($number));
+    
     $words = [
         '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
         'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'
     ];
     $tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
-    if ($number < 20) return $words[$number];
-    if ($number < 100) return $tens[intval($number / 10)] . ' ' . $words[$number % 10];
-    if ($number < 1000)
-        return $words[intval($number / 100)] . ' Hundred ' . ($number % 100 != 0 ? numberToWords($number % 100) : '');
-    if ($number < 100000)
-        return numberToWords(intval($number / 1000)) . ' Thousand ' . ($number % 1000 != 0 ? numberToWords($number % 1000) : '');
-    if ($number < 1000000)
-        return numberToWords(intval($number / 100000)) . ' Lakh ' . ($number % 100000 != 0 ? numberToWords($number % 100000) : '');
+    // Safety check - ensure number is within array bounds
+    if ($number < 0 || $number >= 10000000) {
+        return "Number out of range";
+    }
+
+    if ($number < 20) {
+        return isset($words[$number]) ? $words[$number] : '';
+    }
+    
+    if ($number < 100) {
+        $tensDigit = intval($number / 10);
+        $onesDigit = $number % 10;
+        return (isset($tens[$tensDigit]) ? $tens[$tensDigit] : '') . 
+               ($onesDigit > 0 ? ' ' . (isset($words[$onesDigit]) ? $words[$onesDigit] : '') : '');
+    }
+    
+    if ($number < 1000) {
+        $hundreds = intval($number / 100);
+        $remainder = $number % 100;
+        return (isset($words[$hundreds]) ? $words[$hundreds] : '') . 
+               ' Hundred' . ($remainder != 0 ? ' ' . numberToWords($remainder) : '');
+    }
+    
+    if ($number < 100000) {
+        $thousands = intval($number / 1000);
+        $remainder = $number % 1000;
+        return numberToWords($thousands) . ' Thousand' . ($remainder != 0 ? ' ' . numberToWords($remainder) : '');
+    }
+    
+    if ($number < 10000000) {
+        $lakhs = intval($number / 100000);
+        $remainder = $number % 100000;
+        return numberToWords($lakhs) . ' Lakh' . ($remainder != 0 ? ' ' . numberToWords($remainder) : '');
+    }
 
     return "Number too large";
 }
- ?>
+
+?>

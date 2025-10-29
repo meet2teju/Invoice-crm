@@ -26,7 +26,6 @@ if (isset($_POST['submit'])) {
         // Sanitize inputs
         $client_id     = (int)($_POST['client_id'] ?? 0);
         $project_id    = (int)($_POST['project_id'] ?? 0);
-        $task_id       = (int)($_POST['task_id'] ?? 0);
         $invoice_id    = mysqli_real_escape_string($conn, $_POST['invoice_id'] ?? '');
         $reference_name= mysqli_real_escape_string($conn, $_POST['reference_name'] ?? '');
         $invoice_date  = mysqli_real_escape_string($conn, $_POST['invoice_date'] ?? '');
@@ -45,14 +44,14 @@ if (isset($_POST['submit'])) {
         $shipping_charge= (float)($_POST['shipping_charge'] ?? 0);
         $total_amount  = (float)($_POST['total_amount'] ?? 0);
 
-        // Insert invoice
+        // Insert invoice (without task_id in main table)
         $query = "INSERT INTO invoice (
-            client_id, project_id, task_id, invoice_id, reference_name, invoice_date, due_date,
+            client_id, project_id, invoice_id, reference_name, invoice_date, due_date,
             order_number, item_type, user_id, bank_id,
             invoice_note, description, amount, tax_amount, shipping_charge, total_amount,
             org_id, is_deleted, created_by, updated_by
         ) VALUES (
-            '$client_id', '$project_id', '$task_id', '$invoice_id', '$reference_name', '$invoice_date', '$expiry_date',
+            '$client_id', '$project_id', '$invoice_id', '$reference_name', '$invoice_date', '$expiry_date',
             '$order_number', '$item_type', '$user_id', $bank_id_sql,
             '$invoice_note', '$description', '$amount', '$tax_amount', '$shipping_charge', '$total_amount',
             '$orgId', 0, '$currentUserId', '$currentUserId'
@@ -63,6 +62,20 @@ if (isset($_POST['submit'])) {
         }
 
         $invoiceId = mysqli_insert_id($conn);
+
+        // Insert selected tasks into invoice_tasks table
+        if (isset($_POST['task_id']) && is_array($_POST['task_id'])) {
+            foreach ($_POST['task_id'] as $taskId) {
+                $taskId = (int)$taskId;
+                if ($taskId > 0) {
+                    $taskQuery = "INSERT INTO invoice_tasks (invoice_id, task_id, created_by, updated_by) 
+                                  VALUES ('$invoiceId', '$taskId', '$currentUserId', '$currentUserId')";
+                    if (!mysqli_query($conn, $taskQuery)) {
+                        throw new Exception("Task insert failed: " . mysqli_error($conn));
+                    }
+                }
+            }
+        }
 
         // Multiple document uploads
         if (!empty($_FILES['document']['name'][0])) {
