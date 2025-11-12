@@ -54,11 +54,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Save user
-    $hashedPassword = md5($password); // Keep md5 for now, but consider upgrading to password_hash()
-    $insertQuery = "INSERT INTO login (name, email, password) VALUES (?, ?, ?)";
+   // $hashedPassword = md5($password); // Keep md5 for now, but consider upgrading to password_hash()
+  //  $insertQuery = "INSERT INTO login (name, email, password) VALUES (?, ?, ?)";
+  //  $stmt = mysqli_prepare($conn, $insertQuery);
+   // mysqli_stmt_bind_param($stmt, "sss", $name, $email, $hashedPassword);
+    
+ $hashedPassword = md5($password); // Keep md5 for now, but consider upgrading to password_hash()
+    $insertQuery = "INSERT INTO login (name, email, password,role_id) VALUES (?, ?, ?,1)";
     $stmt = mysqli_prepare($conn, $insertQuery);
     mysqli_stmt_bind_param($stmt, "sss", $name, $email, $hashedPassword);
-    
+
+
+
+
     if (mysqli_stmt_execute($stmt)) {
         $user_id = mysqli_insert_id($conn);
         

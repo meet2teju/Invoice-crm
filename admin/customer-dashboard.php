@@ -8,6 +8,25 @@ $customer_id = $_SESSION['crm_user_id'] ?? 0;
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d', strtotime('-29 days'));
 $end_date   = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
+// Initialize variables with default values
+$totalProjects = 0;
+$outstandingAmount = 0;
+$overdueAmount = 0;
+$cancelledAmount = 0;
+$latestInvoice = null;
+
+$paymentStats = [
+    'total_invoices' => 0,
+    'paid_count' => 0,
+    'partial_count' => 0,
+    'unpaid_count' => 0,
+    'overdue_count' => 0,
+    'total_invoiced' => 0,
+    'paid_amount' => 0,
+    'partial_amount' => 0,
+    'unpaid_amount' => 0
+];
+
 // Total Projects for logged-in customer within date range
 $totalProjectQuery = "
     SELECT COUNT(*) as total 
@@ -18,12 +37,14 @@ $totalProjectQuery = "
 ";
 
 $totalProjectResult = mysqli_query($conn, $totalProjectQuery);
-$totalProjectRow = mysqli_fetch_assoc($totalProjectResult);
-$totalProjects = $totalProjectRow['total'] ?? 0;
+if ($totalProjectResult) {
+    $totalProjectRow = mysqli_fetch_assoc($totalProjectResult);
+    $totalProjects = $totalProjectRow['total'] ?? 0;
+}
 
-// Get customer's outstanding amount (assuming status field indicates payment status)
+// Get customer's outstanding amount
 $outstandingQuery = "
-    SELECT SUM(total_amount) as outstanding
+    SELECT COALESCE(SUM(total_amount), 0) as outstanding
     FROM invoice 
     WHERE user_id = '$customer_id' 
     AND status IN ('unpaid', 'partially_paid')
@@ -31,12 +52,14 @@ $outstandingQuery = "
 ";
 
 $outstandingResult = mysqli_query($conn, $outstandingQuery);
-$outstandingRow = mysqli_fetch_assoc($outstandingResult);
-$outstandingAmount = $outstandingRow['outstanding'] ?? 0;
+if ($outstandingResult) {
+    $outstandingRow = mysqli_fetch_assoc($outstandingResult);
+    $outstandingAmount = $outstandingRow['outstanding'] ?? 0;
+}
 
 // Get customer's overdue amount
 $overdueQuery = "
-    SELECT SUM(total_amount) as overdue
+    SELECT COALESCE(SUM(total_amount), 0) as overdue
     FROM invoice 
     WHERE user_id = '$customer_id' 
     AND status IN ('unpaid', 'partially_paid')
@@ -45,12 +68,14 @@ $overdueQuery = "
 ";
 
 $overdueResult = mysqli_query($conn, $overdueQuery);
-$overdueRow = mysqli_fetch_assoc($overdueResult);
-$overdueAmount = $overdueRow['overdue'] ?? 0;
+if ($overdueResult) {
+    $overdueRow = mysqli_fetch_assoc($overdueResult);
+    $overdueAmount = $overdueRow['overdue'] ?? 0;
+}
 
 // Get customer's cancelled invoices amount
 $cancelledQuery = "
-    SELECT SUM(total_amount) as cancelled
+    SELECT COALESCE(SUM(total_amount), 0) as cancelled
     FROM invoice 
     WHERE user_id = '$customer_id' 
     AND status = 'cancelled'
@@ -59,8 +84,10 @@ $cancelledQuery = "
 ";
 
 $cancelledResult = mysqli_query($conn, $cancelledQuery);
-$cancelledRow = mysqli_fetch_assoc($cancelledResult);
-$cancelledAmount = $cancelledRow['cancelled'] ?? 0;
+if ($cancelledResult) {
+    $cancelledRow = mysqli_fetch_assoc($cancelledResult);
+    $cancelledAmount = $cancelledRow['cancelled'] ?? 0;
+}
 
 // Get latest invoice for the customer
 $latestInvoiceQuery = "
@@ -74,29 +101,33 @@ $latestInvoiceQuery = "
 ";
 
 $latestInvoiceResult = mysqli_query($conn, $latestInvoiceQuery);
-$latestInvoice = mysqli_fetch_assoc($latestInvoiceResult);
+if ($latestInvoiceResult && mysqli_num_rows($latestInvoiceResult) > 0) {
+    $latestInvoice = mysqli_fetch_assoc($latestInvoiceResult);
+}
 
 // Get payment statistics for the customer
 $paymentStatsQuery = "
     SELECT 
         COUNT(*) as total_invoices,
-        SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid_count,
-        SUM(CASE WHEN status = 'partially_paid' THEN 1 ELSE 0 END) as partial_count,
-        SUM(CASE WHEN status = 'unpaid' THEN 1 ELSE 0 END) as unpaid_count,
-        SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_count,
-        SUM(total_amount) as total_invoiced,
-        SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END) as paid_amount,
-        SUM(CASE WHEN status = 'partially_paid' THEN total_amount ELSE 0 END) as partial_amount,
-        SUM(CASE WHEN status = 'unpaid' THEN total_amount ELSE 0 END) as unpaid_amount
+        COALESCE(SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END), 0) as paid_count,
+        COALESCE(SUM(CASE WHEN status = 'partially_paid' THEN 1 ELSE 0 END), 0) as partial_count,
+        COALESCE(SUM(CASE WHEN status = 'unpaid' THEN 1 ELSE 0 END), 0) as unpaid_count,
+        COALESCE(SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END), 0) as overdue_count,
+        COALESCE(SUM(total_amount), 0) as total_invoiced,
+        COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) as paid_amount,
+        COALESCE(SUM(CASE WHEN status = 'partially_paid' THEN total_amount ELSE 0 END), 0) as partial_amount,
+        COALESCE(SUM(CASE WHEN status = 'unpaid' THEN total_amount ELSE 0 END), 0) as unpaid_amount
     FROM invoice 
     WHERE user_id = '$customer_id'
     AND is_deleted = 0
 ";
 
 $paymentStatsResult = mysqli_query($conn, $paymentStatsQuery);
-$paymentStats = mysqli_fetch_assoc($paymentStatsResult);
+if ($paymentStatsResult && mysqli_num_rows($paymentStatsResult) > 0) {
+    $paymentStats = mysqli_fetch_assoc($paymentStatsResult);
+}
 
-// Get recent invoices for the customer (NO SERVER-SIDE SORTING - let DataTables handle it)
+// Get recent invoices for the customer
 $recentInvoicesQuery = "
     SELECT i.*
     FROM invoice i
@@ -107,8 +138,14 @@ $recentInvoicesQuery = "
 ";
 
 $recentInvoicesResult = mysqli_query($conn, $recentInvoicesQuery);
+$recentInvoicesData = [];
+if ($recentInvoicesResult && mysqli_num_rows($recentInvoicesResult) > 0) {
+    while ($row = mysqli_fetch_assoc($recentInvoicesResult)) {
+        $recentInvoicesData[] = $row;
+    }
+}
 
-// Since there's no payments table, we'll use invoice status for recent activities
+// Recent activities
 $recentActivitiesQuery = "
     SELECT 'invoice' as type, id, created_at, 
            CONCAT('Invoice ', invoice_id, ' created - Status: ', status) as description 
@@ -120,6 +157,12 @@ $recentActivitiesQuery = "
 ";
 
 $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
+$recentActivitiesData = [];
+if ($recentActivitiesResult && mysqli_num_rows($recentActivitiesResult) > 0) {
+    while ($row = mysqli_fetch_assoc($recentActivitiesResult)) {
+        $recentActivitiesData[] = $row;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -300,8 +343,8 @@ $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
                                             <?php if ($latestInvoice['tax_amount'] > 0): ?>
                                             <p class="text-dark mb-1">Tax <span class="float-end">₹<?= number_format($latestInvoice['tax_amount'], 2) ?></span></p>
                                             <?php endif; ?>
-                                            <?php if ($latestInvoice['total_amount'] > 0): ?>
-                                            <p class="text-dark mb-1">Discount <span class="text-danger float-end">- ₹<?= number_format($latestInvoice['total_amount'], 2) ?></span></p>
+                                            <?php if (isset($latestInvoice['discount_amount']) && $latestInvoice['discount_amount'] > 0): ?>
+                                            <p class="text-dark mb-1">Discount <span class="text-danger float-end">- ₹<?= number_format($latestInvoice['discount_amount'], 2) ?></span></p>
                                             <?php endif; ?>
                                         </div>
                                         <h6>Total (USD) <span class="float-end">₹<?= number_format($latestInvoice['total_amount'], 2) ?></span></h6>
@@ -385,8 +428,8 @@ $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
                                 <div class="mb-0">
                                     <h6 class="mb-1 pb-3 mb-3 border-bottom">Recent Activities</h6>
                                     <div class="recent-activities">
-                                        <?php if ($recentActivitiesResult && mysqli_num_rows($recentActivitiesResult) > 0): ?>
-                                            <?php while ($activity = mysqli_fetch_assoc($recentActivitiesResult)): ?>
+                                        <?php if (!empty($recentActivitiesData)): ?>
+                                            <?php foreach ($recentActivitiesData as $activity): ?>
                                             <div class="d-flex align-items-center pb-3">
                                                 <span class="border z-1 border-primary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center bg-white p-1"><i class="fa fa-circle fs-8 text-primary"></i></span>
                                                 <div class="recent-activities-flow">
@@ -394,7 +437,7 @@ $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
                                                     <p class="mb-0 d-inline-flex align-items-center fs-13"><i class="isax isax-calendar-25 me-1"></i><?= date('d M Y', strtotime($activity['created_at'])) ?></p>
                                                 </div>
                                             </div>
-                                            <?php endwhile; ?>
+                                            <?php endforeach; ?>
                                         <?php else: ?>
                                             <div class="text-center py-4">
                                                 <p>No recent activities</p>
@@ -421,19 +464,19 @@ $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
                                     <a href="invoices.php" class="btn btn-sm btn-dark mb-1">View all Invoices</a>
                                 </div>
                                 <div class="table-responsive border recent-invoice-table table-nowrap">
-                                    <table class="table table-nowrap datatable m-0">
+                                    <table class="table table-nowrap m-0">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>ID</th>
                                                 <th>Amount</th>
                                                 <th>Status</th>
                                                 <th>Due Date</th>
-                                                <th class="no-sort">Action</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php if ($recentInvoicesResult && mysqli_num_rows($recentInvoicesResult) > 0): ?>
-                                                <?php while ($invoice = mysqli_fetch_assoc($recentInvoicesResult)): ?>
+                                            <?php if (!empty($recentInvoicesData)): ?>
+                                                <?php foreach ($recentInvoicesData as $invoice): ?>
                                                 <tr>
                                                     <td>
                                                         <a href="invoice-details.php?id=<?= $invoice['id'] ?>" class="link-default"><?= $invoice['invoice_id'] ?></a>
@@ -468,7 +511,7 @@ $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
                                                         <?php endif; ?>
                                                     </td>
                                                 </tr>
-                                                <?php endwhile; ?>
+                                                <?php endforeach; ?>
                                             <?php else: ?>
                                                 <tr>
                                                     <td colspan="5" class="text-center py-4">No invoices found</td>
@@ -488,12 +531,8 @@ $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
                             <div class="card-body">
                                 <div class="mb-0">
                                     <h6 class="mb-3">Recent Invoices Status</h6>
-                                    <?php if ($recentInvoicesResult && mysqli_num_rows($recentInvoicesResult) > 0): ?>
-                                        <?php 
-                                        // Reset pointer and loop through invoices again
-                                        mysqli_data_seek($recentInvoicesResult, 0);
-                                        while ($invoice = mysqli_fetch_assoc($recentInvoicesResult)): 
-                                        ?>
+                                    <?php if (!empty($recentInvoicesData)): ?>
+                                        <?php foreach ($recentInvoicesData as $invoice): ?>
                                         <div class="d-flex align-items-center justify-content-between mb-3">
                                             <div class="d-flex align-items-center">
                                                 <span class="avatar avatar-lg rounded-pill border bg-light p-2 flex-shrink-0">
@@ -508,7 +547,7 @@ $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
                                                 ₹<?= number_format($invoice['total_amount'], 2) ?>
                                             </span>
                                         </div>
-                                        <?php endwhile; ?>
+                                        <?php endforeach; ?>
                                     <?php else: ?>
                                         <div class="text-center py-4">
                                             <p>No recent invoices</p>
@@ -576,26 +615,23 @@ $recentActivitiesResult = mysqli_query($conn, $recentActivitiesQuery);
     var chart = new ApexCharts(document.querySelector("#radial-chart2"), options);
     chart.render();
 
-    // Initialize DataTables for better sorting functionality
+    // Simple DataTables initialization without complex options
     $(document).ready(function() {
-        // Check if DataTable is already initialized
-        if (!$.fn.DataTable.isDataTable('.datatable')) {
-            $('.datatable').DataTable({
-                "paging": false,
-                "searching": false,
-                "info": false,
-                "ordering": true,
-                "autoWidth": false,
-                "order": [], // No initial sorting
-                "columnDefs": [{
-                    "targets": 'no-sort',
-                    "orderable": false,
-                }],
-                "language": {
-                    "emptyTable": "No invoices found"
+        // Initialize DataTables only if table has data
+        $('.datatable').each(function() {
+            var table = $(this);
+            if (table.find('tbody tr').length > 0) {
+                if (!$.fn.DataTable.isDataTable(table)) {
+                    table.DataTable({
+                        "paging": false,
+                        "searching": false,
+                        "info": false,
+                        "ordering": true,
+                        "autoWidth": false
+                    });
                 }
-            });
-        }
+            }
+        });
     });
     </script>
 

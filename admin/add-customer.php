@@ -220,7 +220,7 @@ $country_codes = [
             </select>
             <input type="text" class="form-control phone-number-input" name="phone_number" id="phone_number" placeholder="Phone Number">
         </div>
-        <span id="phone_number_error" class="text-danger error-text">Please enter a valid number (7-15 digits)</span>
+        <span id="phone_number_error" class="text-danger error-text">Please enter a valid number (7-12 digits)</span>
     </div>
 </div>
 <div class="col-lg-4 col-md-6">
@@ -236,7 +236,7 @@ $country_codes = [
             </select>
             <input type="text" class="form-control phone-number-input" name="business_number" id="business_number" placeholder="Mobile Number">
         </div>
-        <span id="business_number_error" class="text-danger error-text">Please enter a valid number (7-15 digits)</span>
+        <span id="business_number_error" class="text-danger error-text">Please enter a valid number (7-12 digits)</span>
     </div>
 </div>
                                         <!-- Tabs Start -->
@@ -625,16 +625,16 @@ $(document).ready(function () {
 
         // Phone number validation with country code
         const workPhone = $('[name="phone_number"]').val().trim();
-        if (workPhone && !/^[0-9]{7,15}$/.test(workPhone)) {
-            $('#phone_number_error').text('Please enter a valid phone number (7-15 digits)');
+        if (workPhone && !/^[0-9]{7,12}$/.test(workPhone)) {
+            $('#phone_number_error').text('Please enter a valid phone number (7-12 digits)');
             isValid = false;
             $(`[data-bs-target="#otherTab"]`).addClass('has-error');
         }
 
         // Mobile number validation with country code
         const mobile = $('[name="business_number"]').val().trim();
-        if (mobile && !/^[0-9]{7,15}$/.test(mobile)) {
-            $('#business_number_error').text('Please enter a valid mobile number (7-15 digits)');
+        if (mobile && !/^[0-9]{7,12}$/.test(mobile)) {
+            $('#business_number_error').text('Please enter a valid mobile number (7-12 digits)');
             isValid = false;
             $(`[data-bs-target="#otherTab"]`).addClass('has-error');
         }

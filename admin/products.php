@@ -5,7 +5,6 @@
 
 <head>
 	<?php include 'layouts/title-meta.php'; ?> 
-
 	<?php include 'layouts/head-css.php'; ?>
 </head>
 
@@ -97,7 +96,24 @@
                 $product_names = [];
                 $selectedProducts = is_array($_GET['product']) ? $_GET['product'] : [$_GET['product']];
                 $ids = implode(",", array_map('intval', $selectedProducts));
-                $res = mysqli_query($conn, "SELECT name FROM product WHERE id IN ($ids)");
+                
+                // Apply user filtering to product filter query as well
+                $currentUserId = $_SESSION['crm_user_id'] ?? 0;
+                $userRoleId = $_SESSION['role_id'] ?? 0;
+                $userFilter = "";
+                if ($userRoleId != 1) {
+                    // Get admin user IDs for filter
+                    $adminUsersQuery = "SELECT id FROM login WHERE role_id = 1";
+                    $adminUsersResult = mysqli_query($conn, $adminUsersQuery);
+                    $adminUserIds = [];
+                    while ($row = mysqli_fetch_assoc($adminUsersResult)) {
+                        $adminUserIds[] = $row['id'];
+                    }
+                    $adminUserIdsString = implode(',', $adminUserIds);
+                    $userFilter = " AND (user_id = $currentUserId OR user_id IN ($adminUserIdsString))";
+                }
+                
+                $res = mysqli_query($conn, "SELECT name FROM product WHERE id IN ($ids) AND is_deleted = 0 $userFilter");
                 while ($row = mysqli_fetch_assoc($res)) {
                     $product_names[] = htmlspecialchars($row['name']);
                 }
@@ -217,12 +233,24 @@
                         $filterQuery[] = "p.status = " . intval($_GET['status']);
                     }
                     
-                    // Add user-specific filtering - ONLY ADDED THIS CONDITION
+                    // FIXED: User-specific filtering with 3 conditions
                     $whereClause = "WHERE p.is_deleted = 0";
                     if ($userRoleId != 1) {
-                        // For non-admin users (role_id != 1), show only their own products
-                        $whereClause .= " AND p.user_id = $currentUserId";
+                        // For non-admin users (role_id != 1): 
+                        // Get admin user IDs
+                        $adminUsersQuery = "SELECT id FROM login WHERE role_id = 1";
+                        $adminUsersResult = mysqli_query($conn, $adminUsersQuery);
+                        $adminUserIds = [];
+                        while ($row = mysqli_fetch_assoc($adminUsersResult)) {
+                            $adminUserIds[] = $row['id'];
+                        }
+                        $adminUserIdsString = implode(',', $adminUserIds);
+                        
+                        // Show products created by current user OR products created by admin users
+                        $whereClause .= " AND (p.user_id = $currentUserId OR p.user_id IN ($adminUserIdsString))";
                     }
+                    // For admin users (role_id = 1): Show all products (no additional filter)
+                    
                     if (!empty($filterQuery)) {
                         $whereClause .= " AND " . implode(" AND ", $filterQuery);
                     }
@@ -233,7 +261,6 @@
                         LEFT JOIN units u ON p.unit_id = u.id 
                         $whereClause 
                         ORDER BY p.id DESC";
-
 
                     $result = mysqli_query($conn, $query);
                     while ($row = mysqli_fetch_assoc($result)) {
@@ -366,7 +393,24 @@
                 $selectedProductNames = [];
                 if (!empty($selectedProducts)) {
                     $ids = implode(",", array_map('intval', $selectedProducts));
-                    $res = mysqli_query($conn, "SELECT name FROM product WHERE id IN ($ids)");
+                    
+                    // Apply user filtering to product filter dropdown as well
+                    $currentUserId = $_SESSION['crm_user_id'] ?? 0;
+                    $userRoleId = $_SESSION['role_id'] ?? 0;
+                    $userFilter = "";
+                    if ($userRoleId != 1) {
+                        // Get admin user IDs for filter
+                        $adminUsersQuery = "SELECT id FROM login WHERE role_id = 1";
+                        $adminUsersResult = mysqli_query($conn, $adminUsersQuery);
+                        $adminUserIds = [];
+                        while ($row = mysqli_fetch_assoc($adminUsersResult)) {
+                            $adminUserIds[] = $row['id'];
+                        }
+                        $adminUserIdsString = implode(',', $adminUserIds);
+                        $userFilter = " AND (user_id = $currentUserId OR user_id IN ($adminUserIdsString))";
+                    }
+                    
+                    $res = mysqli_query($conn, "SELECT name FROM product WHERE id IN ($ids) AND is_deleted = 0 $userFilter");
                     while ($row = mysqli_fetch_assoc($res)) {
                         $selectedProductNames[] = htmlspecialchars($row['name']);
                     }
@@ -394,7 +438,23 @@
                                 <a href="javascript:void(0);" class="link-danger fw-medium text-decoration-underline reset-product">Reset</a>
                             </li>
                             <?php
-                            $products = mysqli_query($conn, "SELECT id, name FROM product WHERE is_deleted = 0");
+                            // Apply user filtering to product dropdown list
+                            $currentUserId = $_SESSION['crm_user_id'] ?? 0;
+                            $userRoleId = $_SESSION['role_id'] ?? 0;
+                            $userFilter = "";
+                            if ($userRoleId != 1) {
+                                // Get admin user IDs for filter
+                                $adminUsersQuery = "SELECT id FROM login WHERE role_id = 1";
+                                $adminUsersResult = mysqli_query($conn, $adminUsersQuery);
+                                $adminUserIds = [];
+                                while ($row = mysqli_fetch_assoc($adminUsersResult)) {
+                                    $adminUserIds[] = $row['id'];
+                                }
+                                $adminUserIdsString = implode(',', $adminUserIds);
+                                $userFilter = " AND (user_id = $currentUserId OR user_id IN ($adminUserIdsString))";
+                            }
+                            
+                            $products = mysqli_query($conn, "SELECT id, name FROM product WHERE is_deleted = 0 $userFilter");
                             while ($p = mysqli_fetch_assoc($products)) {
                                 $isChecked = in_array($p['id'], $selectedProducts) ? 'checked' : '';
                                 echo '<li>

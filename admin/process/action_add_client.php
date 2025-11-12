@@ -85,34 +85,36 @@ if (isset($_POST['submit'])) {
         $clientId = mysqli_insert_id($conn); // Get inserted ID
 
         // Insert billing and shipping address into client_address
-        $billing_name = $_POST['billing_name'];
-        $billing_address1 = $_POST['billing_address1'];
-        $billing_address2 = $_POST['billing_address2'];
-        $billing_country = $_POST['billing_country'];
-        $billing_state = $_POST['billing_state'];
-        $billing_city = $_POST['billing_city'];
-        $billing_pincode = mysqli_real_escape_string($conn, $_POST['billing_pincode']);
+       $billing_name = $_POST['billing_name'] ?? '';
+$billing_address1 = $_POST['billing_address1'] ?? '';
+$billing_address2 = $_POST['billing_address2'] ?? '';
+$billing_country = !empty($_POST['billing_country']) ? (int)$_POST['billing_country'] : 'NULL';
+$billing_state = !empty($_POST['billing_state']) ? (int)$_POST['billing_state'] : 'NULL';
+$billing_city = !empty($_POST['billing_city']) ? (int)$_POST['billing_city'] : 'NULL';
+$billing_pincode = mysqli_real_escape_string($conn, $_POST['billing_pincode'] ?? '');
 
-        $shipping_name = $_POST['shipping_name'];
-        $shipping_address1 = $_POST['shipping_address1'];
-        $shipping_address2 = $_POST['shipping_address2'];
-        $shipping_country = $_POST['shipping_country'];
-        $shipping_state = $_POST['shipping_state'];
-        $shipping_city = $_POST['shipping_city'];
-        $shipping_pincode = mysqli_real_escape_string($conn, $_POST['shipping_pincode']);
-        $addressQuery = "INSERT INTO client_address (
-            client_id, billing_name, billing_address1, billing_address2, billing_country, billing_state, billing_city, billing_pincode,
-            shipping_name, shipping_address1, shipping_address2, shipping_country, shipping_state, shipping_city, shipping_pincode,
-            status, org_id, is_deleted, created_by, updated_by
-        ) VALUES (
-            '$clientId', '$billing_name', '$billing_address1', '$billing_address2', '$billing_country', '$billing_state', '$billing_city', '$billing_pincode',
-            '$shipping_name', '$shipping_address1', '$shipping_address2', '$shipping_country', '$shipping_state', '$shipping_city', '$shipping_pincode',
-            1, '$orgId', 0, '$currentUserId', '$currentUserId'
-        )";
+$shipping_name = $_POST['shipping_name'] ?? '';
+$shipping_address1 = $_POST['shipping_address1'] ?? '';
+$shipping_address2 = $_POST['shipping_address2'] ?? '';
+$shipping_country = !empty($_POST['shipping_country']) ? (int)$_POST['shipping_country'] : 'NULL';
+$shipping_state = !empty($_POST['shipping_state']) ? (int)$_POST['shipping_state'] : 'NULL';
+$shipping_city = !empty($_POST['shipping_city']) ? (int)$_POST['shipping_city'] : 'NULL';
+$shipping_pincode = mysqli_real_escape_string($conn, $_POST['shipping_pincode'] ?? '');
 
-        if (!mysqli_query($conn, $addressQuery)) {
-            throw new Exception("Address insert failed: " . mysqli_error($conn));
-        }
+// Build the address query with NULL for empty values
+$addressQuery = "INSERT INTO client_address (
+    client_id, billing_name, billing_address1, billing_address2, billing_country, billing_state, billing_city, billing_pincode,
+    shipping_name, shipping_address1, shipping_address2, shipping_country, shipping_state, shipping_city, shipping_pincode,
+    status, org_id, is_deleted, created_by, updated_by
+) VALUES (
+    '$clientId', '$billing_name', '$billing_address1', '$billing_address2', $billing_country, $billing_state, $billing_city, '$billing_pincode',
+    '$shipping_name', '$shipping_address1', '$shipping_address2', $shipping_country, $shipping_state, $shipping_city, '$shipping_pincode',
+    1, '$orgId', 0, '$currentUserId', '$currentUserId'
+)";
+
+if (!mysqli_query($conn, $addressQuery)) {
+    throw new Exception("Address insert failed: " . mysqli_error($conn));
+}
 
         // Insert banking details into client_bank
         $bank_name = $_POST['bank_name'] ?? '';
