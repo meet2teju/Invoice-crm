@@ -202,7 +202,7 @@
                                 <div class="error-message" id="account_number_error"></div>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label">IFSC Code<span class="text-danger">*</span></label>
+                                <label class="form-label">IFSC Code</label>
                                 <input type="text" id="ifsc_code" name="ifsc_code" class="form-control">
                                 <div class="error-message" id="ifsc_code_error"></div>
                             </div>
@@ -212,7 +212,7 @@
                                 <div class="error-message" id="swift_code_error"></div>
                             </div>
                             <div class="mb-0">
-                                <label class="form-label">Opening Balance<span class="text-danger">*</span></label>
+                                <label class="form-label">Opening Balance</label>
                                 <input type="number" id="opening_balance" name="opening_balance" class="form-control" step="0.01">
                                 <div class="error-message" id="opening_balance_error"></div>
                             </div>
@@ -253,7 +253,7 @@
                                 <div class="error-message" id="edit_account_number_error"></div>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label">IFSC Code<span class="text-danger">*</span></label>
+                                <label class="form-label">IFSC Code</label>
                                 <input type="text" id="edit_ifsc_code" name="ifsc_code" class="form-control">
                                 <div class="error-message" id="edit_ifsc_code_error"></div>
                             </div>
@@ -263,7 +263,7 @@
                                 <div class="error-message" id="edit_swift_code_error"></div>
                             </div>
                             <div class="mb-0">
-                                <label class="form-label">Opening Balance<span class="text-danger">*</span></label>
+                                <label class="form-label">Opening Balance</label>
                                 <input type="number" id="edit_opening_balance" name="opening_balance" class="form-control" step="0.01">
                                 <div class="error-message" id="edit_opening_balance_error"></div>
                             </div>
@@ -423,17 +423,17 @@ $(document).ready(function() {
         var id = formType === 'add' ? 0 : $('#edit_id').val();
 
         var fields = [
-            {id: prefix+'bank_name', name:'Bank name', type:'text'},
-            {id: prefix+'account_holder', name:'Account holder', type:'text'},
-            {id: prefix+'account_number', name:'Account number', type:'number'},
-            {id: prefix+'ifsc_code', name:'IFSC code', type:'ifsc'},
-            {id: prefix+'opening_balance', name:'Opening balance', type:'decimal'}
+            {id: prefix+'bank_name', name:'Bank name', type:'text', required: true},
+            {id: prefix+'account_holder', name:'Account holder', type:'text', required: true},
+            {id: prefix+'account_number', name:'Account number', type:'number', required: true},
+            {id: prefix+'ifsc_code', name:'IFSC code', type:'ifsc', required: false},
+            {id: prefix+'opening_balance', name:'Opening balance', type:'decimal', required: false}
         ];
 
         // Validate each field
         for(var i=0; i<fields.length; i++){
             var val = $('#'+fields[i].id).val();
-            var error = validateField(val, fields[i].name, true, fields[i].type);
+            var error = validateField(val, fields[i].name, fields[i].required, fields[i].type);
             if(error){ $('#'+fields[i].id+'_error').text(error); isValid=false; }
             else{ $('#'+fields[i].id+'_error').text(''); }
         }

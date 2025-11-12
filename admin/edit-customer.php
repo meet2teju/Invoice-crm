@@ -334,7 +334,7 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                                 <input type="text" id="billing_address2" class="form-control" name="billing_address2" value="<?php echo htmlspecialchars($addressrow['billing_address2']); ?>">
                                                             </div>
                                                             <div class="col-md-6 mb-3">
-                                                                <label class="form-label">Country<span class="text-danger ms-1">*</span></label>
+                                                                <label class="form-label">Country</label>
                                                                 <select class="select" id="billing_country" name="billing_country" onchange="getStates(this.value, 'billing_state')">
                                                                      <option value="">Select Country</option>
                                                                     <?php 
@@ -344,10 +344,9 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                                         echo "<option value='{$country['id']}' $selected>{$country['name']}</option>";
                                                                     } ?>
                                                                 </select>
-                                                                <span id="billing_country_error" class="text-danger error-text"></span>
                                                             </div>
                                                             <div class="col-md-6 mb-3">
-                                                                <label class="form-label">State<span class="text-danger ms-1">*</span></label>
+                                                                <label class="form-label">State</label>
                                                                 <select class="select2" id="billing_state" name="billing_state" onchange="getCities(this.value, 'billing_city')">
                                                                     <option value="">Select State</option>
                                                                     <?php if (!empty($addressrow['billing_state'])): ?>
@@ -361,10 +360,9 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                                         ?>
                                                                     <?php endif; ?>
                                                                 </select>
-                                                                <span id="billing_state_error" class="text-danger error-text"></span>
                                                             </div>
                                                             <div class="col-md-6 mb-3">
-                                                                <label class="form-label">City<span class="text-danger ms-1">*</span></label>
+                                                                <label class="form-label">City</label>
                                                                 <select class="select" id="billing_city" name="billing_city">
                                                                     <option value="">Select City</option>
                                                                     <?php if (!empty($addressrow['billing_city'])): ?>
@@ -378,7 +376,6 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                                         ?>
                                                                     <?php endif; ?>
                                                                 </select>
-                                                                <span id="billing_city_error" class="text-danger error-text"></span>
                                                             </div>
                                                             <div class="col-md-6 mb-3">
                                                                 <label class="form-label">Pincode</label>
@@ -408,7 +405,7 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                                 <input type="text" class="form-control" id="shipping_address2" name="shipping_address2" value="<?php echo htmlspecialchars($addressrow['shipping_address2']); ?>">
                                                             </div>
                                                           <div class="col-md-6 mb-3">
-    <label class="form-label">Country<span class="text-danger ms-1">*</span></label>
+    <label class="form-label">Country</label>
     <select class="select" id="shipping_country" name="shipping_country" onchange="getStates(this.value, 'shipping_state')">
         <option value="">Select Country</option>
         <?php 
@@ -419,10 +416,9 @@ $contacts_result = mysqli_query($conn, $contacts_query);
             echo "<option value='{$country['id']}' $selected>{$country['name']}</option>";
         } ?>
     </select>
-    <span id="shipping_country_error" class="text-danger error-text"></span>
 </div>
                                                             <div class="col-md-6 mb-3">
-                                                                <label class="form-label">State<span class="text-danger ms-1">*</span></label>
+                                                                <label class="form-label">State</label>
                                                                 <select class="select" id="shipping_state" name="shipping_state" onchange="getCities(this.value, 'shipping_city')">
                                                                     <option value="">Select State</option>
                                                                     <?php if (!empty($addressrow['shipping_state'])): ?>
@@ -436,10 +432,9 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                                         ?>
                                                                     <?php endif; ?>
                                                                 </select>
-                                                                 <span id="shipping_state_error" class="text-danger error-text"></span>
                                                             </div>
                                                             <div class="col-md-6 mb-3">
-                                                                <label class="form-label">City<span class="text-danger ms-1">*</span></label>
+                                                                <label class="form-label">City</label>
                                                                 <select class="select" id="shipping_city" name="shipping_city">
                                                                     <option value="">Select City</option>
                                                                     <?php if (!empty($addressrow['shipping_city'])): ?>
@@ -453,7 +448,6 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                                         ?>
                                                                     <?php endif; ?>
                                                                 </select>
-                                                                <span id="shipping_city_error" class="text-danger error-text"></span>
                                                             </div>
                                                             <div class="col-md-6 mb-3">
                                                                 <label class="form-label">Pincode</label>
@@ -499,29 +493,22 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                     <div class="col-lg-4 col-md-6 mb-3">
                                                         <label class="form-label">Bank Name</label>
                                                         <input type="text" class="form-control" name="bank_name" value="<?php echo htmlspecialchars($bankrow['bank_name']??''); ?>">
-                                                         <span id="bank_name_error" class="text-danger error-text"></span>
                                                     </div>
                                                     <div class="col-lg-4 col-md-6 mb-3">
                                                         <label class="form-label">Branch</label>
                                                         <input type="text" class="form-control" name="bank_branch" value="<?php echo htmlspecialchars($bankrow['bank_branch']??''); ?>">
-                                                                <span id="bank_branch_error" class="text-danger error-text"></span>                                                   
                                                     </div>
                                                     <div class="col-lg-4 col-md-6 mb-3">
                                                         <label class="form-label">Account Holder</label>
                                                         <input type="text" class="form-control" name="account_holder" value="<?php echo htmlspecialchars($bankrow['account_holder']??''); ?>">
-                                                   <span id="account_holder_error" class="text-danger error-text"></span>
                                                     </div>
                                                     <div class="col-lg-4 col-md-6 mb-3">
                                                         <label class="form-label">Account Number</label>
                                                         <input type="text" class="form-control" name="account_number" value="<?php echo htmlspecialchars($bankrow['account_number']??''); ?>">
-                                                          <span id="account_number_error" class="text-danger error-text"></span>
-
                                                     </div>
                                                     <div class="col-lg-4 col-md-6 mb-3">
                                                         <label class="form-label">IFSC</label>
                                                         <input type="text" class="form-control" name="IFSC_code" value="<?php echo htmlspecialchars($bankrow['IFSC_code']??''); ?>">
-                                                       <span id="ifsc_code_error" class="text-danger error-text"></span>
-
                                                     </div>
                                                 </div>
                                             </div>
@@ -955,191 +942,8 @@ $(document).ready(function () {
 });
 </script>
 
-<!-- <script>
-    $(document).ready(function() {
-    // Form Validation
-    $('#form').on('submit', function(e) {
-        let isValid = true;
-        $('.error-text').text('');
-        $('.is-invalid').removeClass('is-invalid');
-
-        // Required fields validation
-        const requiredFields = [
-            {name: 'first_name', errorId: 'first_name_error', message: 'First name is required'},
-            {name: 'last_name', errorId: 'last_name_error', message: 'Last name is required'},
-            // {name: 'company_name', errorId: 'company_name_error', message: 'Company name is required'},
-            {name: 'display_name', errorId: 'display_name_error', message: 'Display name is required'},
-            // {name: 'email', errorId: 'email_error', message: 'Email is required'},
-            // {name: 'phone_number', errorId: 'phone_number_error', message: 'Work number is required'},
-            // {name: 'business_number', errorId: 'business_number_error', message: 'Mobile number is required'},
-            // {name: 'pan_number', errorId: 'pan_number_error', message: 'PAN number is required'},
-            {name: 'billing_city', errorId: 'billing_city_error', message: 'Billing city is required'},
-            {name: 'shipping_city', errorId: 'shipping_city_error', message: 'Shipping city is required'},
-            {name: 'billing_country', errorId: 'billing_country_error', message: 'Billing country is required'},
-            {name: 'shipping_country', errorId: 'shipping_country_error', message: 'Shipping country is required'},
-            {name: 'billing_state', errorId: 'billing_state_error', message: 'Billing State is required'},
-            {name: 'shipping_state', errorId: 'shipping_state_error', message: 'Shipping State is required'},
-            {name: 'salutation', errorId: 'salutation_error', message: 'Salutation is required'}
-        ];
-
-        requiredFields.forEach(field => {
-            const value = $(`[name="${field.name}"]`).val();
-            if (!value) {
-                $(`#${field.errorId}`).text(field.message);
-                isValid = false;
-            }
-        });
-
-        // Email format validation
-        const email = $('[name="email"]').val().trim();
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            $('#email_error').text('Please enter a valid email address');
-            isValid = false;
-        }
-
-        // PAN format validation
-        const pan = $('[name="pan_number"]').val().trim();
-        if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
-            $('#pan_number_error').text('Invalid PAN format (e.g. AAAAA9999A)');
-            isValid = false;
-        }
-
-        // // Phone number validation
-        // const phone = $('[name="phone_number"]').val().trim();
-        // if (phone && !/^[0-9]{7,15}$/.test(phone)) {
-        //     $('#phone_number_error').text('Please enter a valid phone number');
-        //     isValid = false;
-        // }
-
-        // // Mobile number validation
-        // const mobile = $('[name="business_number"]').val().trim();
-        // if (mobile && !/^[0-9]{7,15}$/.test(mobile)) {
-        //     $('#business_number_error').text('Please enter a valid mobile number');
-        //     isValid = false;
-        // }
-
-        // Validate contact persons if any exist
-        $('[name="contact_email[]"]').each(function(index) {
-            const contactEmail = $(this).val().trim();
-            if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-                $(this).next('.invalid-feedback').remove();
-                $(this).after('<div class="invalid-feedback">Please enter a valid email address</div>');
-                isValid = false;
-            }
-        });
-
-        // Check if portal is enabled and email is provided
-        // if ($('#enablePortalCheckbox').is(':checked') && !email) {
-        //     $('#email_error').text('Email is required when portal access is enabled');
-        //     isValid = false;
-        // }
-
-   // ✅ Document type check
-        $('#documents_error').text('');
-        const files = $('#documents')[0]?.files || [];
-        const allowedExtensions = ['pdf', 'xls', 'xlsx', 'csv'];
-
-        for (let i = 0; i < files.length; i++) {
-            const fileName = files[i].name.toLowerCase();
-            const ext = fileName.split('.').pop();
-            if (!allowedExtensions.includes(ext)) {
-                $('#documents_error').text('Only PDF, Excel, or CSV files are allowed.');
-                isValid = false;
-                break;
-            }
-        }
-
-        // Scroll to first error if validation fails
-        if (!isValid) {
-            e.preventDefault();
-            const firstError = $('.error-text').filter(function() {
-                return $(this).text().length > 0;
-            }).first();
-            
-            if (firstError.length) {
-                $('html, body').animate({
-                    scrollTop: firstError.offset().top - 100
-                }, 500);
-            }
-        }
-    });
-
-    // Real-time validation for PAN
-    $('[name="pan_number"]').on('input', function() {
-        const pan = $(this).val().trim();
-        if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
-            $('#pan_number_error').text('Invalid PAN format (e.g. AAAAA9999A)');
-        } else {
-            $('#pan_number_error').text('');
-        }
-    });
-
-    // Real-time validation for email
-    $('[name="email"]').on('input', function() {
-        const email = $(this).val().trim();
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            $('#email_error').text('Please enter a valid email address');
-        } else {
-            $('#email_error').text('');
-        }
-    });
-$(document).ready(function () {
-    // Function to validate email
-    function validateEmail(email) {
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return regex.test(email);
-    }
-
-    // Real-time validation
-    $('[name="email"]').on('input', function () {
-        const email = $(this).val().trim();
-        const errorEl = $('#email_error');
-
-        if (email === "") {
-            errorEl.text(""); // clear if empty (optional: show "required")
-        } else if (!validateEmail(email)) {
-            errorEl.text("Please enter a valid email address (e.g. user@example.com)");
-        } else {
-            errorEl.text(""); // valid email → clear error
-        }
-    });
-
-    // Final check on form submit
-    $('form').on('submit', function (e) {
-        let isValid = true;
-        const email = $('[name="email"]').val().trim();
-        const errorEl = $('#email_error');
-        errorEl.text("");
-
-        if (email === "") {
-            // errorEl.text("Email is required");
-            // isValid = false;
-        } else if (!validateEmail(email)) {
-            errorEl.text("Please enter a valid email address (e.g. user@example.com)");
-            isValid = false;
-        }
-
-        if (!isValid) e.preventDefault(); // stop submit
-    });
-});
-
-    // Real-time validation for phone numbers
-    $('[name="phone_number"], [name="business_number"]').on('input', function() {
-        const number = $(this).val().trim();
-        const fieldName = $(this).attr('name');
-        const errorId = `${fieldName}_error`;
-        
-        if (number && !/^[0-9]{7,15}$/.test(number)) {
-            $(`#${errorId}`).text('Please enter a valid number');
-        } else {
-            $(`#${errorId}`).text('');
-        }
-    });
-});
-</script> -->
-
 <script>
-$(document).ready(function() {
+    $(document).ready(function() {
     // Add CSS for error indicators
     $('head').append(`
         <style>
@@ -1175,12 +979,6 @@ $(document).ready(function() {
             // {name: 'phone_number', errorId: 'phone_number_error', message: 'Work number is required', tab: 'otherTab'},
             // {name: 'business_number', errorId: 'business_number_error', message: 'Mobile number is required', tab: 'otherTab'},
             // {name: 'pan_number', errorId: 'pan_number_error', message: 'PAN number is required', tab: 'otherTab'},
-            {name: 'billing_city', errorId: 'billing_city_error', message: 'Billing city is required', tab: 'addressTab'},
-            {name: 'shipping_city', errorId: 'shipping_city_error', message: 'Shipping city is required', tab: 'addressTab'},
-            {name: 'billing_country', errorId: 'billing_country_error', message: 'Billing country is required', tab: 'addressTab'},
-            {name: 'shipping_country', errorId: 'shipping_country_error', message: 'Shipping country is required', tab: 'addressTab'},
-            {name: 'billing_state', errorId: 'billing_state_error', message: 'Billing state is required', tab: 'addressTab'},
-            {name: 'shipping_state', errorId: 'shipping_state_error', message: 'Shipping state is required', tab: 'addressTab'},
             {name: 'salutation', errorId: 'salutation_error', message: 'Salutation is required', tab: 'otherTab'}
         ];
 
@@ -1357,18 +1155,7 @@ $(document).ready(function() {
 });
 
     // Real-time validation for city fields
-    $('#billing_city, #shipping_city').on('change', function() {
-        const fieldId = $(this).attr('id');
-        const value = $(this).val();
-        
-        if (!value) {
-            $(`#${fieldId}_error`).text(`${fieldId.replace('_', ' ')} is required`);
-            $(`[data-bs-target="#addressTab"]`).addClass('has-error');
-        } else {
-            $(`#${fieldId}_error`).text('');
-            $(`[data-bs-target="#addressTab"]`).removeClass('has-error');
-        }
-    });
+    // Removed address field validations
 $(document).ready(function () {
     // Function to validate email
     function validateEmail(email) {
@@ -1459,43 +1246,8 @@ function validateTab(tabId) {
                 isValid = false;
             }
         });
-    } else if (tabId === 'addressTab') {
-        // Validate address tab fields
-        const billingCity = $('#billing_city').val();
-        const shippingCity = $('#shipping_city').val();
-        const billingcountry = $('#billing_country').val();
-        const shippingcountry = $('#shipping_country').val();
-        const billingstate = $('#billing_state').val();
-        const shippingstate = $('#shipping_state').val();
-
-        if (!billingCity) {
-            $('#billing_city_error').text('Billing city is required');
-            isValid = false;
-        }
-        
-        if (!shippingCity) {
-            $('#shipping_city_error').text('Shipping city is required');
-            isValid = false;
-        }
-        if (!billingcountry) {
-            $('#billing_country_error').text('Billing country is required');
-            isValid = false;
-        }
-        
-        if (!shippingcountry) {
-            $('#shipping_country_error').text('Shipping country is required');
-            isValid = false;
-        }
-        if (!billingstate) {
-            $('#billing_state_error').text('Billing state is required');
-            isValid = false;
-        }
-        
-        if (!shippingstate) {
-            $('#shipping_state_error').text('Shipping state is required');
-            isValid = false;
-        }
     }
+    // Removed address tab validation
     
     return isValid;
 }
@@ -1740,187 +1492,29 @@ document.addEventListener('DOMContentLoaded', function() {
     updateDisplayName();
 });
 </script>
-<!-- <script>
-$(document).ready(function() {
-    // Add CSS for error indicators on tabs
-    $('head').append(`
-        <style>
-            .nav-link.has-error {
-                color: #dc3545 !important;
-                border-bottom: 2px solid #dc3545 !important;
-            }
-        </style>
-    `);
-
-    // ---------------- Bank Field Real-time Validation ----------------
-    $('input[name="bank_name"], input[name="bank_branch"], input[name="account_holder"]').on('input', function() {
-        this.value = this.value.replace(/[^a-zA-Z\s]/g, '');
-        validateBankTextField(this);
-    });
-
-    $('input[name="account_number"]').on('input', function() {
-        this.value = this.value.replace(/[^0-9]/g, '');
-        validateBankAccountNumber(this);
-    });
-
-    $('input[name="IFSC_code"]').on('input', function() {
-        this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');
-        validateBankIFSC(this);
-    });
-
-    // ---------------- Validation Functions ----------------
-    function validateBankTextField(input) {
-        const val = $(input).val().trim();
-        const name = $(input).attr('name');
-        const errorId = name + '_error';
-        if (!val) {
-            $('#' + errorId).text('This field is required.').addClass('error-text');
-            $('#bank-tab').addClass('has-error');
-        } else {
-            $('#' + errorId).text('').removeClass('error-text');
-            checkBankTabErrors();
-        }
-    }
-
-    function validateBankAccountNumber(input) {
-        const val = $(input).val().trim();
-        const errorId = 'account_number_error';
-        if (!val) {
-            $('#' + errorId).text('Account number is required.').addClass('error-text');
-            $('#bank-tab').addClass('has-error');
-        } else if (!/^\d{6,20}$/.test(val)) {
-            $('#' + errorId).text('Account number must be 6-20 digits.').addClass('error-text');
-            $('#bank-tab').addClass('has-error');
-        } else {
-            $('#' + errorId).text('').removeClass('error-text');
-            checkBankTabErrors();
-        }
-    }
-
-    function validateBankIFSC(input) {
-        const val = $(input).val().trim();
-        const errorId = 'IFSC_code_error';
-        if (!val) {
-            $('#' + errorId).text('IFSC code is required.').addClass('error-text');
-            $('#bank-tab').addClass('has-error');
-        } else if (!/^[A-Za-z]{4}0[A-Za-z0-9]{6}$/.test(val)) {
-            $('#' + errorId).text('Invalid IFSC format.').addClass('error-text');
-            $('#bank-tab').addClass('has-error');
-        } else {
-            $('#' + errorId).text('').removeClass('error-text');
-            checkBankTabErrors();
-        }
-    }
-
-    function checkBankTabErrors() {
-        const hasErrors = $('#bank-tab .error-text:visible').length > 0;
-        if (!hasErrors) $('#bank-tab').removeClass('has-error');
-    }
-
-    // ---------------- On form submit ----------------
-    $('#form').on('submit', function(e) {
-        let isValid = true;
-
-        // Validate all bank fields on submit
-        $('input[name="bank_name"], input[name="bank_branch"], input[name="account_holder"]').each(function() {
-            validateBankTextField(this);
-            if ($(this).val().trim() === '') isValid = false;
-        });
-
-        validateBankAccountNumber($('input[name="account_number"]'));
-        if ($('#account_number_error').text() !== '') isValid = false;
-
-        validateBankIFSC($('input[name="IFSC_code"]'));
-        if ($('#IFSC_code_error').text() !== '') isValid = false;
-
-        // If invalid, prevent submit and show bank tab
-        if (!isValid) {
-            e.preventDefault();
-
-            $('#bank-tab').tab('show'); // Activate bank tab
-
-            // Scroll to first visible error
-            setTimeout(function() {
-                const firstError = $('#bank-tab .error-text:visible').first();
-                if (firstError.length) {
-                    $('html, body').animate({
-                        scrollTop: firstError.offset().top - 100
-                    }, 500);
-                }
-            }, 300);
-        }
-    });
-});
-</script> -->
-
 
 <script>
-    $(document).ready(function () {
-    function validatePhone(selector, errorSelector, tabSelector) {
-        const value = $(selector).val().trim();
-        if (value && !/^[0-9]{10}$/.test(value)) {
-            $(errorSelector).text('Please enter a valid 10-digit number');
-            $(tabSelector).addClass('has-error');
-            return false;
-        } else {
-            $(errorSelector).text('');
-            $(tabSelector).removeClass('has-error');
-            return true;
-        }
-    }
-
-    // Real-time validation (on input/blur)
-    $('[name="phone_number"]').on('input blur', function () {
-        validatePhone('[name="phone_number"]', '#phone_number_error', `[data-bs-target="#otherTab"]`);
-    });
-
-    $('[name="business_number"]').on('input blur', function () {
-        validatePhone('[name="business_number"]', '#business_number_error', `[data-bs-target="#otherTab"]`);
-    });
-
-    // Form submit validation (final check)
-    $('form').on('submit', function (e) {
-        let isValid = true;
-        if (!validatePhone('[name="phone_number"]', '#phone_number_error', `[data-bs-target="#otherTab"]`)) {
-            isValid = false;
-        }
-        if (!validatePhone('[name="business_number"]', '#business_number_error', `[data-bs-target="#otherTab"]`)) {
-            isValid = false;
-        }
-
-        if (!isValid) {
-            e.preventDefault(); // stop submission
-        }
-    });
-});
-
-</script>
-<script>
+// Image Preview Functionality
 $(document).ready(function() {
-    // Image preview functionality
     $('#add_image').on('change', function(e) {
         const file = e.target.files[0];
         const preview = $('#add_image_preview');
         
         if (file) {
-            // Check file size (5MB limit)
             if (file.size > 5 * 1024 * 1024) {
                 $('#add_image_error').text('File size must be less than 5MB');
-                $(this).val(''); // Clear the file input
+                $(this).val('');
                 return;
             }
             
-            // Check file type
             if (!file.type.match('image.*')) {
                 $('#add_image_error').text('Please select a valid image file');
-                $(this).val(''); // Clear the file input
+                $(this).val('');
                 return;
             }
             
-            // Clear any previous errors
             $('#add_image_error').text('');
             
-            // Create preview
             const reader = new FileReader();
             
             reader.onload = function(e) {
@@ -1929,7 +1523,6 @@ $(document).ready(function() {
             
             reader.readAsDataURL(file);
         } else {
-            // If no file selected, show default icon
             const existingImage = $('input[name="existing_image"]').val();
             if (existingImage) {
                 preview.html(`<img src="../uploads/${existingImage}" class="avatar avatar-xl" alt="Customer Image">`);
@@ -1939,12 +1532,10 @@ $(document).ready(function() {
         }
     });
     
-    // Also add click handler for better UX
     $('.drag-upload-btn').on('click', function() {
         $('#add_image').click();
     });
     
-    // Optional: Drag and drop functionality
     $('#add_image_preview').on('dragover', function(e) {
         e.preventDefault();
         $(this).addClass('border-primary');
@@ -1963,3 +1554,6 @@ $(document).ready(function() {
     });
 });
 </script>
+
+</body>
+</html>

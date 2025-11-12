@@ -20,7 +20,7 @@
 										</a>
 										<ul>
 											<li><a href="account-settings.php" class="<?php echo ($page =='account-settings.php') ? 'active' : '' ;?>">Profile </a></li>
-											<li><a href="security-settings.php" class="<?php echo ($page =='security-settings.php') ? 'active' : '' ;?>">Change Paaword</a></li>
+											<li><a href="security-settings.php" class="<?php echo ($page =='security-settings.php') ? 'active' : '' ;?>">Change Password</a></li>
 											<li><a href="company-settings.php" class="<?php echo ($page =='company-settings.php') ? 'active' : '' ;?>">Company Profile</a></li>
 											<!-- <li><a href="localization-settings.php" class="<?php echo ($page =='localization-settings.php') ? 'active' : '' ;?>">Localization</a></li> -->
 										</ul>

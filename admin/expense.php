@@ -229,7 +229,7 @@ $result = mysqli_query($conn, $query);
                         <thead class="thead-light">
                             <tr>
                                 <th class="no-sort"><input class="form-check-input" type="checkbox" id="select-all"></th>
-                                <th>Expense Category</th>
+                                <th>Expense</th>
                                 <th>Client</th>
                                 <th>Date</th>
                                 
