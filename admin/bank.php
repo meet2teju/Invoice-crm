@@ -132,6 +132,7 @@
                                                 data-bank-name="<?= htmlspecialchars($row['bank_name']) ?>"
                                                 data-account-holder="<?= htmlspecialchars($row['account_holder']) ?>"
                                                 data-account-number="<?= htmlspecialchars($row['account_number']) ?>"
+                                                data-routing-number="<?= htmlspecialchars($row['routing_number']) ?>" 
                                                 data-ifsc-code="<?= htmlspecialchars($row['ifsc_code']) ?>"
                                                 data-swift-code="<?= htmlspecialchars($row['swift_code']) ?>"
                                                 data-opening-balance="<?= htmlspecialchars($row['opening_balance']) ?>">
@@ -260,8 +261,8 @@
                             </div>
                              <div class="mb-2">
                                 <label class="form-label">Routing Number</label>
-                                <input type="text" id="routing_number" name="routing_number" class="form-control">
-                                <div class="error-message" id="routing_number_error"></div>
+                                <input type="text" id="edit_routing_number" name="routing_number" class="form-control">
+                                <div class="error-message" id="edit_routing_number_error"></div>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label">IFSC Code</label>
@@ -391,6 +392,7 @@ $(document).ready(function() {
         $('#edit_bank_name').val($(this).data('bank-name'));
         $('#edit_account_holder').val($(this).data('account-holder'));
         $('#edit_account_number').val($(this).data('account-number'));
+         $('#edit_routing_number').val($(this).data('routing-number'));
         $('#edit_ifsc_code').val($(this).data('ifsc-code'));
         $('#edit_swift_code').val($(this).data('swift-code'));
         $('#edit_opening_balance').val($(this).data('opening-balance'));
@@ -400,6 +402,7 @@ $(document).ready(function() {
 
     // Input restrictions
     $('#account_number, #edit_account_number').on('input', function() { this.value = this.value.replace(/[^0-9]/g,''); });
+     $('#routing_number, #edit_routing_number').on('input', function() { this.value = this.value.replace(/[^0-9]/g,''); });
     $('#opening_balance, #edit_opening_balance').on('input', function() { this.value = this.value.replace(/[^0-9.]/g,''); });
     $('#bank_name, #account_holder, #edit_bank_name, #edit_account_holder').on('input', function() { this.value = this.value.replace(/[^a-zA-Z\s]/g,''); });
 
@@ -437,6 +440,7 @@ $(document).ready(function() {
             {id: prefix+'bank_name', name:'Bank name', type:'text', required: true},
             {id: prefix+'account_holder', name:'Account holder', type:'text', required: true},
             {id: prefix+'account_number', name:'Account number', type:'number', required: true},
+             {id: prefix+'account_number', name:'Account number', type:'number', required: false},
             {id: prefix+'ifsc_code', name:'IFSC code', type:'ifsc', required: false},
             {id: prefix+'opening_balance', name:'Opening balance', type:'decimal', required: false}
         ];
@@ -476,7 +480,7 @@ $(document).ready(function() {
     });
 
     // Real-time validation on blur
-    $('#bank_name, #account_holder, #account_number, #ifsc_code, #opening_balance, #edit_bank_name, #edit_account_holder, #edit_account_number, #edit_ifsc_code, #edit_opening_balance').on('blur', async function(){
+    $('#bank_name, #account_holder, #account_number,#routing_number, #ifsc_code, #opening_balance, #edit_bank_name, #edit_account_holder, #edit_account_number, #edit_ifsc_code, #edit_opening_balance').on('blur', async function(){
         var formType = $(this).closest('form').attr('id') === 'add-bank-form' ? 'add' : 'edit';
         await validateForm(formType);
     });
@@ -501,6 +505,15 @@ $(document).ready(function() {
                 $(errorSelector).text('');
             }
         }
+          if ($(input).attr('id') === 'routing_number' || $(input).attr('id') === 'edit_routing_number') {
+            fieldName = 'Routing number';
+            errorSelector = '#' + $(input).attr('id') + '_error';
+            if (!/^\d*$/.test(value)) {
+                $(errorSelector).text(fieldName + ' should contain only numbers.');
+            } else {
+                $(errorSelector).text('');
+            }
+        }
 
         if ($(input).attr('id') === 'ifsc_code' || $(input).attr('id') === 'edit_ifsc_code') {
             fieldName = 'IFSC code';
@@ -514,7 +527,7 @@ $(document).ready(function() {
     }
 
     // Attach real-time validation for add and edit fields
-    $('#account_number, #edit_account_number, #ifsc_code, #edit_ifsc_code, #swift_code, #edit_swift_code').on('input', function() {
+    $('#account_number, #edit_account_number, #routing_number, #edit_routing_number, #ifsc_code, #edit_ifsc_code, #swift_code, #edit_swift_code').on('input', function() {
         validateFieldRealtime(this);
     });
 });
