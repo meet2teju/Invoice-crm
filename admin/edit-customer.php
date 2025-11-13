@@ -3,22 +3,11 @@
 include '../config/config.php';
 
 // Get row ID from URL
-// $client_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
-// // Fetch row data
-// $client_query = "SELECT * FROM row WHERE id = $client_id";
-// $client_result = mysqli_query($conn, $client_query);
-// $row = mysqli_fetch_assoc($client_result);
 $clientid = $_GET['id'];
 $query = "SELECT * FROM client WHERE id = $clientid";
 $result = mysqli_query($conn, $query);
 $row = mysqli_fetch_assoc($result);
 
-// if (!$row) {
-//     // Redirect if row not found
-//     header("Location: customers.php");
-//     exit();
-// }
 $bankquery = "SELECT * FROM client_bank WHERE client_id = $clientid";
 $bankresult = mysqli_query($conn, $bankquery);
 $bankrow = mysqli_fetch_assoc($bankresult);
@@ -26,7 +15,6 @@ $bankrow = mysqli_fetch_assoc($bankresult);
 $client_id = $_GET['id'];
 $doc_query = "SELECT * FROM client_document WHERE client_id = $client_id";
 $doc_result = mysqli_query($conn, $doc_query);
-
 
 $addressquery = "SELECT * FROM client_address WHERE client_id = $clientid";
 $addressresult = mysqli_query($conn, $addressquery);
@@ -41,8 +29,7 @@ mysqli_data_seek($country_result, 0);
 
 // Fetch contact persons
 $client_id = $_GET['id'];
-$contacts_query = "SELECT * FROM client_contact_persons WHERE client_id = $clientid";
-$contacts_result = mysqli_query($conn, $contacts_query);
+$contacts_query = "SELECT * FROM client_contact_persons WHERE client_id = $clientid AND is_deleted = 0";
 ?>
 
 <!DOCTYPE html>
@@ -83,13 +70,6 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                         <div class="row gx-3">
                                             <div class="col-lg-6 col-md-6">
                                                 <div class="d-flex align-items-center mb-3">
-                                                    <!-- <div id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0">
-                                                        <?php if (!empty($row['customer_image'])): ?>
-                                                            <img src="../uploads/<?php echo $row['customer_image']; ?>" class="avatar avatar-xl" alt="Customer Image">
-                                                        <?php else: ?>
-                                                            <i class="isax isax-image text-primary fs-24"></i>
-                                                        <?php endif; ?>
-                                                    </div> -->
                                                     <div id="add_image_preview" class="avatar avatar-xxl border border-dashed bg-light me-3 flex-shrink-0" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                                         <?php if (!empty($row['customer_image'])): ?>
                                                             <img src="../uploads/<?php echo $row['customer_image']; ?>" class="avatar avatar-xl" alt="Customer Image" style="width: 100%; height: 100%; object-fit: cover;">
@@ -347,7 +327,7 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                             </div>
                                                             <div class="col-md-6 mb-3">
                                                                 <label class="form-label">State</label>
-                                                                <select class="select2" id="billing_state" name="billing_state" onchange="getCities(this.value, 'billing_city')">
+                                                                <select class="select" id="billing_state" name="billing_state" onchange="getCities(this.value, 'billing_city')">
                                                                     <option value="">Select State</option>
                                                                     <?php if (!empty($addressrow['billing_state'])): ?>
                                                                         <?php 
@@ -484,8 +464,6 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                 </button>
                                             </div>
 
-
-
                                             <!-- Bank Details Tab -->
                                             <div class="tab-pane fade" id="bankTab" role="tabpanel">
                                                 <h6 class="mb-3">Banking Details</h6>
@@ -505,6 +483,10 @@ $contacts_result = mysqli_query($conn, $contacts_query);
                                                     <div class="col-lg-4 col-md-6 mb-3">
                                                         <label class="form-label">Account Number</label>
                                                         <input type="text" class="form-control" name="account_number" value="<?php echo htmlspecialchars($bankrow['account_number']??''); ?>">
+                                                    </div>
+                                                     <div class="col-lg-4 col-md-6 mb-3">
+                                                        <label class="form-label">Routing Number</label>
+                                                        <input type="text" class="form-control" name="routing_number" value="<?php echo htmlspecialchars($bankrow['routing_number']??''); ?>">
                                                     </div>
                                                     <div class="col-lg-4 col-md-6 mb-3">
                                                         <label class="form-label">IFSC</label>
@@ -561,33 +543,8 @@ $(document).ready(function () {
     });
 });
 </script>
-<div class="tab-pane fade" id="contactTab" role="tabpanel">
-    <h6 class="mb-3">Contact Persons</h6>
-    <div class="table-responsive">
-        <table class="table table-bordered align-middle" id="contactTable">
-            <thead class="table-light">
-                <tr>
-                    <th>Salutation</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Email Address</th>
-                    <th>Work Phone</th>
-                    <th>Mobile</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="contactTableBody">
-                <!-- Rows added dynamically -->
-            </tbody>
-        </table>
-    </div>
-    <button type="button" class="btn btn-outline-primary mt-2" onclick="addContactRow()">
-        + Add Contact Person
-    </button>
-</div>
 
 <script>
-    
 function addContactRow(
     salutation = "", 
     firstName = "", 
@@ -675,13 +632,18 @@ function addContactRow(
     tbody.appendChild(extraRow);
 
     // Attach real-time validation listeners
-    row.querySelector(".contact-email").addEventListener("input", validateEmail);
-    row.querySelector(".contact-workphone").addEventListener("input", validateWorkPhone);
-    row.querySelector(".contact-mobile").addEventListener("input", validateMobile);
-    row.querySelector(".contact-firstname").addEventListener("input", validateName);
-    row.querySelector(".contact-lastname").addEventListener("input", validateName);
-}
+    const emailInput = row.querySelector(".contact-email");
+    const workPhoneInput = row.querySelector(".contact-workphone");
+    const mobileInput = row.querySelector(".contact-mobile");
+    const firstNameInput = row.querySelector(".contact-firstname");
+    const lastNameInput = row.querySelector(".contact-lastname");
 
+    if (emailInput) emailInput.addEventListener("input", validateEmail);
+    if (workPhoneInput) workPhoneInput.addEventListener("input", validateWorkPhone);
+    if (mobileInput) mobileInput.addEventListener("input", validateMobile);
+    if (firstNameInput) firstNameInput.addEventListener("input", validateName);
+    if (lastNameInput) lastNameInput.addEventListener("input", validateName);
+}
 
 // ---------------- Validation Functions ----------------
 function validateEmail(e) {
@@ -724,6 +686,7 @@ function toggleExtraFields(button, rowId) {
         }
     }
 }
+
 function removeRow(button) {
     const row = button.closest("tr");
     const rowId = row.dataset.rowId;
@@ -769,7 +732,6 @@ function removeRow(button) {
     }
 }
 
-
 // Helper function for toast notifications
 function showToast(message, type = 'success') {
     // Implement your toast notification system here
@@ -781,27 +743,32 @@ function showToast(message, type = 'success') {
     toastBody.className = `toast-body bg-${type}`;
     toast.show();
 }
-</script>
 
-<script>
+// Load existing contact persons when page loads
 document.addEventListener("DOMContentLoaded", function () {
-<?php
-$contacts_result = mysqli_query($conn, "SELECT * FROM client_contact_persons WHERE client_id = $client_id");
-while ($contact = mysqli_fetch_assoc($contacts_result)) {
-?>
-    addContactRow(
-        <?= json_encode($contact['contact_salutation']) ?>,
-        <?= json_encode($contact['contact_first_name']) ?>,
-        <?= json_encode($contact['contact_last_name']) ?>,
-        <?= json_encode($contact['contact_email']) ?>,
-        <?= json_encode($contact['contact_work_phone']) ?>,
-        <?= json_encode($contact['contact_mobile']) ?>,
-        <?= json_encode($contact['contact_skype']) ?>,
-        <?= json_encode($contact['contact_designation']) ?>,
-        <?= json_encode($contact['contact_department']) ?>,
-        <?= json_encode($contact['id']) ?>
-    );
-<?php } ?>
+    // Load existing contact persons
+    <?php
+    $contacts_result = mysqli_query($conn, "SELECT * FROM client_contact_persons WHERE client_id = $client_id AND is_deleted = 0");
+    if (mysqli_num_rows($contacts_result) > 0) {
+        while ($contact = mysqli_fetch_assoc($contacts_result)) {
+            echo "addContactRow(";
+            echo json_encode($contact['contact_salutation']) . ",";
+            echo json_encode($contact['contact_first_name']) . ",";
+            echo json_encode($contact['contact_last_name']) . ",";
+            echo json_encode($contact['contact_email']) . ",";
+            echo json_encode($contact['contact_work_phone']) . ",";
+            echo json_encode($contact['contact_mobile']) . ",";
+            echo json_encode($contact['contact_skype']) . ",";
+            echo json_encode($contact['contact_designation']) . ",";
+            echo json_encode($contact['contact_department']) . ",";
+            echo json_encode($contact['id']);
+            echo ");\n";
+        }
+    } else {
+        // Add one empty row if no contacts exist
+        echo "addContactRow();\n";
+    }
+    ?>
 });
 </script>
 
@@ -880,6 +847,7 @@ function copyBillingToShipping() {
     }
 }
 </script>
+
 <script>
 $(document).ready(function () {
     $('.delete-doc').on('click', function () {
@@ -898,6 +866,7 @@ $(document).ready(function () {
     });
 });
 </script>
+
 <script>
 $(document).ready(function () {
     $('.replace-doc').on('change', function () {
@@ -1220,7 +1189,6 @@ $(document).ready(function () {
 
     // Initialize select2 and other components
     $('.select').select2();
-    addContactRow();
     
     $('#enablePortalCheckbox').change(function() {
         if (this.checked) {
@@ -1296,8 +1264,8 @@ function copyBillingToShipping() {
     try {
         // Copy basic fields
         $('#shipping_name').val($('#billing_name').val());
-        $('#shipping_address1').val($('#billing_address1').val());
-        $('#shipping_address2').val($('#billing_address2').val());
+        $('#shipping_address1').val($('#billing_address1'].val());
+        $('#shipping_address2').val($('#billing_address2'].val());
         $('#shipping_pincode').val($('#billing_pincode').val());
         
         // Copy country
@@ -1404,8 +1372,6 @@ function addContactRow() {
     row.querySelector(".contact-workphone").addEventListener("input", validateWorkPhone);
     row.querySelector(".contact-mobile").addEventListener("input", validateMobile);
 }
-
-// ---------------- VALIDATION FUNCTIONS ----------------
 
 // ✅ Email validation
 function validateEmail(e) {
