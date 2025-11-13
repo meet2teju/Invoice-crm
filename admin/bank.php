@@ -201,6 +201,11 @@
                                 <input type="text" id="account_number" name="account_number" class="form-control">
                                 <div class="error-message" id="account_number_error"></div>
                             </div>
+                             <div class="mb-2">
+                                <label class="form-label">Routing Number</label>
+                                <input type="text" id="routing_number" name="routing_number" class="form-control">
+                                <div class="error-message" id="routing_number_error"></div>
+                            </div>
                             <div class="mb-2">
                                 <label class="form-label">IFSC Code</label>
                                 <input type="text" id="ifsc_code" name="ifsc_code" class="form-control">
@@ -217,6 +222,7 @@
                                 <div class="error-message" id="opening_balance_error"></div>
                             </div>
                         </div>
+                       
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-white" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-primary">Add</button>
@@ -251,6 +257,11 @@
                                 <label class="form-label">Account Number<span class="text-danger">*</span></label>
                                 <input type="text" id="edit_account_number" name="account_number" class="form-control">
                                 <div class="error-message" id="edit_account_number_error"></div>
+                            </div>
+                             <div class="mb-2">
+                                <label class="form-label">Routing Number</label>
+                                <input type="text" id="routing_number" name="routing_number" class="form-control">
+                                <div class="error-message" id="routing_number_error"></div>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label">IFSC Code</label>
