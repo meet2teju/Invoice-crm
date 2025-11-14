@@ -309,7 +309,7 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
                             ?>
                             <tr>
                                 <td><div class="form-check form-check-md"><input type="checkbox" class="form-check-input user-checkbox" name="client_ids[]" value="<?= $clientId ?>"></div></td>
-                                <td>
+                                <!-- <td>
                                     <div class="d-flex align-items-center">
                                         <a href="customer-details.php" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
                                             <img src="<?= $clientImg ?>" onerror="this.src='assets/img/users/user-16.jpg';">
@@ -318,7 +318,17 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
                                             <h6 class="fs-14 fw-medium mb-0"><?= htmlspecialchars($row['first_name']) ?></h6>
                                         </div>
                                     </div>
-                                </td>
+                                </td> -->
+                                <td>
+    <div class="d-flex align-items-center">
+        <a href="customer-details.php?id=<?= $clientId ?>" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
+            <img src="<?= $clientImg ?>" onerror="this.src='assets/img/users/user-16.jpg';">
+        </a>
+        <div>
+            <h6 class="fs-14 fw-medium mb-0"><?= htmlspecialchars($row['first_name']) ?></h6>
+        </div>
+    </div>
+</td>
                                 <td><?= htmlspecialchars($row['company_name']) ?></td>
                                 <td><?= htmlspecialchars($row['email']) ?></td>
                                 <td><?= htmlspecialchars($row['phone_number']) ?></td>
