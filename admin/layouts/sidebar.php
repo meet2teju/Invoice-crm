@@ -176,7 +176,7 @@ $logo = !empty($logoRow['company_logo']) ? '../uploads/' . $logoRow['company_log
                                 </ul>
                             </li>
                             <?php } ?>
-                              <?php if (check_is_access_new("quotation", $role_id)) { ?>
+                            <?php if (check_is_access_new("quotation", $role_id)) { ?>
                             <li class="submenu">
                                 <a href="javascript:void(0);" class="<?= in_array($page, ['quotations.php','edit-quotation.php','add-quotation.php','view-quotation.php']) ? 'active subdrop' : '' ?>">
                                     <i class="isax isax-strongbox5"></i><span>Quotations</span><span class="menu-arrow"></span>
@@ -200,12 +200,7 @@ $logo = !empty($logoRow['company_logo']) ? '../uploads/' . $logoRow['company_log
                                 </ul>
                             </li>
                             <?php } ?>
-
-                 
-                          
-
-                         
-
+                        
                             <!-- <?php if (check_is_access_new("project", $role_id)) { ?>
                             <li class="submenu">
                                 <a href="javascript:void(0);" class="<?= in_array($page, ['projects.php','add-projects','edit-project.php','project-details.php']) ? 'active subdrop' : '' ?>">
@@ -215,20 +210,21 @@ $logo = !empty($logoRow['company_logo']) ? '../uploads/' . $logoRow['company_log
                                     <li><a href="projects.php" class="<?= ($page == 'projects.php') ? 'active' : '' ?>">Projects</a></li>
                                 </ul>
                             </li>
+                            <?php } ?> -->
+
+                            <?php if (check_is_access_new("project", $role_id)) { ?>
+                                <li class="submenu">
+                                    <a href="javascript:void(0);" class="<?= in_array($page, ['projects.php','add-projects','edit-project.php','project-details.php','project-tasks.php','add-project-task.php','edit-project-task.php']) ? 'active subdrop' : '' ?>">
+                                        <i class="isax isax-diagram"></i><span>Projects</span><span class="menu-arrow"></span>
+                                    </a>
+                                    <ul>
+                                        <li><a href="projects.php" class="<?= ($page == 'projects.php') ? 'active' : '' ?>">Projects</a></li>
+                                        <li><a href="project-tasks.php" class="<?= ($page == 'project-tasks.php') ? 'active' : '' ?>">Tasks</a></li>
+                                    </ul>
+                                </li>
                             <?php } ?>
                         </ul>
-                    </li> -->
-                    <?php if (check_is_access_new("project", $role_id)) { ?>
-    <li class="submenu">
-        <a href="javascript:void(0);" class="<?= in_array($page, ['projects.php','add-projects','edit-project.php','project-details.php','project-tasks.php','add-project-task.php','edit-project-task.php']) ? 'active subdrop' : '' ?>">
-            <i class="isax isax-diagram"></i><span>Projects</span><span class="menu-arrow"></span>
-        </a>
-        <ul>
-            <li><a href="projects.php" class="<?= ($page == 'projects.php') ? 'active' : '' ?>">Projects</a></li>
-            <li><a href="project-tasks.php" class="<?= ($page == 'project-tasks.php') ? 'active' : '' ?>">Tasks</a></li>
-        </ul>
-    </li>
-<?php } ?>
+                    </li> 
 
                     <!-- Finance & Accounts -->
                     <?php if (check_is_access_new("expense", $role_id)) { ?>
