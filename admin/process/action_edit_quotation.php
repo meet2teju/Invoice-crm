@@ -54,8 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         $description     = dbString($conn, $_POST['description'] ?? '');
         $amount          = dbFloat($_POST['sub_amount'] ?? 0);
         $tax_amount      = dbFloat($_POST['tax_amount'] ?? 0);
-       $shipping_charge = unformat($_POST['shipping_charge'] ?? 0);
+        $shipping_charge = unformat($_POST['shipping_charge'] ?? 0);
         $total_amount    = dbFloat($_POST['total_amount'] ?? 0);
+        
+        // === NEW: GST Type field ===
+        $gst_type        = dbString($conn, $_POST['gst_type'] ?? 'gst');
 
         // === 1. Update quotation main record ===
         $update_quotation = "UPDATE quotation SET
@@ -72,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             tax_amount = '$tax_amount',
             shipping_charge = '$shipping_charge',
             total_amount = '$total_amount',
+            gst_type = '$gst_type',
             updated_by = '$currentUserId'
             WHERE id = '$quotation_id'";
 
@@ -85,48 +89,146 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             throw new Exception("Failed to mark old items as deleted: " . mysqli_error($conn));
         }
 
-        // === 3. Insert/update quotation items ===
-        if (!empty($_POST['product_id']) && is_array($_POST['product_id'])) {
-            foreach ($_POST['product_id'] as $index => $product_id) {
-                $product_id = dbInt($product_id);
-                if ($product_id === 0) continue;
-
+        // === 3. Insert/update quotation items - UPDATED FOR PRODUCTS & SERVICES ===
+        if (isset($_POST['item_id']) && is_array($_POST['item_id'])) {
+            foreach ($_POST['item_id'] as $index => $item_id) {
+                $item_id       = dbInt($item_id);
+                $service_name  = dbString($conn, $_POST['service_name'][$index] ?? '');
                 $quantity      = dbFloat($_POST['quantity'][$index] ?? 0);
-                $unit_id       = dbInt($_POST['unit_id'][$index] ?? 0);
                 $selling_price = dbFloat($_POST['selling_price'][$index] ?? 0);
                 $tax_id        = dbInt($_POST['tax_id'][$index] ?? 0);
+                $rate          = dbFloat($_POST['rate'][$index] ?? 0);
                 $item_amount   = dbFloat($_POST['amount'][$index] ?? 0);
+                $code          = dbString($conn, $_POST['code'][$index] ?? '');
+                
+                // Determine if this is a product or service
+                $isProduct = ($item_id > 0);
+                
+                // Prepare values for database
+                if ($isProduct) {
+                    // Product item
+                    $product_id_sql = $item_id;
+                    $service_name_sql = 'NULL';
+                } else {
+                    // Service item - only save if service name is provided
+                    if (empty($service_name)) {
+                        continue; // Skip if no service name
+                    }
+                    $product_id_sql = 'NULL';
+                    $service_name_sql = "'$service_name'";
+                }
 
-                $check_item = "SELECT id FROM quotation_item 
-                               WHERE quotation_id = '$quotation_id' 
-                               AND product_id = '$product_id' 
-                               LIMIT 1";
+                $tax_id_sql = ($tax_id === 0) ? 'NULL' : $tax_id;
+
+                // Check if item already exists (for update scenario)
+                if ($isProduct) {
+                    $check_item = "SELECT id FROM quotation_item 
+                                   WHERE quotation_id = '$quotation_id' 
+                                   AND product_id = '$product_id_sql'
+                                   LIMIT 1";
+                } else {
+                    $check_item = "SELECT id FROM quotation_item 
+                                   WHERE quotation_id = '$quotation_id' 
+                                   AND service_name = '$service_name'
+                                   LIMIT 1";
+                }
+                
                 $item_exists = mysqli_query($conn, $check_item);
 
                 if ($item_exists && mysqli_num_rows($item_exists) > 0) {
-                    $update_item = "UPDATE quotation_item SET
-                        quantity = '$quantity',
-                        unit_id = '$unit_id',
-                        selling_price = '$selling_price',
-                        tax_id = '$tax_id',
-                        amount = '$item_amount',
-                        is_deleted = 0
-                        WHERE quotation_id = '$quotation_id' AND product_id = '$product_id'";
+                    if ($isProduct) {
+                        $update_item = "UPDATE quotation_item SET
+                            quantity = '$quantity',
+                            selling_price = '$selling_price',
+                            tax_id = $tax_id_sql,
+                            rate = '$rate',
+                            amount = '$item_amount',
+                            is_deleted = 0
+                            WHERE quotation_id = '$quotation_id' 
+                            AND product_id = '$product_id_sql'";
+                    } else {
+                        $update_item = "UPDATE quotation_item SET
+                            quantity = '$quantity',
+                            selling_price = '$selling_price',
+                            tax_id = $tax_id_sql,
+                            rate = '$rate',
+                            amount = '$item_amount',
+                            is_deleted = 0
+                            WHERE quotation_id = '$quotation_id' 
+                            AND service_name = '$service_name'";
+                    }
+                    
                     if (!mysqli_query($conn, $update_item)) {
                         throw new Exception("Failed to update item: " . mysqli_error($conn));
                     }
                 } else {
                     $insert_item = "INSERT INTO quotation_item (
-                        quotation_id, product_id, quantity, unit_id, 
-                        selling_price, tax_id, amount, org_id, 
+                        quotation_id, product_id, service_name, quantity, 
+                        selling_price, tax_id, rate, amount, org_id, 
                         created_by, updated_by
                     ) VALUES (
-                        '$quotation_id', '$product_id', '$quantity', '$unit_id',
-                        '$selling_price', '$tax_id', '$item_amount', '$orgId',
-                        '$currentUserId', '$currentUserId'
+                        '$quotation_id', 
+                        " . ($isProduct ? "'$product_id_sql'" : "NULL") . ", 
+                        " . ($isProduct ? "NULL" : "'$service_name'") . ", 
+                        '$quantity',
+                        '$selling_price', 
+                        $tax_id_sql, 
+                        '$rate', 
+                        '$item_amount', 
+                        '$orgId',
+                        '$currentUserId', 
+                        '$currentUserId'
                     )";
+                    
                     if (!mysqli_query($conn, $insert_item)) {
                         throw new Exception("Failed to insert item: " . mysqli_error($conn));
+                    }
+                }
+            }
+        } else {
+            // Fallback to old product-only logic (for backward compatibility)
+            if (!empty($_POST['product_id']) && is_array($_POST['product_id'])) {
+                foreach ($_POST['product_id'] as $index => $product_id) {
+                    $product_id = dbInt($product_id);
+                    if ($product_id === 0) continue;
+
+                    $quantity      = dbFloat($_POST['quantity'][$index] ?? 0);
+                    $unit_id       = dbInt($_POST['unit_id'][$index] ?? 0);
+                    $selling_price = dbFloat($_POST['selling_price'][$index] ?? 0);
+                    $tax_id        = dbInt($_POST['tax_id'][$index] ?? 0);
+                    $item_amount   = dbFloat($_POST['amount'][$index] ?? 0);
+
+                    $check_item = "SELECT id FROM quotation_item 
+                                   WHERE quotation_id = '$quotation_id' 
+                                   AND product_id = '$product_id' 
+                                   LIMIT 1";
+                    $item_exists = mysqli_query($conn, $check_item);
+
+                    if ($item_exists && mysqli_num_rows($item_exists) > 0) {
+                        $update_item = "UPDATE quotation_item SET
+                            quantity = '$quantity',
+                            unit_id = '$unit_id',
+                            selling_price = '$selling_price',
+                            tax_id = '$tax_id',
+                            amount = '$item_amount',
+                            is_deleted = 0
+                            WHERE quotation_id = '$quotation_id' AND product_id = '$product_id'";
+                        if (!mysqli_query($conn, $update_item)) {
+                            throw new Exception("Failed to update item: " . mysqli_error($conn));
+                        }
+                    } else {
+                        $insert_item = "INSERT INTO quotation_item (
+                            quotation_id, product_id, quantity, unit_id, 
+                            selling_price, tax_id, amount, org_id, 
+                            created_by, updated_by
+                        ) VALUES (
+                            '$quotation_id', '$product_id', '$quantity', '$unit_id',
+                            '$selling_price', '$tax_id', '$item_amount', '$orgId',
+                            '$currentUserId', '$currentUserId'
+                        )";
+                        if (!mysqli_query($conn, $insert_item)) {
+                            throw new Exception("Failed to insert item: " . mysqli_error($conn));
+                        }
                     }
                 }
             }
@@ -163,7 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         mysqli_commit($conn);
         $_SESSION['message'] = "Quotation updated successfully!";
         $_SESSION['message_type'] = "success";
-        header("Location: ../quotations.php?id=" . $quotation_id);
+        header("Location: ../edit-quotation.php?id=" . $quotation_id);
         exit();
 
     } catch (Exception $e) {

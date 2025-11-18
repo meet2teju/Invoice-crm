@@ -1,6 +1,13 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+
+if (isset($_SESSION['message'])) {
+    $message = $_SESSION['message'];
+    $message_type = $_SESSION['message_type'] ?? 'success';
+    unset($_SESSION['message']);
+    unset($_SESSION['message_type']);
+}
 ?>
 <?php include 'layouts/session.php'; ?>
 <?php
@@ -45,9 +52,29 @@ while ($taxRow = mysqli_fetch_assoc($taxResult)) {
     $taxRates[] = $taxRow;
 }
 
+// Fetch products and services from product table based on item_type
+$products = [];
+$services = [];
+$itemQuery = "SELECT p.id, p.name, p.selling_price, p.code, p.item_type, 
+                     t.id AS tax_id, t.rate AS tax_rate, t.name AS tax_name
+              FROM product p
+              LEFT JOIN tax t ON p.tax_id = t.id
+              WHERE p.is_deleted = 0 AND p.status = 1";
+$itemResult = mysqli_query($conn, $itemQuery);
+while ($item = mysqli_fetch_assoc($itemResult)) {
+    if ($item['item_type'] == 1) {
+        $products[] = $item;
+    } else {
+        $services[] = $item;
+    }
+}
+
 // Radio precheck
 $is_product = ($row['item_type'] == 1) ? 'checked' : '';
 $is_service = ($row['item_type'] == 0) ? 'checked' : '';
+
+// Check if we're in Non-GST mode for initial display
+$isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
 ?>
 
 <!DOCTYPE html>
@@ -99,6 +126,27 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
         .product-row .service-fields {
             display: none;
         }
+        .service-quantity {
+            background-color: #f8f9fa;
+        }
+        .service-custom-input {
+            margin-top: 5px;
+        }
+        .gst-toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .gst-toggle-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .non-gst-mode .tax-column {
+            display: none;
+        }
+        .non-gst-mode .tax-details {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -107,101 +155,131 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
         <?php include 'layouts/menu.php'; ?>
 
         <div class="page-wrapper">
+            <?php if (isset($_SESSION['message'])): ?>
+    <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
+        <?= $_SESSION['message']; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php unset($_SESSION['message'], $_SESSION['message_type']); ?>
+<?php endif; ?>
             <div class="content">
                 <div class="row">
                     <div class="col-md-12 mx-auto">
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <h6>Edit Quotations</h6>
-                                <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="gst-toggle-group">
+                                        <span class="gst-toggle-label">GST Type:</span>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gst_type" id="gst-enabled" value="gst" <?= ($row['gst_type'] ?? 'gst') === 'gst' ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="gst-enabled">GST</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gst_type" id="gst-disabled" value="non_gst" <?= ($row['gst_type'] ?? 'gst') === 'non_gst' ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="gst-disabled">Non-GST</label>
+                                        </div>
+                                    </div>
+                                    <!-- <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a> -->
+                                </div>
                             </div>
                             <div class="card">
                                 <div class="card-body">
                                     <form action="process/action_edit_quotation.php" method="POST" enctype="multipart/form-data" id="form">
-                                    <input type="hidden" name="id" value="<?= $quotation_id ?>">   
-                                    <div class="border-bottom mb-3 pb-1">
-                                        <div class="row gx-3">
-                                            <div class="col-lg-4 col-md-6">
-                                                <div class="mb-3">
-                                                  <label class="form-label">Client Name <span class="text-danger">*</span></label>
-                                                  <select class="form-select select2" name="client_id" id="client_id" >
-                                                      <option value="">Select Client</option>
-                                                    <?php while ($client = mysqli_fetch_assoc($clients)) {
-    $displayName = $client['first_name'];
-    if (!empty($client['company_name'])) {
-        $displayName .= ' - ' . $client['company_name'];
-    }
-    $selected = ($client['id'] == $row['client_id']) ? 'selected' : '';
-    echo "<option value='{$client['id']}' $selected>{$displayName}</option>";
-} ?>
-                                                  </select>
-                                                  <span class="text-danger error-text" id="clientname_error"></span>
+                                        <input type="hidden" name="id" value="<?= $quotation_id ?>">
+                                        <input type="hidden" name="gst_type" id="gst_type_field" value="<?= $row['gst_type'] ?? 'gst' ?>">
+                                        
+                                        <div class="border-bottom mb-3 pb-1">
+                                            <div class="row gx-3">
+                                                <div class="col-lg-4 col-md-6">
+                                                    <div class="mb-3">
+                                                      <label class="form-label">Client Name <span class="text-danger">*</span></label>
+                                                      <select class="form-select select2" name="client_id" id="client_id" >
+                                                          <option value="">Select Client</option>
+                                                        <?php 
+                                                        $clients = mysqli_query($conn, "SELECT id, first_name,company_name  FROM client WHERE is_deleted = 0");
+                                                        while ($client = mysqli_fetch_assoc($clients)) {
+                                                            $displayName = $client['first_name'];
+                                                            if (!empty($client['company_name'])) {
+                                                                $displayName .= ' - ' . $client['company_name'];
+                                                            }
+                                                            $selected = ($client['id'] == $row['client_id']) ? 'selected' : '';
+                                                            echo "<option value='{$client['id']}' $selected>{$displayName}</option>";
+                                                        } ?>
+                                                      </select>
+                                                      <span class="text-danger error-text" id="clientname_error"></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-4 col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Quotation ID</label>
+                                                        <input type="text" class="form-control" name="quotation_id" value="<?= htmlspecialchars($row['quotation_id']) ?>" readonly>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-4 col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Reference Name</label>
+                                                        <input type="text" class="form-control" name="reference_name" id="reference_name" value="<?= htmlspecialchars($row['reference_name']) ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-4 col-md-6">
+                                                  <div class="mb-3">
+                                                    <label class="form-label">Quotation Date<span class="text-danger">*</span></label>
+                                                    <div class="input-group position-relative mb-3">
+                                                        <input type="text" class="form-control datepicker" id="quotation_date" placeholder="dd/mm/yyyy" name="quotation_date" value="<?= htmlspecialchars($row['quotation_date']) ?>">
+                                                        <span class="input-icon-addon fs-16 text-gray-9">
+                                                            <i class="isax isax-calendar-2"></i>
+                                                        </span>
+                                                    </div>
+                                                    <span class="text-danger error-text" id="quotation_date_error"></span>
+                                                  </div>
+                                                </div>
+                                                <div class="col-lg-4 col-md-6">
+                                                  <div class="mb-3">
+                                                    <label class="form-label">Expire Date<span class="text-danger">*</span></label>
+                                                    <div class="input-group position-relative mb-3">
+                                                        <input type="text" class="form-control datepicker" placeholder="dd/mm/yyyy" name="expiry_date" value="<?= htmlspecialchars($row['expiry_date']) ?>">
+                                                        <span class="input-icon-addon fs-16 text-gray-9">
+                                                            <i class="isax isax-calendar-2"></i>
+                                                        </span>
+                                                    </div>
+                                                    <span class="text-danger error-text" id="expiry_date_error"></span>
+                                                  </div>
+                                                </div>
+                                                <div class="col-lg-4 col-md-6">
+                                                  <div class="mb-3">
+                                                    <label class="form-label">Salesperson </label>
+                                                    <select class="form-select select2" name="user_id" id="user_id">
+                                                        <option value="">Select Salesperson</option>
+                                                        <?php 
+                                                        $users = mysqli_query($conn,  "SELECT login.id, login.name FROM login
+                                                                JOIN user_role ON login.role_id = user_role.id
+                                                                WHERE login.is_deleted = 0
+                                                                ORDER BY login.name ASC");
+                                                        while ($user = mysqli_fetch_assoc($users)) {
+                                                            $selected = ($user['id'] == $row['user_id']) ? 'selected' : '';
+                                                            echo "<option value='{$user['id']}' $selected>{$user['name']}</option>";
+                                                        } ?>
+                                                    </select>
+                                                    <span class="text-danger error-text" id="username_error"></span>
+                                                  </div>
+                                                </div>
+                                                <div class="col-lg-4 col-md-6">
+                                                  <div class="mb-3">
+                                                    <label class="form-label">Project Name </label>
+                                                    <select class="form-select select2" name="project_id" id="project_id">
+                                                        <option value="">Select Project</option>
+                                                        <?php 
+                                                        $projects = mysqli_query($conn, "SELECT id, project_name FROM project WHERE is_deleted = 0");
+                                                        while ($project = mysqli_fetch_assoc($projects)) {
+                                                            $selected = ($project['id'] == $row['project_id']) ? 'selected' : '';
+                                                            echo "<option value='{$project['id']}' $selected>{$project['project_name']}</option>";
+                                                        } ?> 
+                                                    </select>
+                                                    <span class="text-danger error-text" id="projectname_error"></span>
+                                                  </div>
                                                 </div>
                                             </div>
-                                            <div class="col-lg-4 col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label">Quotation ID</label>
-                                                    <input type="text" class="form-control" name="quotation_id" value="<?= htmlspecialchars($row['quotation_id']) ?>" readonly>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                                <div class="mb-3">
-                                                    <label class="form-label">Reference Name</label>
-                                                    <input type="text" class="form-control" name="reference_name" id="reference_name" value="<?= htmlspecialchars($row['reference_name']) ?>">
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                              <div class="mb-3">
-                                                <label class="form-label">Quotation Date<span class="text-danger">*</span></label>
-                                                <div class="input-group position-relative mb-3">
-                                                    <input type="text" class="form-control datepicker" id="quotation_date" placeholder="dd/mm/yyyy" name="quotation_date" value="<?= htmlspecialchars($row['quotation_date']) ?>">
-                                                    <span class="input-icon-addon fs-16 text-gray-9">
-                                                        <i class="isax isax-calendar-2"></i>
-                                                    </span>
-                                                </div>
-                                                <span class="text-danger error-text" id="quotation_date_error"></span>
-                                              </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                              <div class="mb-3">
-                                                <label class="form-label">Expire Date<span class="text-danger">*</span></label>
-                                                <div class="input-group position-relative mb-3">
-                                                    <input type="text" class="form-control datepicker" placeholder="dd/mm/yyyy" name="expiry_date" value="<?= htmlspecialchars($row['expiry_date']) ?>">
-                                                    <span class="input-icon-addon fs-16 text-gray-9">
-                                                        <i class="isax isax-calendar-2"></i>
-                                                    </span>
-                                                </div>
-                                                <span class="text-danger error-text" id="expiry_date_error"></span>
-                                              </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                              <div class="mb-3">
-                                                <label class="form-label">Salesperson </label>
-                                                <select class="form-select select2" name="user_id" id="user_id">
-                                                    <option value="">Select Salesperson</option>
-                                                    <?php while ($user = mysqli_fetch_assoc($users)) {
-                                                    $selected = ($user['id'] == $row['user_id']) ? 'selected' : '';
-                                                    echo "<option value='{$user['id']}' $selected>{$user['name']}</option>";
-                                                } ?>
-                                                </select>
-                                                <span class="text-danger error-text" id="username_error"></span>
-                                              </div>
-                                            </div>
-                                            <div class="col-lg-4 col-md-6">
-                                              <div class="mb-3">
-                                                <label class="form-label">Project Name </label>
-                                                <select class="form-select select2" name="project_id" id="project_id">
-                                                    <option value="">Select Project</option>
-                                                    <?php while ($project = mysqli_fetch_assoc($projects)) {
-                                                    $selected = ($project['id'] == $row['project_id']) ? 'selected' : '';
-                                                    echo "<option value='{$project['id']}' $selected>{$project['project_name']}</option>";
-                                                } ?> 
-                                                </select>
-                                                <span class="text-danger error-text" id="projectname_error"></span>
-                                              </div>
-                                            </div>
-                                        </div>
-
                                         </div>
 
                                         <div class="border-bottom mb-3">
@@ -211,7 +289,9 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                                                         <div class="card-body">
                                                             <h6 class="mb-3">Bill To</h6>
                                                             <div class="bg-light border rounded p-3 d-flex align-items-start">
-                                                                <div id="client_info_block"></div>
+                                                                <div id="client_info_block">
+                                                                    <p class="text-muted mb-0">Client information will appear here after selection</p>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -221,7 +301,9 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                                                         <div class="card-body">
                                                             <h6 class="mb-3">Bill From</h6>
                                                             <div class="bg-light border rounded p-3 d-flex align-items-start">
-                                                                <div id="shipping_info_block"></div>
+                                                                <div id="shipping_info_block">
+                                                                    <p class="text-muted mb-0">Shipping information will appear here after selection</p>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -250,152 +332,164 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                                             </div>
 
                                             <div class="table-responsive rounded table-nowrap border-bottom-0 border mb-3">
-                                                <table class="table mb-0 add-table">
+                                                <table class="table mb-0 add-table <?= $isNonGST ? 'non-gst-mode' : '' ?>">
                                                     <thead class="table-dark">
                                                         <tr>
                                                             <th>Product/Service</th>
                                                             <th>Quantity</th>
-                                                            <th>Unit</th>
+                                                            <th>HSN Code</th>
                                                             <th>Selling Price</th>
-                                                            <th>Tax</th>
+                                                            <th class="tax-column">Tax</th>
                                                             <th>Amount</th>
                                                             <th></th>
                                                         </tr>
                                                     </thead>
-                                              <tbody class="add-tbody" id="product">
-                                                            <span class="text-danger error-text" id="product_error"></span>
+                                                    <tbody class="add-tbody" id="product">
+                                                        <span class="text-danger error-text" id="product_error"></span>
 
-                                                            <?php
-                                                            $quotation_id = $_GET['id'];
-                                                            $item_query = "SELECT 
-                                                                            qi.*, 
-                                                                            p.name AS product_name, 
-                                                                            u.name AS unit_name,
-                                                                            t.rate AS tax_rate,
-                                                                            t.name AS tax_name,
-                                                                            t.id AS tax_id,
-                                                                            p.selling_price,
-                                                                            p.unit_id
-                                                                        FROM quotation_item qi
-                                                                        LEFT JOIN product p ON qi.product_id = p.id
-                                                                        LEFT JOIN units u ON p.unit_id = u.id
-                                                                        LEFT JOIN tax t ON p.tax_id = t.id
-                                                                        WHERE qi.quotation_id = $quotation_id AND qi.is_deleted = 0";
+                                                        <?php
+                                                        $quotation_id = $_GET['id'];
+                                                        $item_query = "SELECT 
+                                                                        qi.*, 
+                                                                        p.name AS product_name, 
+                                                                        p.code AS hsn_code,
+                                                                        p.selling_price AS product_price,
+                                                                        t.rate AS tax_rate,
+                                                                        t.name AS tax_name,
+                                                                        t.id AS tax_id
+                                                                    FROM quotation_item qi
+                                                                    LEFT JOIN product p ON qi.product_id = p.id
+                                                                    LEFT JOIN tax t ON qi.tax_id = t.id
+                                                                    WHERE qi.quotation_id = $quotation_id AND qi.is_deleted = 0";
 
-                                                            $item_result = mysqli_query($conn, $item_query);
-                                                            while ($item = mysqli_fetch_assoc($item_result)) {
-                                                                $qty = (float)($item['quantity'] ?? 0);
-                                                                $price = (float)($item['selling_price'] ?? 0);
-                                                                $taxRate = (float)($item['tax_rate'] ?? 0);
-                                                                $taxName = $item['tax_name'] ?? '';
-                                                                $productName = $item['product_name'] ?? '';
-                                                                $unitName = $item['unit_name'] ?? '';
-                                                                $unitId = $item['unit_id'] ?? '';
-                                                                $taxId = $item['tax_id'] ?? '';
-
-                                                                $lineSubtotal = $qty * $price;
-                                                                $lineTax = $lineSubtotal * $taxRate / 100;
-                                                                $amount = $lineSubtotal + $lineTax;
-                                                                
-                                                                // Determine row class based on item type
-                                                                $rowClass = $row['item_type'] == 1 ? 'product-row' : 'service-row';
-                                                            ?>
-                                                                <tr class="<?= $rowClass ?>">
-                                                                    <td>
-                                                                        <div class="product-fields">
-                                                                            <select class="form-select item-select" name="item_id[]">
-                                                                                <option value="">Select Product</option>
-                                                                                <?php
-                                                                                $product_query = "SELECT 
-                                                                                                    p.id, p.name, p.selling_price, p.unit_id, 
-                                                                                                    u.name AS unit_name, 
-                                                                                                    t.id AS tax_id, t.rate AS tax_rate, t.name AS tax_name
-                                                                                                FROM product p
-                                                                                                LEFT JOIN units u ON p.unit_id = u.id
-                                                                                                LEFT JOIN tax t ON p.tax_id = t.id
-                                                                                                WHERE p.is_deleted = 0";
-                                                                                $product_result = mysqli_query($conn, $product_query);
-                                                                                while ($product = mysqli_fetch_assoc($product_result)) {
-                                                                                    $selected = ($product['id'] == $item['product_id']) ? 'selected' : '';
-                                                                                    echo '<option value="' . $product['id'] . '" 
-                                                                                        data-unit="' . htmlspecialchars($product['unit_name']) . '"
-                                                                                        data-unit-id="' . $product['unit_id'] . '"
-                                                                                        data-price="' . $product['selling_price'] . '"
-                                                                                        data-tax="' . $product['tax_rate'] . '"
-                                                                                        data-tax-id="' . $product['tax_id'] . '"
-                                                                                        data-tax-name="' . htmlspecialchars($product['tax_name']) . '" ' . $selected . '>' . 
-                                                                                        htmlspecialchars($product['name']) . '</option>';
-                                                                                }
-                                                                                ?>
-                                                                            </select>
-                                                                            <input type="hidden" class="unit-id" name="unit_id[]" value="<?= $unitId ?>">
-                                                                            <input type="hidden" class="tax-id" name="tax_id[]" value="<?= $taxId ?>">
-                                                                            <input type="hidden" class="tax-name" name="name[]" value="<?= htmlspecialchars($taxName) ?>">
-                                                                        </div>
-                                                                        <div class="service-fields">
-                                                                            <input type="text" class="form-control service-name-input" name="service_name[]" placeholder="Enter service name" value="<?= htmlspecialchars($productName) ?>">
-                                                                            <input type="hidden" class="unit-id" name="unit_id[]" value="0">
-                                                                            <input type="hidden" name="item_id[]" value="0">
-                                                                        </div>
-                                                                    </td>
-                                                                    <td>
-                                                                        <input type="number" class="form-control quantity" name="quantity[]" value="<?= $qty ?>" min="1">
-                                                                    </td>
-                                                                    <td>
-                                                                        <input type="text" class="form-control unit-name" value="<?= htmlspecialchars($unitName) ?>" readonly>
-                                                                    </td>
-                                                                    <td>
-                                                                        <div class="product-fields">
-                                                                            <input type="text" class="form-control selling-price" name="selling_price[]" 
-                                                                                value="<?= '$ ' . number_format($price, 2) ?>" 
-                                                                                data-value="<?= $price ?>">
-                                                                        </div>
-                                                                        <div class="service-fields">
-                                                                            <input type="text" class="form-control service-price-input" name="selling_price[]" 
-                                                                                value="<?= '$ ' . number_format($price, 2) ?>" 
-                                                                                data-value="<?= $price ?>" placeholder="0.00">
-                                                                        </div>
-                                                                    </td>
-                                                                    <td>
-                                                                        <div class="product-fields">
-                                                                            <input type="text" class="form-control tax-rate" name="rate[]"
-                                                                                value="<?= number_format($taxRate, 2) . '%' ?>" 
-                                                                                data-value="<?= $taxRate ?>" style="display: none;">
-                                                                            <div class="tax-display-container">
-                                                                                <div class="tax-amount-line"><?= '$ ' . number_format($lineTax, 2) ?></div>
-                                                                                <div class="tax-rate-line"><?= number_format($taxRate, 2) . '%' ?></div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="service-fields">
-                                                                            <select class="form-select service-tax-select" name="tax_id[]">
-                                                                                <option value="">Select Tax</option>
-                                                                                <?php foreach ($taxRates as $tax): ?>
-                                                                                <option value="<?= $tax['id'] ?>" 
-                                                                                    data-rate="<?= $tax['rate'] ?>"
-                                                                                    <?= ($tax['id'] == $taxId) ? 'selected' : '' ?>>
-                                                                                    <?= $tax['name'] ?> (<?= $tax['rate'] ?>%)
+                                                        $item_result = mysqli_query($conn, $item_query);
+                                                        while ($item = mysqli_fetch_assoc($item_result)) {
+                                                            $qty = (float)($item['quantity'] ?? 0);
+                                                            $price = (float)($item['product_price'] ?? $item['selling_price'] ?? 0);
+                                                            $taxRate = (float)($item['tax_rate'] ?? 0);
+                                                            $taxName = $item['tax_name'] ?? '';
+                                                            $productName = $item['product_name'] ?? '';
+                                                            $serviceName = $item['service_name'] ?? '';
+                                                            $hsnCode = $item['hsn_code'] ?? '';
+                                                            $taxId = $item['tax_id'] ?? '';
+                                                            
+                                                            // Determine if this is a product or service
+                                                            $isProduct = (!empty($item['product_id']) && $item['product_id'] != 0);
+                                                            $displayName = $isProduct ? $productName : $serviceName;
+                                                            
+                                                            $lineSubtotal = $qty * $price;
+                                                            $lineTax = $lineSubtotal * $taxRate / 100;
+                                                            $amount = $lineSubtotal + $lineTax;
+                                                            
+                                                            // Adjust for Non-GST mode
+                                                            $displayTaxRate = $isNonGST ? 0 : $taxRate;
+                                                            $displayLineTax = $isNonGST ? 0 : $lineTax;
+                                                            $displayAmount = $isNonGST ? $lineSubtotal : $amount;
+                                                            
+                                                            // Determine row class based on whether it's a product or service
+                                                            $rowClass = $isProduct ? 'product-row' : 'service-row';
+                                                            $quantityClass = $isProduct ? '' : 'service-quantity';
+                                                            $quantityValue = $isProduct ? $qty : ($qty > 0 ? $qty : '');
+                                                            $quantityPlaceholder = $isProduct ? '' : 'Optional';
+                                                        ?>
+                                                            <tr class="<?= $rowClass ?>">
+                                                                <td>
+                                                                    <div class="product-fields">
+                                                                        <select class="form-select product-select" name="item_id[]">
+                                                                            <option value="">Select Product</option>
+                                                                            <?php foreach ($products as $product): ?>
+                                                                                <option value="<?= $product['id'] ?>" 
+                                                                                    data-price="<?= $product['selling_price'] ?>" 
+                                                                                    data-hsn="<?= $product['code'] ?>"
+                                                                                    data-tax="<?= $product['tax_rate'] ?>"
+                                                                                    data-tax-id="<?= $product['tax_id'] ?>"
+                                                                                    data-tax-name="<?= $product['tax_name'] ?>"
+                                                                                    <?= ($isProduct && $product['id'] == $item['product_id']) ? 'selected' : '' ?>>
+                                                                                    <?= $product['name'] ?>
                                                                                 </option>
-                                                                                <?php endforeach; ?>
-                                                                            </select>
-                                                                            <input type="hidden" class="tax-rate" name="rate[]" data-value="<?= $taxRate ?>">
-                                                                            <input type="hidden" class="tax-name" name="name[]" value="<?= htmlspecialchars($taxName) ?>">
-                                                                            <div class="tax-display-container mt-2">
-                                                                                <div class="tax-amount-line"><?= '$ ' . number_format($lineTax, 2) ?></div>
-                                                                                <div class="tax-rate-line"><?= number_format($taxRate, 2) . '%' ?></div>
-                                                                            </div>
+                                                                            <?php endforeach; ?>
+                                                                        </select>
+                                                                        <input type="hidden" class="tax-id" name="tax_id[]" value="<?= $isNonGST ? 0 : $taxId ?>">
+                                                                        <input type="hidden" class="tax-name" name="tax_name[]" value="<?= htmlspecialchars($taxName) ?>">
+                                                                    </div>
+                                                                    <div class="service-fields">
+                                                                        <select class="form-select service-select" name="item_id[]">
+                                                                            <option value="">Select Service</option>
+                                                                            <?php foreach ($services as $service): ?>
+                                                                                <option value="<?= $service['id'] ?>" 
+                                                                                    data-price="<?= $service['selling_price'] ?>" 
+                                                                                    data-hsn="<?= $service['code'] ?>"
+                                                                                    data-tax="<?= $service['tax_rate'] ?>"
+                                                                                    data-tax-id="<?= $service['tax_id'] ?>"
+                                                                                    data-tax-name="<?= $service['tax_name'] ?>"
+                                                                                    <?= (!$isProduct && $service['id'] == $item['product_id']) ? 'selected' : '' ?>>
+                                                                                    <?= $service['name'] ?>
+                                                                                </option>
+                                                                            <?php endforeach; ?>
+                                                                        </select>
+                                                                        <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name" value="<?= !$isProduct ? htmlspecialchars($displayName) : '' ?>">
+                                                                        <input type="hidden" class="tax-id" name="tax_id[]" value="<?= $isNonGST ? 0 : $taxId ?>">
+                                                                        <input type="hidden" class="tax-name" name="tax_name[]" value="<?= htmlspecialchars($taxName) ?>">
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="number" class="form-control quantity <?= $quantityClass ?>" name="quantity[]" value="<?= $quantityValue ?>" <?= $isProduct ? 'min="1"' : '' ?> placeholder="<?= $quantityPlaceholder ?>">
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" class="form-control hsn-code" name="code[]" value="<?= htmlspecialchars($hsnCode) ?>" readonly>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="product-fields">
+                                                                        <input type="text" class="form-control selling-price" name="selling_price[]" 
+                                                                            value="<?= '$ ' . number_format($price, 2) ?>" 
+                                                                            data-value="<?= $price ?>">
+                                                                    </div>
+                                                                    <div class="service-fields">
+                                                                        <input type="text" class="form-control service-price-input" name="selling_price[]" 
+                                                                            value="<?= '$ ' . number_format($price, 2) ?>" 
+                                                                            data-value="<?= $price ?>" placeholder="0.00">
+                                                                    </div>
+                                                                </td>
+                                                                <td class="tax-column">
+                                                                    <div class="product-fields">
+                                                                        <input type="text" class="form-control tax-rate" name="rate[]"
+                                                                            value="<?= number_format($displayTaxRate, 2) . '%' ?>" 
+                                                                            data-value="<?= $displayTaxRate ?>" style="display: none;">
+                                                                        <div class="tax-display-container">
+                                                                            <div class="tax-amount-line"><?= '$ ' . number_format($displayLineTax, 2) ?></div>
+                                                                            <div class="tax-rate-line"><?= number_format($displayTaxRate, 2) . '%' ?></div>
                                                                         </div>
-                                                                    </td>
-                                                                    <td>
-                                                                        <input type="text" class="form-control amount" name="amount[]" 
-                                                                            value="<?= '$ ' . number_format($amount, 2) ?>" 
-                                                                            data-value="<?= $amount ?>" readonly>
-                                                                    </td>
-                                                                    <td>
-                                                                        <a href="javascript:void(0);" class="remove-table"><i class="isax isax-trash"></i></a>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php } ?>
-                                                </tbody>
+                                                                    </div>
+                                                                    <div class="service-fields">
+                                                                        <select class="form-select service-tax-select" name="tax_id[]">
+                                                                            <option value="">Select Tax</option>
+                                                                            <?php foreach ($taxRates as $tax): ?>
+                                                                            <option value="<?= $tax['id'] ?>" 
+                                                                                data-rate="<?= $tax['rate'] ?>"
+                                                                                <?= (!$isNonGST && $tax['id'] == $taxId) ? 'selected' : '' ?>>
+                                                                                <?= $tax['name'] ?> (<?= $tax['rate'] ?>%)
+                                                                            </option>
+                                                                            <?php endforeach; ?>
+                                                                        </select>
+                                                                        <input type="hidden" class="tax-rate" name="rate[]" data-value="<?= $displayTaxRate ?>">
+                                                                        <input type="hidden" class="tax-name" name="tax_name[]" value="<?= htmlspecialchars($taxName) ?>">
+                                                                        <div class="tax-display-container mt-2">
+                                                                            <div class="tax-amount-line"><?= '$ ' . number_format($displayLineTax, 2) ?></div>
+                                                                            <div class="tax-rate-line"><?= number_format($displayTaxRate, 2) . '%' ?></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" class="form-control amount" name="amount[]" 
+                                                                        value="<?= '$ ' . number_format($displayAmount, 2) ?>" 
+                                                                        data-value="<?= $displayAmount ?>" readonly>
+                                                                </td>
+                                                                <td>
+                                                                    <a href="javascript:void(0);" class="remove-table"><i class="isax isax-trash"></i></a>
+                                                                </td>
+                                                            </tr>
+                                                        <?php } ?>
+                                                    </tbody>
                                                 </table>
                                             </div>
                                             <div>
@@ -445,7 +539,6 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                                                                                 <a href="../uploads/<?= htmlspecialchars($doc['document']) ?>" target="_blank">
                                                                                     <?= htmlspecialchars($doc['document']) ?>
                                                                                 </a>
-                                                                            
                                                                             </li>
                                                                         <?php endwhile; ?>
                                                                     </ul>
@@ -457,16 +550,21 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                                                     </div>
                                                 </div>
                                             <div class="col-lg-5">
-                                                <input type="hidden" name="sub_amount" id="subtotal-amount-field" value="<?= $row['amount'] ?>">
-                                                <input type="hidden" name="tax_amount" id="tax-amount-field" value="<?= $row['tax_amount'] ?>">
-                                                <input type="hidden" name="total_amount" id="total-amount-field" value="<?= $row['total_amount'] ?>">
+                                                <?php
+                                                // Calculate display amounts for Non-GST mode
+                                                $displaySubAmount = $isNonGST ? ($row['amount'] - $row['tax_amount']) : $row['amount'];
+                                                $displayTotalAmount = $isNonGST ? ($row['total_amount'] - $row['tax_amount']) : $row['total_amount'];
+                                                ?>
+                                                <input type="hidden" name="sub_amount" id="subtotal-amount-field" value="<?= $displaySubAmount ?>">
+                                                <input type="hidden" name="tax_amount" id="tax-amount-field" value="<?= $isNonGST ? 0 : $row['tax_amount'] ?>">
+                                                <input type="hidden" name="total_amount" id="total-amount-field" value="<?= $displayTotalAmount ?>">
 
                                                 <div class="mb-3">
                                                     <div class="d-flex align-items-center justify-content-between mb-3">
                                                         <h6 class="fs-14 fw-semibold">Amount</h6>
-                                                        <h6 class="fs-14 fw-semibold" id="subtotal-amount"><?= '$ ' . number_format($row['amount'], 2) ?></h6>
+                                                        <h6 class="fs-14 fw-semibold" id="subtotal-amount"><?= '$ ' . number_format($displaySubAmount, 2) ?></h6>
                                                     </div>
-                                                     <div class="tax-details">
+                                                     <div class="tax-details" style="<?= $isNonGST ? 'display: none !important;' : '' ?>">
                                                             <!-- JS will populate tax per rate here -->
                                                         </div>
                                                     <div id="shipping-charge-group" class="d-flex align-items-center justify-content-between mb-3">
@@ -475,7 +573,7 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                                                     </div>
                                                     <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
                                                         <h6>Total</h6>
-                                                        <h6 id="total-amount"><?= '$ ' . number_format($row['total_amount'], 2) ?></h6>
+                                                        <h6 id="total-amount"><?= '$ ' . number_format($displayTotalAmount, 2) ?></h6>
                                                     </div>
                                                 </div>
                                             </div>
@@ -548,6 +646,92 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             }
         });
 
+        // Fetch client billing & shipping info on page load
+        function fetchClientInfo(clientId) {
+            if (clientId) {
+                $.ajax({
+                    url: 'process/fetch_client_full_info.php',
+                    type: 'POST',
+                    data: { client_id: clientId },
+                    dataType: 'json',
+                    success: response => {
+                        $('#client_info_block').html(response.billing_html);
+                        $('#shipping_info_block').html(response.shipping_html);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching client info:', error);
+                        $('#client_info_block').html('<p class="text-muted">Client information not available</p>');
+                        $('#shipping_info_block').html('<p class="text-muted">Shipping information not available</p>');
+                    }
+                });
+            } else {
+                $('#client_info_block').html('<p class="text-muted">Please select a client</p>');
+                $('#shipping_info_block').html('<p class="text-muted">Please select a client</p>');
+            }
+        }
+
+        // Fetch client info when page loads
+        const initialClientId = $('#client_id').val();
+        fetchClientInfo(initialClientId);
+
+        // Fetch client info when client selection changes
+        $('#client_id').on('change', function() {
+            const clientId = $(this).val();
+            fetchClientInfo(clientId);
+        });
+
+        // GST/Non-GST toggle functionality
+        $('input[name="gst_type"]').on('change', function() {
+            const gstType = $(this).val();
+            $('#gst_type_field').val(gstType);
+            
+            if (gstType === 'non_gst') {
+                // Non-GST mode - hide tax column and tax details
+                $('.add-table').addClass('non-gst-mode');
+                $('.tax-details').hide();
+                
+                // Set all tax rates to 0 and recalculate
+                $('.tax-rate').data('value', 0).val('0%');
+                $('.service-tax-select').val('');
+                
+                // Update tax display containers
+                $('.tax-amount-line').text('$ 0.00');
+                $('.tax-rate-line').text('0%');
+                
+            } else {
+                // GST mode - show tax column and tax details
+                $('.add-table').removeClass('non-gst-mode');
+                $('.tax-details').show();
+                
+                // Restore original tax values for products
+                $('.product-select').each(function() {
+                    const $row = $(this).closest('tr');
+                    const option = $(this).find('option:selected');
+                    if (option.val()) {
+                        const tax = parseFloat(option.data('tax')) || 0;
+                        $row.find('.tax-rate').data('value', tax).val(formatPercent(tax));
+                    }
+                });
+                
+                // Restore original tax values for services
+                $('.service-select').each(function() {
+                    const $row = $(this).closest('tr');
+                    const option = $(this).find('option:selected');
+                    if (option.val()) {
+                        const tax = parseFloat(option.data('tax')) || 0;
+                        $row.find('.tax-rate').data('value', tax).val(formatPercent(tax));
+                    }
+                });
+            }
+            
+            // Recalculate all rows
+            $('.add-tbody tr').each(function() {
+                calculateRow($(this));
+            });
+            
+            calculateSummary();
+        });
+
         function formatCurrency(value) {
             const n = parseFloat(value);
             if (isNaN(n)) return '';
@@ -564,25 +748,6 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             const n = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
             return isNaN(n) ? 0 : n;
         }
-
-        // Fetch client billing & shipping info
-        $('#client_id').on('change', function() {
-            const clientId = $(this).val();
-            if (clientId) {
-                $.ajax({
-                    url: 'process/fetch_client_full_info.php',
-                    type: 'POST',
-                    data: { client_id: clientId },
-                    dataType: 'json',
-                    success: response => {
-                        $('#client_info_block').html(response.billing_html);
-                        $('#shipping_info_block').html(response.shipping_html);
-                    }
-                });
-            } else {
-                $('#client_info_block, #shipping_info_block').empty();
-            }
-        });
 
         // Form validation
         $('#form').on('submit', function(e) {
@@ -614,24 +779,74 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             }
         });
 
-        function loadItems(type, target) {
-            $.post('process/get_productcategories_by_type.php', { item_type: type }, data => {
-                if (target) target.html(data);
-                updateItemDropdowns();
+        function loadProducts(target) {
+            let productOptions = '<option value="">Select Product</option>';
+            <?php foreach ($products as $product): ?>
+            productOptions += `<option value="<?= $product['id'] ?>" 
+                          data-price="<?= $product['selling_price'] ?>" 
+                          data-hsn="<?= $product['code'] ?>"
+                          data-tax="<?= $product['tax_rate'] ?>"
+                          data-tax-id="<?= $product['tax_id'] ?>"
+                          data-tax-name="<?= $product['tax_name'] ?>">
+                          <?= $product['name'] ?>
+                          </option>`;
+            <?php endforeach; ?>
+            
+            if (target) {
+                target.html(productOptions);
+            }
+            updateProductDropdowns();
+        }
+
+        function loadServices(target) {
+            let serviceOptions = '<option value="">Select Service</option>';
+            <?php foreach ($services as $service): ?>
+            serviceOptions += `<option value="<?= $service['id'] ?>" 
+                          data-price="<?= $service['selling_price'] ?>" 
+                          data-hsn="<?= $service['code'] ?>"
+                          data-tax="<?= $service['tax_rate'] ?>"
+                          data-tax-id="<?= $service['tax_id'] ?>"
+                          data-tax-name="<?= $service['tax_name'] ?>">
+                          <?= $service['name'] ?>
+                          </option>`;
+            <?php endforeach; ?>
+            
+            if (target) {
+                target.html(serviceOptions);
+            }
+            updateServiceDropdowns();
+        }
+
+        function updateProductDropdowns() {
+            let selectedProducts = [];
+            $('.product-select').each(function() {
+                let val = $(this).val();
+                if (val) selectedProducts.push(val);
+            });
+
+            $('.product-select').each(function() {
+                let currentVal = $(this).val();
+                $(this).find('option').each(function() {
+                    if ($(this).val() && selectedProducts.includes($(this).val()) && $(this).val() !== currentVal) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                });
             });
         }
 
-        function updateItemDropdowns() {
-            let selectedItems = [];
-            $('.item-select').each(function() {
+        function updateServiceDropdowns() {
+            let selectedServices = [];
+            $('.service-select').each(function() {
                 let val = $(this).val();
-                if (val) selectedItems.push(val);
+                if (val) selectedServices.push(val);
             });
 
-            $('.item-select').each(function() {
+            $('.service-select').each(function() {
                 let currentVal = $(this).val();
                 $(this).find('option').each(function() {
-                    if ($(this).val() && selectedItems.includes($(this).val()) && $(this).val() !== currentVal) {
+                    if ($(this).val() && selectedServices.includes($(this).val()) && $(this).val() !== currentVal) {
                         $(this).hide();
                     } else {
                         $(this).show();
@@ -686,34 +901,97 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             calculateSummary();
         });
 
+        // Initialize shipping field formatting on load
+        (function initShipping(){
+            const $ship = $('#shipping-charge');
+            if ($ship.length) {
+                const initVal = unformat($ship.val());
+                $ship.data('value', initVal);
+                // Only show $ if input type allows text
+                if ($ship.attr('type') !== 'number') {
+                    $ship.val(formatCurrency(initVal));
+                } else {
+                    $ship.val(initVal.toFixed(2)); // keep numeric visible
+                }
+            }
+        })();
+
         /* =========================
            Item events
         ========================== */
-        $(document).on('change', '.item-select', function() {
+        $(document).on('change', '.product-select', function() {
             const $row = $(this).closest('tr');
             const option = $(this).find('option:selected');
 
             if (option.val()) {
                 const price = parseFloat(option.data('price')) || 0;
-                const unit = option.data('unit') || '';
-                const unitId = option.data('unit-id') || '';
-                const taxRate = parseFloat(option.data('tax')) || 0;
+                const hsnCode = option.data('hsn') || '';
+                const tax = parseFloat(option.data('tax')) || 0;
                 const taxId = option.data('tax-id') || '';
                 const taxName = option.data('tax-name') || '';
 
-                $row.find('.unit-name').val(unit);
-                $row.find('.unit-id').val(unitId);
+                $row.find('.hsn-code').val(hsnCode);
                 $row.find('.tax-id').val(taxId);
                 $row.find('.tax-name').val(taxName);
+                
+                // Check if we're in Non-GST mode
+                const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+                const effectiveTax = isNonGST ? 0 : tax;
+                
                 $row.find('.selling-price').data('value', price).val(formatCurrency(price));
-                $row.find('.tax-rate').data('value', taxRate).val(formatPercent(taxRate));
+                $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
 
                 calculateRow($row);
             } else {
                 resetRow($row);
             }
 
-            updateItemDropdowns();
+            updateProductDropdowns();
+        });
+
+        // Handle service selection from dropdown
+        $(document).on('change', '.service-select', function() {
+            const $row = $(this).closest('tr');
+            const option = $(this).find('option:selected');
+
+            if (option.val()) {
+                const price = parseFloat(option.data('price')) || 0;
+                const hsnCode = option.data('hsn') || '';
+                const tax = parseFloat(option.data('tax')) || 0;
+                const taxId = option.data('tax-id') || '';
+                const taxName = option.data('tax-name') || '';
+
+                // Auto-fill the service name input
+                $row.find('.service-name-input').val(option.text());
+                $row.find('.hsn-code').val(hsnCode);
+                $row.find('.tax-id').val(taxId);
+                $row.find('.tax-name').val(taxName);
+                
+                // Check if we're in Non-GST mode
+                const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+                const effectiveTax = isNonGST ? 0 : tax;
+                
+                $row.find('.selling-price').data('value', price).val(formatCurrency(price));
+                $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
+                
+                // Set service tax select if available and not in Non-GST mode
+                if (taxId && !isNonGST) {
+                    $row.find('.service-tax-select').val(taxId).trigger('change');
+                }
+
+                calculateRow($row);
+            }
+
+            updateServiceDropdowns();
+        });
+
+        // Handle service name input
+        $(document).on('input', '.service-name-input', function() {
+            const $row = $(this).closest('tr');
+            // Clear HSN code when manually entering service name
+            $row.find('.hsn-code').val('');
+            // Clear service dropdown selection when typing manually
+            $row.find('.service-select').val('');
         });
 
         // Handle service price input
@@ -732,7 +1010,11 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             const taxId = selectedOption.val();
             const taxName = selectedOption.text().split(' (')[0]; // Get tax name without percentage
 
-            $row.find('.tax-rate').data('value', taxRate).val(formatPercent(taxRate));
+            // Check if we're in Non-GST mode
+            const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+            const effectiveTax = isNonGST ? 0 : taxRate;
+            
+            $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
             $row.find('.tax-id').val(taxId);
             $row.find('.tax-name').val(taxName);
             calculateRow($row);
@@ -746,14 +1028,23 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             e.preventDefault();
             $(this).closest('tr').remove();
             calculateSummary();
-            updateItemDropdowns();
+            updateProductDropdowns();
+            updateServiceDropdowns();
         });
 
         /* =========================
            Calculations
         ========================== */
         function calculateRow($row) {
-            const qty  = unformat($row.find('.quantity').val());
+            const qtyInput = $row.find('.quantity');
+            let qty = unformat(qtyInput.val());
+            
+            // For services, if quantity is empty or 0, treat as 1 for calculation
+            const isService = $row.hasClass('service-row');
+            if (isService && (qty === 0 || qtyInput.val() === '')) {
+                qty = 1; // Use 1 for calculation but keep field empty for display
+            }
+            
             const price = $row.find('.selling-price').data('value') || 0;
             const taxRate = $row.find('.tax-rate').data('value') || 0;
 
@@ -776,8 +1067,10 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
         function getShippingCharge() {
             const $ship = $('#shipping-charge');
             if (!$ship.length) return 0;
+            // Prefer stored numeric if available
             const stored = $ship.data('value');
             if (stored !== undefined) return parseFloat(stored) || 0;
+            // Fallback: parse current field
             return unformat($ship.val());
         }
 
@@ -786,7 +1079,15 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
 
             $('.add-tbody tr').each(function() {
                 const p = $(this).find('.selling-price').data('value') || 0;
-                const q = unformat($(this).find('.quantity').val());
+                const qtyInput = $(this).find('.quantity');
+                let q = unformat(qtyInput.val());
+                
+                // For services with empty quantity, use 1 for calculation
+                const isService = $(this).hasClass('service-row');
+                if (isService && (q === 0 || qtyInput.val() === '')) {
+                    q = 1;
+                }
+                
                 const t = $(this).find('.tax-rate').data('value') || 0;
                 const taxName = $(this).find('.tax-name').val() || 'Tax';
 
@@ -807,24 +1108,35 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             const shippingCharge = getShippingCharge();
             let taxHtml = "";
 
-            $('.add-tbody tr').each(function(index) {
-                const p = $(this).find('.selling-price').data('value') || 0;
-                const q = unformat($(this).find('.quantity').val());
-                const t = $(this).find('.tax-rate').data('value') || 0;
-                const taxName = $(this).find('.tax-name').val() || 'Tax';
+            // Only show tax details in GST mode
+            const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+            if (!isNonGST) {
+                $('.add-tbody tr').each(function(index) {
+                    const p = $(this).find('.selling-price').data('value') || 0;
+                    const qtyInput = $(this).find('.quantity');
+                    let q = unformat(qtyInput.val());
+                    
+                    const isService = $(this).hasClass('service-row');
+                    if (isService && (q === 0 || qtyInput.val() === '')) {
+                        q = 1;
+                    }
+                    
+                    const t = $(this).find('.tax-rate').data('value') || 0;
+                    const taxName = $(this).find('.tax-name').val() || 'Tax';
 
-                const lineSubtotal = p * q;
-                const lineTaxAmount = (lineSubtotal * t / 100);
+                    const lineSubtotal = p * q;
+                    const lineTaxAmount = (lineSubtotal * t / 100);
 
-                if (t > 0 && lineTaxAmount > 0) {
-                    const taxLabel = `${taxName} (${t}%)`;
-                    taxHtml += `
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="fs-14 fw-semibold">${taxLabel}</h6>
-                            <h6 class="fs-14 fw-semibold">${formatCurrency(lineTaxAmount)}</h6>
-                        </div>`;
-                }
-            });
+                    if (t > 0 && lineTaxAmount > 0) {
+                        const taxLabel = `${taxName} (${t}%)`;
+                        taxHtml += `
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fs-14 fw-semibold">${taxLabel}</h6>
+                                <h6 class="fs-14 fw-semibold">${formatCurrency(lineTaxAmount)}</h6>
+                            </div>`;
+                    }
+                });
+            }
 
             $('.tax-details').html(taxHtml);
 
@@ -833,198 +1145,54 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             $('#subtotal-amount').text(formatCurrency(sub));
             $('#total-amount').text(formatCurrency(totalAll));
 
+            // Hidden numeric fields for backend
             $('#subtotal-amount-field').val(sub.toFixed(2));
             $('#tax-amount-field').val(Object.values(taxGroups).reduce((a,b)=>a+b,0).toFixed(2));
             $('#total-amount-field').val(totalAll.toFixed(2));
         }
-
+        
         function resetRow($row) {
-            $row.find('.quantity').val(1);
-            $row.find('.unit-name, .selling-price, .tax-rate, .amount, .service-name-input, .service-price-input').val('').removeData('value');
-            $row.find('.unit-id, .tax-id').val('');
+            $row.find('.quantity').val(1).removeClass('service-quantity');
+            $row.find('.hsn-code, .selling-price, .tax-rate, .amount, .service-name-input, .service-price-input').val('').removeData('value');
+            $row.find('.tax-id').val('');
             $row.find('.tax-amount-line').text('');
             $row.find('.tax-rate-line').text('');
             calculateSummary();
         }
 
-        // Initialize shipping field formatting on load
-        (function initShipping(){
-            const $ship = $('#shipping-charge');
-            if ($ship.length) {
-                const initVal = unformat($ship.val());
-                $ship.data('value', initVal);
-                if ($ship.attr('type') !== 'number') {
-                    $ship.val(formatCurrency(initVal));
-                } else {
-                    $ship.val(initVal.toFixed(2));
-                }
-            }
-        })();
-
-        // Item type change handler - CONVERTS EXISTING ROWS
+        // Item type change handler
         $('input[name="item_type"]').on('change', function() {
             const itemType = $(this).val();
-            console.log('Item type changed to:', itemType);
             
-            // Convert all existing rows to the new type
-            convertExistingRows(itemType);
-        });
-
-        function convertExistingRows(itemType) {
+            // Update all existing rows
             $('.add-tbody tr').each(function() {
                 const $row = $(this);
-                const rowClass = itemType == 1 ? 'product-row' : 'service-row';
                 
-                // Remove existing classes
-                $row.removeClass('product-row service-row').addClass(rowClass);
-                
-                // Generate tax options HTML
-                let taxOptions = '<option value="">Select Tax</option>';
-                <?php foreach ($taxRates as $tax): ?>
-                taxOptions += `<option value="<?= $tax['id'] ?>" data-rate="<?= $tax['rate'] ?>"><?= $tax['name'] ?> (<?= $tax['rate'] ?>%)</option>`;
-                <?php endforeach; ?>
-
                 if (itemType == 1) {
-                    // Convert to PRODUCT
-                    const currentServiceName = $row.find('.service-name-input').val() || '';
-                    
-                    $row.find('td:eq(0)').html(`
-                        <div class="product-fields">
-                            <select class="form-select item-select" name="item_id[]">
-                                <option value="">Select Product</option>
-                            </select>
-                            <input type="hidden" class="unit-id" name="unit_id[]">
-                            <input type="hidden" class="tax-id" name="tax_id[]">
-                            <input type="hidden" class="tax-name" name="name[]">
-                        </div>
-                        <div class="service-fields" style="display: none;">
-                            <input type="text" class="form-control service-name-input" name="service_name[]" placeholder="Enter service name" value="${currentServiceName}">
-                            <input type="hidden" class="unit-id" name="unit_id[]" value="0">
-                            <input type="hidden" name="item_id[]" value="0">
-                        </div>
-                    `);
-                    
-                    $row.find('td:eq(3)').html(`
-                        <div class="product-fields">
-                            <input type="text" class="form-control selling-price" name="selling_price[]" data-value="0">
-                        </div>
-                        <div class="service-fields" style="display: none;">
-                            <input type="text" class="form-control service-price-input" name="selling_price[]" data-value="0" placeholder="0.00">
-                        </div>
-                    `);
-                    
-                    $row.find('td:eq(4)').html(`
-                        <div class="product-fields">
-                            <input type="text" class="form-control tax-rate" name="rate[]" data-value="0" style="display: none;">
-                            <div class="tax-display-container">
-                                <div class="tax-amount-line"></div>
-                                <div class="tax-rate-line"></div>
-                            </div>
-                        </div>
-                        <div class="service-fields" style="display: none;">
-                            <select class="form-select service-tax-select" name="tax_id[]">
-                                ${taxOptions}
-                            </select>
-                            <input type="hidden" class="tax-rate" name="rate[]" data-value="0">
-                            <input type="hidden" class="tax-name" name="name[]" value="">
-                            <div class="tax-display-container mt-2">
-                                <div class="tax-amount-line"></div>
-                                <div class="tax-rate-line"></div>
-                            </div>
-                        </div>
-                    `);
-                    
-                    // Load product dropdown for this row
-                    const $newSelect = $row.find('.item-select');
-                    loadItems(itemType, $newSelect);
-                    
+                    // Switch to product mode
+                    $row.removeClass('service-row').addClass('product-row');
+                    $row.find('.quantity').val(1).removeClass('service-quantity');
                 } else {
-                    // Convert to SERVICE
-                    const currentItemId = $row.find('.item-select').val() || '';
-                    const currentPrice = $row.find('.selling-price').data('value') || 0;
-                    const currentTaxRate = $row.find('.tax-rate').data('value') || 0;
-                    const currentTaxId = $row.find('.tax-id').val() || '';
-                    const currentTaxName = $row.find('.tax-name').val() || '';
-                    
-                    $row.find('td:eq(0)').html(`
-                        <div class="product-fields" style="display: none;">
-                            <select class="form-select item-select" name="item_id[]">
-                                <option value="">Select Product</option>
-                            </select>
-                            <input type="hidden" class="unit-id" name="unit_id[]">
-                            <input type="hidden" class="tax-id" name="tax_id[]">
-                            <input type="hidden" class="tax-name" name="name[]">
-                        </div>
-                        <div class="service-fields">
-                            <input type="text" class="form-control service-name-input" name="service_name[]" placeholder="Enter service name">
-                            <input type="hidden" class="unit-id" name="unit_id[]" value="0">
-                            <input type="hidden" name="item_id[]" value="0">
-                        </div>
-                    `);
-                    
-                    $row.find('td:eq(3)').html(`
-                        <div class="product-fields" style="display: none;">
-                            <input type="text" class="form-control selling-price" name="selling_price[]" data-value="0">
-                        </div>
-                        <div class="service-fields">
-                            <input type="text" class="form-control service-price-input" name="selling_price[]" data-value="${currentPrice}" value="${formatCurrency(currentPrice)}" placeholder="0.00">
-                        </div>
-                    `);
-                    
-                    $row.find('td:eq(4)').html(`
-                        <div class="product-fields" style="display: none;">
-                            <input type="text" class="form-control tax-rate" name="rate[]" data-value="0" style="display: none;">
-                            <div class="tax-display-container">
-                                <div class="tax-amount-line"></div>
-                                <div class="tax-rate-line"></div>
-                            </div>
-                        </div>
-                        <div class="service-fields">
-                            <select class="form-select service-tax-select" name="tax_id[]">
-                                ${taxOptions}
-                            </select>
-                            <input type="hidden" class="tax-rate" name="rate[]" data-value="${currentTaxRate}">
-                            <input type="hidden" class="tax-name" name="name[]" value="${currentTaxName}">
-                            <div class="tax-display-container mt-2">
-                                <div class="tax-amount-line"></div>
-                                <div class="tax-rate-line"></div>
-                            </div>
-                        </div>
-                    `);
-                    
-                    // Set default unit as "Service"
-                    $row.find('.unit-name').val('Service');
-                    
-                    // Preserve selected tax if any
-                    if (currentTaxId) {
-                        $row.find('.service-tax-select').val(currentTaxId);
-                    }
-                    
-                    // Attach currency behavior to service price input
-                    const $servicePrice = $row.find('.service-price-input');
-                    $servicePrice.on('focus', function(){
-                        const raw = $(this).data('value');
-                        $(this).val(raw !== undefined ? raw : unformat($(this).val()));
-                    });
-                    $servicePrice.on('blur', function(){
-                        const num = unformat($(this).val());
-                        $(this).data('value', num).val(formatCurrency(num));
-                        calculateRow($(this).closest('tr'));
-                    });
-                    $servicePrice.on('input', function(){
-                        calculateRow($(this).closest('tr'));
-                    });
+                    // Switch to service mode
+                    $row.removeClass('product-row').addClass('service-row');
+                    $row.find('.quantity').val('').addClass('service-quantity');
                 }
                 
-                // Recalculate the row
-                calculateRow($row);
+                // Reset values when switching types
+                $row.find('.hsn-code').val('');
+                $row.find('.selling-price').val('').removeData('value');
+                $row.find('.tax-rate').val('').removeData('value');
+                $row.find('.amount').val('').removeData('value');
+                $row.find('.tax-id').val('');
+                $row.find('.tax-name').val('');
+                $row.find('.tax-amount-line').text('');
+                $row.find('.tax-rate-line').text('');
             });
             
-            updateItemDropdowns();
             calculateSummary();
-        }
+        });
 
-        // "Add New" event handler with dynamic item type
+        // SINGLE "Add New" event handler - FIXED
         $('.add-invoice-data').on('click', function(e) {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -1033,6 +1201,7 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             
             const itemType = $('input[name="item_type"]:checked').val();
             const rowClass = itemType == 1 ? 'product-row' : 'service-row';
+            const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
             
             // Generate tax options HTML from PHP data
             let taxOptions = '<option value="">Select Tax</option>';
@@ -1044,24 +1213,26 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                 <tr class="${rowClass}">
                     <td>
                         <div class="product-fields">
-                            <select class="form-select item-select" name="item_id[]">
+                            <select class="form-select product-select" name="item_id[]">
                                 <option value="">Select Product</option>
                             </select>
-                            <input type="hidden" class="unit-id" name="unit_id[]">
                             <input type="hidden" class="tax-id" name="tax_id[]">
-                            <input type="hidden" class="tax-name" name="name[]">
+                            <input type="hidden" class="tax-name" name="tax_name[]">
                         </div>
                         <div class="service-fields">
-                            <input type="text" class="form-control service-name-input" name="service_name[]" placeholder="Enter service name">
-                            <input type="hidden" class="unit-id" name="unit_id[]" value="0">
-                            <input type="hidden" name="item_id[]" value="0">
+                            <select class="form-select service-select" name="item_id[]">
+                                <option value="">Select Service</option>
+                            </select>
+                            <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name">
+                            <input type="hidden" class="tax-id" name="tax_id[]">
+                            <input type="hidden" class="tax-name" name="tax_name[]">
                         </div>
                     </td>
                     <td>
-                        <input type="number" class="form-control quantity" name="quantity[]" value="1" min="1">
+                        <input type="number" class="form-control quantity ${itemType == 0 ? 'service-quantity' : ''}" name="quantity[]" value="${itemType == 1 ? '1' : ''}" ${itemType == 1 ? 'min="1"' : 'placeholder="Optional"'}">
                     </td>
                     <td>
-                        <input type="text" class="form-control unit-name" name="unit_name[]" readonly>
+                        <input type="text" class="form-control hsn-code" name="code[]" readonly>
                     </td>
                     <td>
                         <div class="product-fields">
@@ -1071,7 +1242,7 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                             <input type="text" class="form-control service-price-input" name="selling_price[]" data-value="0" placeholder="0.00">
                         </div>
                     </td>
-                    <td>
+                    <td class="tax-column">
                         <div class="product-fields">
                             <input type="text" class="form-control tax-rate" name="rate[]" data-value="0" style="display: none;">
                             <div class="tax-display-container">
@@ -1083,8 +1254,8 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
                             <select class="form-select service-tax-select" name="tax_id[]">
                                 ${taxOptions}
                             </select>
-                            <input type="hidden" class="tax-rate" name="rate[]" data-value="0">
-                            <input type="hidden" class="tax-name" name="name[]" value="">
+                            <input type="hidden" class="tax-rate" name="rate[]" data-value="${isNonGST ? '0' : '0'}">
+                            <input type="hidden" class="tax-name" name="tax_name[]" value="">
                             <div class="tax-display-container mt-2">
                                 <div class="tax-amount-line"></div>
                                 <div class="tax-rate-line"></div>
@@ -1102,36 +1273,67 @@ $is_service = ($row['item_type'] == 0) ? 'checked' : '';
             
             $('.add-tbody').append(newRow);
             
-            // If it's a product, load the dropdown items
+            // Load appropriate dropdown
             if (itemType == 1) {
-                const $newSelect = $('.add-tbody tr:last .item-select');
-                loadItems(itemType, $newSelect);
+                const $productSelect = $('.add-tbody tr:last .product-select');
+                loadProducts($productSelect);
             } else {
-                // For service, set default unit as "Service"
-                $('.add-tbody tr:last .unit-name').val('Service');
-                
-                // Attach currency behavior to service price input
-                const $servicePrice = $('.add-tbody tr:last .service-price-input');
-                $servicePrice.on('focus', function(){
-                    const raw = $(this).data('value');
-                    $(this).val(raw !== undefined ? raw : unformat($(this).val()));
-                });
-                $servicePrice.on('blur', function(){
-                    const num = unformat($(this).val());
-                    $(this).data('value', num).val(formatCurrency(num));
-                    calculateRow($(this).closest('tr'));
-                });
-                $servicePrice.on('input', function(){
-                    calculateRow($(this).closest('tr'));
-                });
+                const $serviceSelect = $('.add-tbody tr:last .service-select');
+                loadServices($serviceSelect);
+                // For service, set default tax display
+                $('.add-tbody tr:last .tax-amount-line').text('$ 0.00');
+                $('.add-tbody tr:last .tax-rate-line').text('0%');
             }
             
-            updateItemDropdowns();
+            updateProductDropdowns();
+            updateServiceDropdowns();
             return false;
         });
 
+        // Trigger GST toggle on page load to apply initial state
+        setTimeout(function() {
+            const initialGstType = $('input[name="gst_type"]:checked').val();
+            $('#gst_type_field').val(initialGstType);
+            
+            if (initialGstType === 'non_gst') {
+                // Apply Non-GST mode on page load
+                $('.add-table').addClass('non-gst-mode');
+                $('.tax-details').hide();
+                
+                // Set all tax rates to 0 and recalculate
+                $('.tax-rate').data('value', 0).val('0%');
+                $('.service-tax-select').val('');
+                
+                // Update tax display containers
+                $('.tax-amount-line').text('$ 0.00');
+                $('.tax-rate-line').text('0%');
+                
+                // Recalculate all rows with zero tax
+                $('.add-tbody tr').each(function() {
+                    const $row = $(this);
+                    const qtyInput = $row.find('.quantity');
+                    let qty = unformat(qtyInput.val());
+                    
+                    // For services, if quantity is empty or 0, treat as 1 for calculation
+                    const isService = $row.hasClass('service-row');
+                    if (isService && (qty === 0 || qtyInput.val() === '')) {
+                        qty = 1;
+                    }
+                    
+                    const price = $row.find('.selling-price').data('value') || 0;
+                    const lineSubtotal = qty * price;
+                    const lineTotal = lineSubtotal; // No tax in Non-GST mode
+                    
+                    $row.find('.amount').data('value', lineTotal).val(formatCurrency(lineTotal));
+                });
+                
+                calculateSummary();
+            }
+        }, 100);
+
         // Initial pass
-        updateItemDropdowns();
+        updateProductDropdowns();
+        updateServiceDropdowns();
         calculateSummary();
         
         console.log('Initialization complete - ONE handler attached');

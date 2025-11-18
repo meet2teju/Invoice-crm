@@ -46,7 +46,6 @@ while ($item = mysqli_fetch_assoc($itemResult)) {
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -143,7 +142,7 @@ while ($item = mysqli_fetch_assoc($itemResult)) {
                                             <label class="form-check-label" for="gst-disabled">Non-GST</label>
                                         </div>
                                     </div>
-                                    <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
+                                    <!-- <a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a> -->
                                 </div>
                             </div>
                             <div class="card">
@@ -1032,7 +1031,7 @@ $(document).ready(function() {
                             <option value="">Select Product</option>
                         </select>
                         <input type="hidden" class="tax-id" name="tax_id[]">
-                        <input type="hidden" class="tax-name" name="name[]">
+                        <input type="hidden" class="tax-name" name="tax_name[]">
                     </div>
                     <div class="service-fields">
                         <select class="form-select service-select" name="item_id[]">
@@ -1040,7 +1039,7 @@ $(document).ready(function() {
                         </select>
                         <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name">
                         <input type="hidden" class="tax-id" name="tax_id[]">
-                        <input type="hidden" class="tax-name" name="name[]">
+                        <input type="hidden" class="tax-name" name="tax_name[]">
                     </div>
                 </td>
                 <td>
@@ -1070,7 +1069,7 @@ $(document).ready(function() {
                             ${taxOptions}
                         </select>
                         <input type="hidden" class="tax-rate" name="rate[]" data-value="${isNonGST ? '0' : '0'}">
-                        <input type="hidden" class="tax-name" name="name[]" value="">
+                        <input type="hidden" class="tax-name" name="tax_name[]" value="">
                         <div class="tax-display-container mt-2">
                             <div class="tax-amount-line"></div>
                             <div class="tax-rate-line"></div>

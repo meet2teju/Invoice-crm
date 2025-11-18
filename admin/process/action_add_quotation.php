@@ -40,14 +40,17 @@ if (isset($_POST['submit'])) {
         $tax_amount      = unformat($_POST['tax_amount'] ?? 0);
         $shipping_charge = unformat($_POST['shipping_charge'] ?? 0);
         $total_amount    = unformat($_POST['total_amount'] ?? 0);
+        
+        // === NEW: GST Type field ===
+        $gst_type        = mysqli_real_escape_string($conn, $_POST['gst_type'] ?? 'gst');
 
         // === Insert quotation master ===
         $query = "INSERT INTO quotation (
             client_id, quotation_id, reference_name, quotation_date, expiry_date, item_type, user_id, project_id,
-            client_note, description, amount, tax_amount, shipping_charge, total_amount, org_id, is_deleted, created_by, updated_by
+            client_note, description, amount, tax_amount, shipping_charge, total_amount, gst_type, org_id, is_deleted, created_by, updated_by
         ) VALUES (
             '$client_id', '$quotation_id', '$reference_name', '$quotation_date', '$expiry_date', '$item_type', '$user_id', '$project_id',
-            '$client_note', '$description', '$amount', '$tax_amount', '$shipping_charge', '$total_amount',
+            '$client_note', '$description', '$amount', '$tax_amount', '$shipping_charge', '$total_amount', '$gst_type',
             '$orgId', 0, '$currentUserId', '$currentUserId'
         )";
 
@@ -91,6 +94,7 @@ if (isset($_POST['submit'])) {
                 $rate          = unformat($_POST['rate'][$index] ?? 0);
                 $item_amount   = unformat($_POST['amount'][$index] ?? 0);
                 $name          = mysqli_real_escape_string($conn, $_POST['name'][$index] ?? '');
+                // $code          = mysqli_real_escape_string($conn, $_POST['code'][$index] ?? '');
 
                 // Determine if this is a product or service
                 $isProduct = (!empty($item_id) && $item_id != 0);
