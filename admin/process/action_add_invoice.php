@@ -25,7 +25,11 @@ if (isset($_POST['submit'])) {
     try {
         // Sanitize inputs
         $client_id     = (int)($_POST['client_id'] ?? 0);
-        $project_id    = (int)($_POST['project_id'] ?? 0);
+        
+        // Make project_id optional - set to NULL if empty/0
+        $project_id_raw = $_POST['project_id'] ?? '';
+        $project_id_sql = ($project_id_raw !== '' && is_numeric($project_id_raw) && $project_id_raw > 0) ? (int)$project_id_raw : 'NULL';
+        
         $invoice_id    = mysqli_real_escape_string($conn, $_POST['invoice_id'] ?? '');
         $reference_name= mysqli_real_escape_string($conn, $_POST['reference_name'] ?? '');
         $invoice_date  = mysqli_real_escape_string($conn, $_POST['invoice_date'] ?? '');
@@ -33,6 +37,7 @@ if (isset($_POST['submit'])) {
         $order_number  = (int)($_POST['order_number'] ?? 0);
         $item_type     = (int)($_POST['item_type'] ?? 0);
         $user_id       = (int)($_POST['user_id'] ?? 0);
+        $gst_type      = mysqli_real_escape_string($conn, $_POST['gst_type'] ?? 'gst');
 
         $bank_id_raw   = $_POST['bank_id'] ?? '';
         $bank_id_sql   = ($bank_id_raw !== '' && is_numeric($bank_id_raw)) ? (int)$bank_id_raw : 'NULL';
@@ -44,15 +49,15 @@ if (isset($_POST['submit'])) {
         $shipping_charge= (float)($_POST['shipping_charge'] ?? 0);
         $total_amount  = (float)($_POST['total_amount'] ?? 0);
 
-        // Insert invoice (without task_id in main table)
+        // Insert invoice (with optional project_id and gst_type)
         $query = "INSERT INTO invoice (
             client_id, project_id, invoice_id, reference_name, invoice_date, due_date,
-            order_number, item_type, user_id, bank_id,
+            order_number, item_type, user_id, bank_id, gst_type,
             invoice_note, description, amount, tax_amount, shipping_charge, total_amount,
             org_id, is_deleted, created_by, updated_by
         ) VALUES (
-            '$client_id', '$project_id', '$invoice_id', '$reference_name', '$invoice_date', '$expiry_date',
-            '$order_number', '$item_type', '$user_id', $bank_id_sql,
+            '$client_id', $project_id_sql, '$invoice_id', '$reference_name', '$invoice_date', '$expiry_date',
+            '$order_number', '$item_type', '$user_id', $bank_id_sql, '$gst_type',
             '$invoice_note', '$description', '$amount', '$tax_amount', '$shipping_charge', '$total_amount',
             '$orgId', 0, '$currentUserId', '$currentUserId'
         )";
@@ -63,8 +68,8 @@ if (isset($_POST['submit'])) {
 
         $invoiceId = mysqli_insert_id($conn);
 
-        // Insert selected tasks into invoice_tasks table
-        if (isset($_POST['task_id']) && is_array($_POST['task_id'])) {
+        // Insert selected tasks into invoice_tasks table (optional)
+        if (isset($_POST['task_id']) && is_array($_POST['task_id']) && !empty($_POST['task_id'][0])) {
             foreach ($_POST['task_id'] as $taskId) {
                 $taskId = (int)$taskId;
                 if ($taskId > 0) {
@@ -106,22 +111,25 @@ if (isset($_POST['submit'])) {
             foreach ($_POST['item_id'] as $index => $item_id) {
                 $item_id      = $_POST['item_id'][$index] ?? '';
                 $quantity     = (float)($_POST['quantity'][$index] ?? 0);
-                $unit_id      = $_POST['unit_id'][$index] ?? '';
+                // $code         = mysqli_real_escape_string($conn, $_POST['code'][$index] ?? '');
                 $selling_price= (float)($_POST['selling_price'][$index] ?? 0);
                 $tax_id       = $_POST['tax_id'][$index] ?? '';
+                // $tax_name     = mysqli_real_escape_string($conn, $_POST['tax_name'][$index] ?? '');
+                $rate         = (float)($_POST['rate'][$index] ?? 0);
                 $item_amount  = (float)($_POST['amount'][$index] ?? 0);
+                $service_name = mysqli_real_escape_string($conn, $_POST['service_name'][$index] ?? '');
 
                 $item_id_sql = ($item_id === '' ? 'NULL' : (int)$item_id);
-                $unit_id_sql    = ($unit_id === '' ? 0 : (int)$unit_id);
-                $tax_id_sql     = ($tax_id === '' ? 'NULL' : (int)$tax_id);
+                $tax_id_sql  = ($tax_id === '' ? 'NULL' : (int)$tax_id);
 
-                if (!empty($item_id)) {
+                // Handle both products and services
+                if (!empty($item_id) || !empty($service_name)) {
                     $itemInsertQuery = "INSERT INTO invoice_item (
-                        invoice_id, quantity, product_id, unit_id, selling_price,
-                        tax_id, amount, org_id, is_deleted, created_by, updated_by
+                        invoice_id, quantity, product_id, selling_price,
+                        tax_id,rate, amount, service_name, org_id, is_deleted, created_by, updated_by
                     ) VALUES (
-                        '$invoiceId', '$quantity', $item_id_sql, $unit_id_sql, '$selling_price',
-                        $tax_id_sql, '$item_amount', '$orgId', 0, '$currentUserId', '$currentUserId'
+                        '$invoiceId', '$quantity', $item_id_sql, '$selling_price',
+                        $tax_id_sql, '$rate', '$item_amount', '$service_name', '$orgId', 0, '$currentUserId', '$currentUserId'
                     )";
 
                     if (!mysqli_query($conn, $itemInsertQuery)) {

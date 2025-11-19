@@ -15,16 +15,102 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
     // Fallback in case of error
     $newinvoiceID = 'INV-0001';
 }
+
+// Fetch tax rates from database
+$taxRates = [];
+$taxQuery = "SELECT id, name, rate FROM tax WHERE status = 1";
+$taxResult = mysqli_query($conn, $taxQuery);
+while ($taxRow = mysqli_fetch_assoc($taxResult)) {
+    $taxRates[] = $taxRow;
+}
+
+// Fetch products and services from product table based on item_type
+$products = [];
+$services = [];
+$itemQuery = "SELECT p.id, p.name, p.selling_price, p.code, p.item_type, 
+                     t.id AS tax_id, t.rate AS tax_rate, t.name AS tax_name
+              FROM product p
+              LEFT JOIN tax t ON p.tax_id = t.id
+              WHERE p.is_deleted = 0 AND p.status = 1";
+$itemResult = mysqli_query($conn, $itemQuery);
+while ($item = mysqli_fetch_assoc($itemResult)) {
+    if ($item['item_type'] == 1) {
+        $products[] = $item;
+    } else {
+        $services[] = $item;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
 	<?php include 'layouts/title-meta.php'; ?> 
-
 	<?php include 'layouts/head-css.php'; ?>
    <!-- Additional CSS for datepicker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        .tax-display-container {
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            background-color: #f8f9fa;
+        }
+        .tax-amount-line {
+            font-weight: 600;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+        .tax-rate-line {
+            font-size: 12px;
+            color: #6c757d;
+            line-height: 1.2;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .service-fields {
+            display: none;
+        }
+        .service-row .service-fields {
+            display: block;
+        }
+        .service-row .product-fields {
+            display: none;
+        }
+        .product-row .product-fields {
+            display: block;
+        }
+        .product-row .service-fields {
+            display: none;
+        }
+        .service-quantity {
+            background-color: #f8f9fa;
+        }
+        .service-custom-input {
+            margin-top: 5px;
+        }
+        .gst-toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .gst-toggle-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .non-gst-mode .tax-column {
+            display: none;
+        }
+        .non-gst-mode .tax-details {
+            display: none !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -49,11 +135,27 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
                         <div>
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <h6>Add Invoice</h6>
-                                <a href="invoice-details.php" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="gst-toggle-group">
+                                        <span class="gst-toggle-label">GST Type:</span>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gst_type" id="gst-enabled" value="gst" checked>
+                                            <label class="form-check-label" for="gst-enabled">GST</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="gst_type" id="gst-disabled" value="non_gst">
+                                            <label class="form-check-label" for="gst-disabled">Non-GST</label>
+                                        </div>
+                                    </div>
+                                    <!-- <a href="invoice-details.php" class="btn btn-outline-white d-inline-flex align-items-center"><i class="isax isax-eye me-1"></i>Preview</a> -->
+                                </div>
                             </div>
                             <div class="card">
                                 <div class="card-body">
                                     <form action="process/action_add_invoice.php" method="POST" enctype="multipart/form-data" id="form">
+                                      <input type="hidden" name="user_id" value="<?php echo $_SESSION['crm_user_id'] ?? ''; ?>">
+                                      <input type="hidden" name="gst_type" id="gst_type_field" value="gst">
+
                                         <div class="border-bottom mb-3 pb-1">
                                           <div class="row gx-3">
                                             <div class="col-lg-4 col-md-6">
@@ -68,7 +170,11 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
                                                     $result = mysqli_query($conn, "SELECT * FROM client");
                                                     while ($row = mysqli_fetch_assoc($result)) {
                                                         $isSelected = ($row['id'] == $selectedClient) ? 'selected' : '';
-                                                        echo '<option value="' . $row['id'] . '" ' . $isSelected . '>' . htmlspecialchars($row['first_name']) . '</option>';
+                                                        $displayName = $row['first_name'];
+                                                        if (!empty($row['company_name'])) {
+                                                            $displayName .= ' - ' . $row['company_name'];
+                                                        }
+                                                        echo '<option value="' . $row['id'] . '" ' . $isSelected . '>' . htmlspecialchars($displayName) . '</option>';
                                                     }
                                                     ?>
                                                 </select>
@@ -77,20 +183,20 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
                                             </div>
                                             <div class="col-lg-4 col-md-6">
                                               <div class="mb-3">
-                                                <label class="form-label">Project<span class="text-danger">*</span></label>
+                                                <label class="form-label">Project</label>
                                                 <select class="form-select select2" name="project_id" id="project_id" disabled>
                                                   <option value="">Select Project</option>
                                                 </select>
-                                                <span class="text-danger error-text" id="project_error"></span>
+                                                <!-- <span class="text-danger error-text" id="project_error"></span> -->
                                               </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6">
                                               <div class="mb-3">
-                                                <label class="form-label">Tasks<span class="text-danger">*</span></label>
+                                                <label class="form-label">Tasks</label>
                                                 <select class="form-select select2" name="task_id[]" id="task_id" multiple="multiple" disabled>
                                                   <option value="">Select Tasks</option>
                                                 </select>
-                                                <span class="text-danger error-text" id="task_error"></span>
+                                                <!-- <span class="text-danger error-text" id="task_error"></span> -->
                                               </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6">
@@ -199,13 +305,12 @@ if ($row && isset($row['AUTO_INCREMENT'])) {
                                             <div class="table-responsive rounded table-nowrap border-bottom-0 border mb-3">
                                                 <table class="table mb-0 add-table">
                                                     <thead class="table-dark" id="table-heading">
-                                                        <!-- Dynamic headings will be inserted here by JavaScript -->
                                                         <tr>
                                                             <th>Product/Service</th>
                                                             <th>Quantity</th>
-                                                            <th>Unit</th>
+                                                            <th>HSN Code</th>
                                                             <th>Selling Price</th>
-                                                            <th>Tax (%)</th>
+                                                            <th class="tax-column">Tax</th>
                                                             <th>Amount</th>
                                                             <th></th>
                                                         </tr>
@@ -342,41 +447,86 @@ $(document).ready(function() {
     clickOpens: true
   });
 
-  /* =========================
-     Table Heading Management
-  ========================== */
-  function updateTableHeading(itemType) {
-    const $tableHead = $('#table-heading');
-    
-    if (itemType === '0') { // Service
-      $tableHead.html(`
-        <tr>
-          <th>Service</th>
-          <th>Hours</th>
-          <th>Unit</th>
-          <th>Hourly Price</th>
-          <th>Tax (%)</th>
-          <th>Amount</th>
-          <th></th>
-        </tr>
-      `);
-    } else { // Product
-      $tableHead.html(`
-        <tr>
-          <th>Product/Service</th>
-          <th>Quantity</th>
-          <th>Unit</th>
-          <th>Selling Price</th>
-          <th>Tax (%)</th>
-          <th>Amount</th>
-          <th></th>
-        </tr>
-      `);
-    }
-  }
+  // === Allow only text (no digits) ===
+  $('#reference_name').on('input', function () {
+      this.value = this.value.replace(/[0-9]/g, '');
+  });
+
+  $('#shipping-charge').on('input', function () {
+      let val = this.value.replace(/[^0-9.]/g, ''); 
+      let parts = val.split('.');
+      if (parts.length > 2) {
+          val = parts[0] + '.' + parts[1];
+      }
+      this.value = val;
+  });
+
+  // Document upload functionality
+  $('#document-upload').on('change', function () {
+      let files = $(this)[0].files;
+      if (files.length === 0) {
+          $('#file-count-label').text('');
+      } else if (files.length === 1) {
+          $('#file-count-label').text(files[0].name);
+      } else {
+          $('#file-count-label').text(`${files.length} files selected`);
+      }
+  });
+
+  // GST/Non-GST toggle functionality
+  $('input[name="gst_type"]').on('change', function() {
+      const gstType = $(this).val();
+      $('#gst_type_field').val(gstType);
+      
+      if (gstType === 'non_gst') {
+          // Non-GST mode - hide tax column and tax details
+          $('.add-table').addClass('non-gst-mode');
+          $('.tax-details').hide();
+          
+          // Set all tax rates to 0 and recalculate
+          $('.tax-rate').data('value', 0).val('0%');
+          $('.service-tax-select').val('');
+          
+          // Update tax display containers
+          $('.tax-amount-line').text('$ 0.00');
+          $('.tax-rate-line').text('0%');
+          
+      } else {
+          // GST mode - show tax column and tax details
+          $('.add-table').removeClass('non-gst-mode');
+          $('.tax-details').show();
+          
+          // Restore original tax values for products
+          $('.product-select').each(function() {
+              const $row = $(this).closest('tr');
+              const option = $(this).find('option:selected');
+              if (option.val()) {
+                  const tax = parseFloat(option.data('tax')) || 0;
+                  $row.find('.tax-rate').data('value', tax).val(formatPercent(tax));
+              }
+          });
+          
+          // Restore original tax values for services
+          $('.service-select').each(function() {
+              const $row = $(this).closest('tr');
+              const option = $(this).find('option:selected');
+              if (option.val()) {
+                  const tax = parseFloat(option.data('tax')) || 0;
+                  $row.find('.tax-rate').data('value', tax).val(formatPercent(tax));
+              }
+          });
+      }
+      
+      // Recalculate all rows
+      $('.add-tbody tr').each(function() {
+          calculateRow($(this));
+      });
+      
+      calculateSummary();
+  });
 
   /* =========================
-     Project and Task Selection
+     Project and Task Selection (EXISTING LOGIC)
   ========================== */
   // When client changes
   $('#client_id').on('change', function() {
@@ -458,26 +608,34 @@ $(document).ready(function() {
                 // Add task as an invoice item using your existing row structure
                 const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 const newRow = `
-                <tr id="${rowId}">
+                <tr id="${rowId}" class="service-row">
                     <td>
-                        <input type="text" class="form-control" value="${response.task_name}" readonly>
-                        <input type="hidden" name="item_id[]" value="${taskId}">
-                        <input type="hidden" name="item_type[]" value="0">
-                        <input type="hidden" class="unit-id" name="unit_id[]" value="0">
-                        <input type="hidden" class="tax-id" name="tax_id[]" value="0">
-                        <input type="hidden" class="tax-name" name="tax_name[]" value="">
+                        <div class="service-fields">
+                            <input type="text" class="form-control service-name-input" value="${response.task_name}" readonly>
+                            <input type="hidden" name="item_id[]" value="${taskId}">
+                            <input type="hidden" class="tax-id" name="tax_id[]" value="0">
+                            <input type="hidden" class="tax-name" name="tax_name[]" value="">
+                        </div>
                     </td>
                     <td>
-                        <input type="number" class="form-control quantity" name="quantity[]" value="${response.hours}" min="1" readonly>
+                        <input type="number" class="form-control quantity service-quantity" name="quantity[]" value="${response.hours}" min="1" readonly>
                     </td>
                     <td>
-                        <input type="text" class="form-control unit-name" name="unit_name[]" value="Hours" readonly>
+                        <input type="text" class="form-control hsn-code" name="code[]" value="" readonly>
                     </td>
                     <td>
-                        <input type="text" class="form-control selling-price" name="selling_price[]" value="${response.rate_per_hour}" data-value="${response.rate_per_hour}" readonly>
+                        <div class="service-fields">
+                            <input type="text" class="form-control service-price-input" name="selling_price[]" value="${response.rate_per_hour}" data-value="${response.rate_per_hour}" readonly>
+                        </div>
                     </td>
-                    <td>
-                        <input type="text" class="form-control tax-rate" name="tax_rate[]" value="0" data-value="0" readonly>
+                    <td class="tax-column">
+                        <div class="service-fields">
+                            <input type="text" class="form-control tax-rate" name="rate[]" value="0" data-value="0" readonly style="display: none;">
+                            <div class="tax-display-container">
+                                <div class="tax-amount-line">$ 0.00</div>
+                                <div class="tax-rate-line">0%</div>
+                            </div>
+                        </div>
                     </td>
                     <td>
                         <input type="text" class="form-control amount" name="amount[]" value="${response.total_amount}" data-value="${response.total_amount}" readonly>
@@ -527,307 +685,538 @@ $(document).ready(function() {
   }
 
   /* =========================
-     Radio button change handler
+     NEW QUOTATION FUNCTIONALITY
   ========================== */
-  $(document).on('change', 'input[name="item_type"]', function() {
-    const selectedType = $(this).val(); // 1 for Product, 0 for Service
-    
-    // Update table heading based on selected type
-    updateTableHeading(selectedType);
-    
-    // Update all existing dropdowns to match the selected type
-    updateAllItemDropdowns(selectedType);
+
+  // Fetch client billing & shipping info
+  $('#client_id').on('change', function() {
+      const clientId = $(this).val();
+      if (clientId) {
+          $.ajax({
+              url: 'process/fetch_client_full_info.php',
+              type: 'POST',
+              data: { client_id: clientId },
+              dataType: 'json',
+              success: response => {
+                  $('#client_info_block').html(response.billing_html);
+                  $('#shipping_info_block').html(response.shipping_html);
+              }
+          });
+      } else {
+          $('#client_info_block, #shipping_info_block').empty();
+      }
   });
 
-  function updateAllItemDropdowns(itemType) {
-    $('.item-select').each(function() {
-      const currentVal = $(this).val();
-      loadItems(itemType, $(this));
+  function loadProducts(target) {
+      let productOptions = '<option value="">Select Product</option>';
+      <?php foreach ($products as $product): ?>
+      productOptions += `<option value="<?= $product['id'] ?>" 
+                        data-price="<?= $product['selling_price'] ?>" 
+                        data-hsn="<?= $product['code'] ?>"
+                        data-tax="<?= $product['tax_rate'] ?>"
+                        data-tax-id="<?= $product['tax_id'] ?>"
+                        data-tax-name="<?= $product['tax_name'] ?>">
+                        <?= $product['name'] ?>
+                        </option>`;
+      <?php endforeach; ?>
       
-      // Try to restore the previous selection if it exists in the new list
-      if (currentVal) {
-        setTimeout(() => {
-          if ($(this).find('option[value="' + currentVal + '"]').length > 0) {
-            $(this).val(currentVal).trigger('change');
-          } else {
-            // If previous selection doesn't exist in new type, clear the row
-            resetRow($(this).closest('tr'));
-          }
-        }, 100);
+      if (target) {
+          target.html(productOptions);
       }
-    });
+      updateProductDropdowns();
   }
 
-  /* =========================
-     Items dropdown utilities
-  ========================== */
-  function loadItems(type, target) {
-    $.post('process/get_productcategories_by_type.php', { item_type: type }, function(data) {
+  function loadServices(target) {
+      let serviceOptions = '<option value="">Select Service</option>';
+      <?php foreach ($services as $service): ?>
+      serviceOptions += `<option value="<?= $service['id'] ?>" 
+                        data-price="<?= $service['selling_price'] ?>" 
+                        data-hsn="<?= $service['code'] ?>"
+                        data-tax="<?= $service['tax_rate'] ?>"
+                        data-tax-id="<?= $service['tax_id'] ?>"
+                        data-tax-name="<?= $service['tax_name'] ?>">
+                        <?= $service['name'] ?>
+                        </option>`;
+      <?php endforeach; ?>
+      
       if (target) {
-        target.html(data);
-        updateItemDropdowns();
+          target.html(serviceOptions);
       }
-    }).fail(function() {
-      if (target) {
-        target.html('<option value="">Error loading items</option>');
-      }
-    });
+      updateServiceDropdowns();
   }
 
-  function updateItemDropdowns() {
-    let selectedItems = [];
-    $('.item-select').each(function() {
-      let val = $(this).val();
-      if (val) selectedItems.push(val);
-    });
-
-    $('.item-select').each(function() {
-      let currentVal = $(this).val();
-      $(this).find('option').each(function() {
-        if ($(this).val() && selectedItems.includes($(this).val()) && $(this).val() !== currentVal) {
-          $(this).hide();
-        } else {
-          $(this).show();
-        }
+  function updateProductDropdowns() {
+      let selectedProducts = [];
+      $('.product-select').each(function() {
+          let val = $(this).val();
+          if (val) selectedProducts.push(val);
       });
-    });
+
+      $('.product-select').each(function() {
+          let currentVal = $(this).val();
+          $(this).find('option').each(function() {
+              if ($(this).val() && selectedProducts.includes($(this).val()) && $(this).val() !== currentVal) {
+                  $(this).hide();
+              } else {
+                  $(this).show();
+              }
+          });
+      });
   }
 
-  /* =========================
-     Add new row functionality
-  ========================== */
-  function addNewRow() {
-    const itemType = $('input[name="item_type"]:checked').val();
-    const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    
-    const newRow = `
-    <tr id="${rowId}">
-        <td>
-            <select class="form-select item-select" name="item_id[]" required>
-                <option value="">Loading...</option>
-            </select>
-            <input type="hidden" class="unit-id" name="unit_id[]">
-            <input type="hidden" class="tax-id" name="tax_id[]">
-            <input type="hidden" class="tax-name" name="tax_name[]">
-        </td>
-        <td>
-            <input type="number" class="form-control quantity" name="quantity[]" value="1" min="1" required>
-        </td>
-        <td>
-            <input type="text" class="form-control unit-name" name="unit_name[]" readonly>
-        </td>
-        <td>
-            <input type="text" class="form-control selling-price" name="selling_price[]" readonly>
-        </td>
-        <td>
-            <input type="text" class="form-control tax-rate" name="tax_rate[]" readonly>
-        </td>
-        <td>
-            <input type="text" class="form-control amount" name="amount[]" readonly>
-        </td>
-        <td>
-            <a href="javascript:void(0);" class="remove-table"><i class="isax isax-trash text-danger"></i></a>
-        </td>
-    </tr>`;
-    
-    $('.add-tbody').append(newRow);
-    
-    // Load appropriate items for this new row
-    const $select = $('#' + rowId + ' .item-select');
-    loadItems(itemType, $select);
+  function updateServiceDropdowns() {
+      let selectedServices = [];
+      $('.service-select').each(function() {
+          let val = $(this).val();
+          if (val) selectedServices.push(val);
+      });
+
+      $('.service-select').each(function() {
+          let currentVal = $(this).val();
+          $(this).find('option').each(function() {
+              if ($(this).val() && selectedServices.includes($(this).val()) && $(this).val() !== currentVal) {
+                  $(this).hide();
+              } else {
+                  $(this).show();
+              }
+          });
+      });
   }
 
   /* =========================
      Format behaviors for currency/percent inputs
   ========================== */
   function attachCurrencyBehavior(selector, onChangeCallback) {
-    $(document).on('focus', selector, function(){
-      const raw = $(this).data('value');
-      $(this).val(raw !== undefined ? raw : unformat($(this).val()));
-    });
-    
-    $(document).on('blur', selector, function(){
-      const num = unformat($(this).val());
-      $(this).data('value', num).val(formatCurrency(num));
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-    
-    $(document).on('input', selector, function(){
-      if (onChangeCallback) onChangeCallback($(this));
-    });
+      $(document).on('focus', selector, function(){
+          const raw = $(this).data('value');
+          $(this).val(raw !== undefined ? raw : unformat($(this).val()));
+      });
+      $(document).on('blur', selector, function(){
+          const num = unformat($(this).val());
+          $(this).data('value', num).val(formatCurrency(num));
+          if (onChangeCallback) onChangeCallback($(this));
+      });
+      $(document).on('input', selector, function(){
+          if (onChangeCallback) onChangeCallback($(this));
+      });
   }
 
   function attachPercentBehavior(selector, onChangeCallback) {
-    $(document).on('focus', selector, function(){
-      const raw = $(this).data('value');
-      $(this).val(raw !== undefined ? raw : unformat($(this).val()));
-    });
-    
-    $(document).on('blur', selector, function(){
-      const num = unformat($(this).val());
-      $(this).data('value', num).val(formatPercent(num));
-      if (onChangeCallback) onChangeCallback($(this));
-    });
-    
-    $(document).on('input', selector, function(){
-      if (onChangeCallback) onChangeCallback($(this));
-    });
+      $(document).on('focus', selector, function(){
+          const raw = $(this).data('value');
+          $(this).val(raw !== undefined ? raw : unformat($(this).val()));
+      });
+      $(document).on('blur', selector, function(){
+          const num = unformat($(this).val());
+          $(this).data('value', num).val(formatPercent(num));
+          if (onChangeCallback) onChangeCallback($(this));
+      });
+      $(document).on('input', selector, function(){
+          if (onChangeCallback) onChangeCallback($(this));
+      });
   }
 
   // Apply to line-item fields
   attachCurrencyBehavior('.selling-price', function($el){
-    calculateRow($el.closest('tr'));
+      calculateRow($el.closest('tr'));
   });
-  
   attachPercentBehavior('.tax-rate', function($el){
-    calculateRow($el.closest('tr'));
+      calculateRow($el.closest('tr'));
   });
 
   // Apply to shipping charge
   attachCurrencyBehavior('#shipping-charge', function(){
-    calculateSummary();
+      calculateSummary();
   });
 
   // Initialize shipping field formatting on load
   (function initShipping(){
-    const $ship = $('#shipping-charge');
-    if ($ship.length) {
-      const initVal = unformat($ship.val());
-      $ship.data('value', initVal);
-      if ($ship.attr('type') !== 'number') {
-        $ship.val(formatCurrency(initVal));
-      } else {
-        $ship.val(initVal.toFixed(2));
+      const $ship = $('#shipping-charge');
+      if ($ship.length) {
+          const initVal = unformat($ship.val());
+          $ship.data('value', initVal);
+          // Only show $ if input type allows text
+          if ($ship.attr('type') !== 'number') {
+              $ship.val(formatCurrency(initVal));
+          } else {
+              $ship.val(initVal.toFixed(2)); // keep numeric visible
+          }
       }
-    }
   })();
 
   /* =========================
      Item events
   ========================== */
-  $(document).on('change', '.item-select', function() {
-    const $row = $(this).closest('tr');
-    const option = $(this).find('option:selected');
+  $(document).on('change', '.product-select', function() {
+      const $row = $(this).closest('tr');
+      const option = $(this).find('option:selected');
 
-    if (option.val()) {
-      const price = parseFloat(option.data('price')) || 0;
-      const unit = option.data('unit') || '';
-      const unitId = option.data('unit-id') || '';
-      const tax = parseFloat(option.data('tax')) || 0;
-      const taxId = option.data('tax-id') || '';
-      const taxName = option.data('tax-name') || '';
+      if (option.val()) {
+          const price = parseFloat(option.data('price')) || 0;
+          const hsnCode = option.data('hsn') || '';
+          const tax = parseFloat(option.data('tax')) || 0;
+          const taxId = option.data('tax-id') || '';
+          const taxName = option.data('tax-name') || '';
 
-      $row.find('.unit-name').val(unit);
-      $row.find('.unit-id').val(unitId);
+          $row.find('.hsn-code').val(hsnCode);
+          $row.find('.tax-id').val(taxId);
+          $row.find('.tax-name').val(taxName);
+          
+          // Check if we're in Non-GST mode
+          const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+          const effectiveTax = isNonGST ? 0 : tax;
+          
+          $row.find('.selling-price').data('value', price).val(formatCurrency(price));
+          $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
+
+          calculateRow($row);
+      } else {
+          resetRow($row);
+      }
+
+      updateProductDropdowns();
+  });
+
+  // Handle service selection from dropdown
+  $(document).on('change', '.service-select', function() {
+      const $row = $(this).closest('tr');
+      const option = $(this).find('option:selected');
+
+      if (option.val()) {
+          const price = parseFloat(option.data('price')) || 0;
+          const hsnCode = option.data('hsn') || '';
+          const tax = parseFloat(option.data('tax')) || 0;
+          const taxId = option.data('tax-id') || '';
+          const taxName = option.data('tax-name') || '';
+
+          // Auto-fill the service name input
+          $row.find('.service-name-input').val(option.text());
+          $row.find('.hsn-code').val(hsnCode);
+          $row.find('.tax-id').val(taxId);
+          $row.find('.tax-name').val(taxName);
+          
+          // Check if we're in Non-GST mode
+          const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+          const effectiveTax = isNonGST ? 0 : tax;
+          
+          $row.find('.selling-price').data('value', price).val(formatCurrency(price));
+          $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
+          
+          // Set service tax select if available and not in Non-GST mode
+          if (taxId && !isNonGST) {
+              $row.find('.service-tax-select').val(taxId).trigger('change');
+          }
+
+          calculateRow($row);
+      }
+
+      updateServiceDropdowns();
+  });
+
+  // Handle service name input
+  $(document).on('input', '.service-name-input', function() {
+      const $row = $(this).closest('tr');
+      // Clear HSN code when manually entering service name
+      $row.find('.hsn-code').val('');
+      // Clear service dropdown selection when typing manually
+      $row.find('.service-select').val('');
+  });
+
+  // Handle service price input
+  $(document).on('input', '.service-price-input', function() {
+      const $row = $(this).closest('tr');
+      const price = unformat($(this).val());
+      $row.find('.selling-price').data('value', price).val(formatCurrency(price));
+      calculateRow($row);
+  });
+
+  // Handle service tax selection
+  $(document).on('change', '.service-tax-select', function() {
+      const $row = $(this).closest('tr');
+      const selectedOption = $(this).find('option:selected');
+      const taxRate = parseFloat(selectedOption.data('rate')) || 0;
+      const taxId = selectedOption.val();
+      const taxName = selectedOption.text().split(' (')[0]; // Get tax name without percentage
+
+      // Check if we're in Non-GST mode
+      const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+      const effectiveTax = isNonGST ? 0 : taxRate;
+      
+      $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
       $row.find('.tax-id').val(taxId);
       $row.find('.tax-name').val(taxName);
-
-      $row.find('.selling-price').data('value', price).val(formatCurrency(price));
-      $row.find('.tax-rate').data('value', tax).val(formatPercent(tax));
-
       calculateRow($row);
-    } else {
-      resetRow($row);
-    }
-
-    updateItemDropdowns();
   });
 
   $(document).on('input', '.quantity', function() {
-    calculateRow($(this).closest('tr'));
+      calculateRow($(this).closest('tr'));
   });
 
   $(document).on('click', '.remove-table', function(e) {
-    e.preventDefault();
-    $(this).closest('tr').remove();
-    calculateSummary();
-    updateItemDropdowns();
-  });
-
-  /* =========================
-     Add new row click handler
-  ========================== */
-  $(document).on('click', '.add-invoice-data', function() {
-    addNewRow();
+      e.preventDefault();
+      $(this).closest('tr').remove();
+      calculateSummary();
+      updateProductDropdowns();
+      updateServiceDropdowns();
   });
 
   /* =========================
      Calculations
   ========================== */
   function calculateRow($row) {
-    const qty  = unformat($row.find('.quantity').val());
-    const price = $row.find('.selling-price').data('value') || 0;
-    const tax   = $row.find('.tax-rate').data('value') || 0;
+      const qtyInput = $row.find('.quantity');
+      let qty = unformat(qtyInput.val());
+      
+      // For services, if quantity is empty or 0, treat as 1 for calculation
+      const isService = $row.hasClass('service-row');
+      if (isService && (qty === 0 || qtyInput.val() === '')) {
+          qty = 1; // Use 1 for calculation but keep field empty for display
+      }
+      
+      const price = $row.find('.selling-price').data('value') || 0;
+      const taxRate = $row.find('.tax-rate').data('value') || 0;
 
-    const lineSubtotal = qty * price;
-    const lineTax = lineSubtotal * (tax / 100);
-    const lineTotal = lineSubtotal + lineTax;
+      const lineSubtotal = qty * price;
+      const lineTaxAmount = lineSubtotal * (taxRate / 100);
+      const lineTotal = lineSubtotal + lineTaxAmount;
 
-    $row.find('.amount').data('value', lineTotal).val(formatCurrency(lineTotal));
-    calculateSummary();
+      // Update the tax display container
+      const taxAmountFormatted = formatCurrency(lineTaxAmount);
+      const taxRateFormatted = `${taxRate}%`;
+      
+      $row.find('.tax-amount-line').text(taxAmountFormatted);
+      $row.find('.tax-rate-line').text(taxRateFormatted);
+      
+      $row.find('.amount').data('value', lineTotal).val(formatCurrency(lineTotal));
+      
+      calculateSummary();
   }
 
   function getShippingCharge() {
-    const $ship = $('#shipping-charge');
-    if (!$ship.length) return 0;
-    const stored = $ship.data('value');
-    if (stored !== undefined) return parseFloat(stored) || 0;
-    return unformat($ship.val());
+      const $ship = $('#shipping-charge');
+      if (!$ship.length) return 0;
+      // Prefer stored numeric if available
+      const stored = $ship.data('value');
+      if (stored !== undefined) return parseFloat(stored) || 0;
+      // Fallback: parse current field
+      return unformat($ship.val());
   }
 
   function calculateSummary() {
-    let sub = 0, taxGroups = {}, grandTotal = 0;
+      let sub = 0, taxGroups = {}, grandTotal = 0;
 
-    $('.add-tbody tr').each(function() {
-      const p = $(this).find('.selling-price').data('value') || 0;
-      const q = unformat($(this).find('.quantity').val());
-      const t = $(this).find('.tax-rate').data('value') || 0;
-      const taxName = $(this).find('.tax-name').val() || '';
+      $('.add-tbody tr').each(function() {
+          const p = $(this).find('.selling-price').data('value') || 0;
+          const qtyInput = $(this).find('.quantity');
+          let q = unformat(qtyInput.val());
+          
+          // For services with empty quantity, use 1 for calculation
+          const isService = $(this).hasClass('service-row');
+          if (isService && (q === 0 || qtyInput.val() === '')) {
+              q = 1;
+          }
+          
+          const t = $(this).find('.tax-rate').data('value') || 0;
+          const taxName = $(this).find('.tax-name').val() || 'Tax';
 
-      const lineSubtotal = p * q;
-      const lineTax = (lineSubtotal * t / 100);
-      const lineTotal = lineSubtotal + lineTax;
+          const lineSubtotal = p * q;
+          const lineTaxAmount = (lineSubtotal * t / 100);
+          const lineTotal = lineSubtotal + lineTaxAmount;
 
-      sub += lineSubtotal;
-      grandTotal += lineTotal;
+          sub += lineSubtotal;
+          grandTotal += lineTotal;
 
-      if (t > 0) {
-        const taxKey = `${taxName} (${t}%)`;
-        if (!taxGroups[taxKey]) taxGroups[taxKey] = 0;
-        taxGroups[taxKey] += lineTax;
+          if (t > 0) {
+              const taxKey = `${taxName} (${t}%)`;
+              if (!taxGroups[taxKey]) taxGroups[taxKey] = 0;
+              taxGroups[taxKey] += lineTaxAmount;
+          }
+      });
+
+      const shippingCharge = getShippingCharge();
+      let taxHtml = "";
+
+      // Only show tax details in GST mode
+      const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+      if (!isNonGST) {
+          $('.add-tbody tr').each(function(index) {
+              const p = $(this).find('.selling-price').data('value') || 0;
+              const qtyInput = $(this).find('.quantity');
+              let q = unformat(qtyInput.val());
+              
+              const isService = $(this).hasClass('service-row');
+              if (isService && (q === 0 || qtyInput.val() === '')) {
+                  q = 1;
+              }
+              
+              const t = $(this).find('.tax-rate').data('value') || 0;
+              const taxName = $(this).find('.tax-name').val() || 'Tax';
+
+              const lineSubtotal = p * q;
+              const lineTaxAmount = (lineSubtotal * t / 100);
+
+              if (t > 0 && lineTaxAmount > 0) {
+                  const taxLabel = `${taxName} (${t}%)`;
+                  taxHtml += `
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                          <h6 class="fs-14 fw-semibold">${taxLabel}</h6>
+                          <h6 class="fs-14 fw-semibold">${formatCurrency(lineTaxAmount)}</h6>
+                      </div>`;
+              }
+          });
       }
-    });
 
-    const shippingCharge = getShippingCharge();
-    
-    let taxHtml = "";
-    $.each(taxGroups, function(taxLabel, amount) {
-      taxHtml += `
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h6 class="fs-14 fw-semibold">${taxLabel}</h6>
-          <h6 class="fs-14 fw-semibold">${formatCurrency(amount)}</h6>
-        </div>`;
-    });
+      $('.tax-details').html(taxHtml);
 
-    $('.tax-details').html(taxHtml);
+      const totalAll = grandTotal + shippingCharge;
 
-    const totalAll = grandTotal + shippingCharge;
+      $('#subtotal-amount').text(formatCurrency(sub));
+      $('#total-amount').text(formatCurrency(totalAll));
 
-    $('#subtotal-amount').text(formatCurrency(sub));
-    $('#total-amount').text(formatCurrency(totalAll));
-
-    // Hidden numeric fields for backend
-    $('#subtotal-amount-field').val(sub.toFixed(2));
-    $('#tax-amount-field').val(Object.values(taxGroups).reduce((a,b)=>a+b,0).toFixed(2));
-    $('#total-amount-field').val(totalAll.toFixed(2));
+      // Hidden numeric fields for backend
+      $('#subtotal-amount-field').val(sub.toFixed(2));
+      $('#tax-amount-field').val(Object.values(taxGroups).reduce((a,b)=>a+b,0).toFixed(2));
+      $('#total-amount-field').val(totalAll.toFixed(2));
   }
-
+  
   function resetRow($row) {
-    $row.find('.quantity').val(1);
-    $row.find('.unit-name, .selling-price, .tax-rate, .amount').val('').removeData('value');
-    $row.find('.unit-id, .tax-id').val('');
-    calculateSummary();
+      $row.find('.quantity').val(1).removeClass('service-quantity');
+      $row.find('.hsn-code, .selling-price, .tax-rate, .amount, .service-name-input, .service-price-input').val('').removeData('value');
+      $row.find('.tax-id').val('');
+      $row.find('.tax-amount-line').text('');
+      $row.find('.tax-rate-line').text('');
+      calculateSummary();
   }
+
+  // Item type change handler
+  $('input[name="item_type"]').on('change', function() {
+      const itemType = $(this).val();
+      
+      // Update all existing rows
+      $('.add-tbody tr').each(function() {
+          const $row = $(this);
+          
+          if (itemType == 1) {
+              // Switch to product mode
+              $row.removeClass('service-row').addClass('product-row');
+              $row.find('.quantity').val(1).removeClass('service-quantity');
+          } else {
+              // Switch to service mode
+              $row.removeClass('product-row').addClass('service-row');
+              $row.find('.quantity').val('').addClass('service-quantity');
+          }
+          
+          // Reset values when switching types
+          $row.find('.hsn-code').val('');
+          $row.find('.selling-price').val('').removeData('value');
+          $row.find('.tax-rate').val('').removeData('value');
+          $row.find('.amount').val('').removeData('value');
+          $row.find('.tax-id').val('');
+          $row.find('.tax-name').val('');
+          $row.find('.tax-amount-line').text('');
+          $row.find('.tax-rate-line').text('');
+      });
+      
+      calculateSummary();
+  });
+
+  // SINGLE "Add New" event handler - FIXED
+  $('.add-invoice-data').on('click', function(e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      
+      console.log('Add New clicked - adding ONE row only');
+      
+      const itemType = $('input[name="item_type"]:checked').val();
+      const rowClass = itemType == 1 ? 'product-row' : 'service-row';
+      const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
+      
+      // Generate tax options HTML from PHP data
+      let taxOptions = '<option value="">Select Tax</option>';
+      <?php foreach ($taxRates as $tax): ?>
+      taxOptions += `<option value="<?= $tax['id'] ?>" data-rate="<?= $tax['rate'] ?>"><?= $tax['name'] ?> (<?= $tax['rate'] ?>%)</option>`;
+      <?php endforeach; ?>
+
+      const newRow = `
+          <tr class="${rowClass}">
+              <td>
+                  <div class="product-fields">
+                      <select class="form-select product-select" name="item_id[]">
+                          <option value="">Select Product</option>
+                      </select>
+                      <input type="hidden" class="tax-id" name="tax_id[]">
+                      <input type="hidden" class="tax-name" name="tax_name[]">
+                  </div>
+                  <div class="service-fields">
+                      <select class="form-select service-select" name="item_id[]">
+                          <option value="">Select Service</option>
+                      </select>
+                      <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name">
+                      <input type="hidden" class="tax-id" name="tax_id[]">
+                      <input type="hidden" class="tax-name" name="tax_name[]">
+                  </div>
+              </td>
+              <td>
+                  <input type="number" class="form-control quantity ${itemType == 0 ? 'service-quantity' : ''}" name="quantity[]" value="${itemType == 1 ? '1' : ''}" ${itemType == 1 ? 'min="1"' : 'placeholder="Optional"'}">
+              </td>
+              <td>
+                  <input type="text" class="form-control hsn-code" name="code[]" readonly>
+              </td>
+              <td>
+                  <div class="product-fields">
+                      <input type="text" class="form-control selling-price" name="selling_price[]" data-value="0">
+                  </div>
+                  <div class="service-fields">
+                      <input type="text" class="form-control service-price-input" name="selling_price[]" data-value="0" placeholder="0.00">
+                  </div>
+              </td>
+              <td class="tax-column">
+                  <div class="product-fields">
+                      <input type="text" class="form-control tax-rate" name="rate[]" data-value="0" style="display: none;">
+                      <div class="tax-display-container">
+                          <div class="tax-amount-line"></div>
+                          <div class="tax-rate-line"></div>
+                      </div>
+                  </div>
+                  <div class="service-fields">
+                      <select class="form-select service-tax-select" name="tax_id[]">
+                          ${taxOptions}
+                      </select>
+                      <input type="hidden" class="tax-rate" name="rate[]" data-value="${isNonGST ? '0' : '0'}">
+                      <input type="hidden" class="tax-name" name="tax_name[]" value="">
+                      <div class="tax-display-container mt-2">
+                          <div class="tax-amount-line"></div>
+                          <div class="tax-rate-line"></div>
+                      </div>
+                  </div>
+              </td>
+              <td>
+                  <input type="text" class="form-control amount" name="amount[]" data-value="0" readonly>
+              </td>
+              <td>
+                  <a href="javascript:void(0);" class="remove-table"><i class="isax isax-trash"></i></a>
+              </td>
+          </tr>
+      `;
+      
+      $('.add-tbody').append(newRow);
+      
+      // Load appropriate dropdown
+      if (itemType == 1) {
+          const $productSelect = $('.add-tbody tr:last .product-select');
+          loadProducts($productSelect);
+      } else {
+          const $serviceSelect = $('.add-tbody tr:last .service-select');
+          loadServices($serviceSelect);
+          // For service, set default tax display
+          $('.add-tbody tr:last .tax-amount-line').text('$ 0.00');
+          $('.add-tbody tr:last .tax-rate-line').text('0%');
+      }
+      
+      updateProductDropdowns();
+      updateServiceDropdowns();
+      return false;
+  });
 
   /* =========================
      FORM VALIDATION + Clean values on submit
@@ -841,14 +1230,15 @@ $(document).ready(function() {
       $('#clientname_error').text('Client is required.');
       isValid = false;
     }
-    if (!$('#project_id').val()) {
-      $('#project_error').text('Project is required.');
-      isValid = false;
-    }
-    if (!$('#task_id').val() || $('#task_id').val().length === 0) {
-      $('#task_error').text('At least one task is required.');
-      isValid = false;
-    }
+    
+    //if (!$('#project_id').val()) {
+    //  $('#project_error').text('Project is required.');
+     // isValid = false;
+  //  }
+   // if (!$('#task_id').val() || $('#task_id').val().length === 0) {
+   //   $('#task_error').text('At least one task is required.');
+    //  isValid = false;
+    //}
     if (!$('#invoice_date').val()) {
       $('#invoice_date_error').text('Invoice Date is required.');
       isValid = false;
@@ -898,58 +1288,12 @@ $(document).ready(function() {
     $('#shipping-charge').val(parseFloat(shipNum).toFixed(2));
   });
 
-  /* =========================
-     Client info fetch (existing)
-  ========================== */
-  function fetchClientInfo(clientId) {
-    if (clientId) {
-      $.ajax({
-        url: 'process/fetch_client_full_info.php',
-        type: 'POST',
-        data: { client_id: clientId },
-        dataType: 'json',
-        success: function(response) {
-          $('#client_info_block').html(response.billing_html);
-          $('#shipping_info_block').html(response.shipping_html);
-        },
-        error: function(xhr, status, error) {
-          console.error(error);
-        }
-      });
-    } else {
-      $('#client_info_block, #shipping_info_block').empty();
-    }
-  }
-
-  $('#client_id').on('select2:select', function(e) {
-    fetchClientInfo($(this).val());
-  });
-
-  const preselectedClient = $('#client_id').val();
-  if (preselectedClient) {
-    fetchClientInfo(preselectedClient);
-  }
-
-  /* =========================
-     Upload label
-  ========================== */
-  $('#document-upload').on('change', function() {
-    const files = this.files;
-    const label = files.length === 1 ? files[0].name : (files.length > 1 ? `${files.length} files selected` : '');
-    $('#file-count-label').text(label);
-  });
-
-  /* =========================
-     Initialize first row and table heading
-  ========================== */
-  // Initialize table heading based on default selected radio (Product)
-  updateTableHeading('1');
-  
-  // Add initial row based on default selected radio (Product)
-  addNewRow();
-
-  // Initial calculations
+  // Initial pass
+  updateProductDropdowns();
+  updateServiceDropdowns();
   calculateSummary();
+  
+  console.log('Initialization complete - ONE handler attached');
 });
 </script>
 </body>

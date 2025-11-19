@@ -9,6 +9,10 @@ function dbString($conn, $value) {
     return mysqli_real_escape_string($conn, trim($value ?? ''));
 }
 
+function unformat($value) {
+    return (float)str_replace(['$', ',',' '], '', $value);
+}
+
 function dbInt($value) {
     return (is_numeric($value) && $value !== '') ? (int)$value : 0;
 }
@@ -41,31 +45,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
 
     try {
         // === Sanitize Inputs ===
-        $client_id       = dbInt($_POST['client_id'] );
+        $client_id       = dbInt($_POST['client_id']);
         $project_id      = dbInt($_POST['project_id'] ?? 0);
         $reference_name  = dbString($conn, $_POST['reference_name'] ?? '');
-        $invoice_date    = dbString($conn, $_POST['invoice_date'] );
-        $due_date        = dbString($conn, $_POST['due_date'] );
+        $invoice_date    = dbString($conn, $_POST['invoice_date']);
+        $due_date        = dbString($conn, $_POST['due_date']);
         $order_number    = dbString($conn, $_POST['order_number'] ?? '');
-        $item_type       = dbString($conn, $_POST['item_type'] ?? '');
+        $item_type       = dbInt($_POST['item_type'] ?? 1);
         $user_id         = dbInt($_POST['user_id'] ?? 0);
         $invoice_note    = dbString($conn, $_POST['invoice_note'] ?? '');
         $description     = dbString($conn, $_POST['description'] ?? '');
         $amount          = dbFloat($_POST['sub_amount'] ?? 0);
         $tax_amount      = dbFloat($_POST['tax_amount'] ?? 0);
-        $shipping_charge = dbFloat($_POST['shipping_charge'] ?? 0);
+        $shipping_charge = unformat($_POST['shipping_charge'] ?? 0);
         $total_amount    = dbFloat($_POST['total_amount'] ?? 0);
-
-        // Handle task IDs properly
-        $task_ids = [];
-        if (isset($_POST['task_id']) && is_array($_POST['task_id'])) {
-            foreach ($_POST['task_id'] as $task_id) {
-                $task_id = dbInt($task_id);
-                if ($task_id > 0) {
-                    $task_ids[] = $task_id;
-                }
-            }
-        }
+        
+        // === NEW: GST Type field ===
+        $gst_type        = dbString($conn, $_POST['gst_type'] ?? 'gst');
 
         // --- Handle bank_id properly ---
         $bank_id_sql = "NULL";
@@ -90,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             tax_amount = '$tax_amount',
             shipping_charge = '$shipping_charge',
             total_amount = '$total_amount',
+            gst_type = '$gst_type',
             updated_by = '$currentUserId'
             WHERE id = '$invoice_id'";
 
@@ -105,24 +102,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         }
 
         // Then, insert or restore only the selected tasks
-        if (!empty($task_ids)) {
-            foreach ($task_ids as $task_id) {
-                // Check if this task already exists for this invoice
-                $check_task = "SELECT id FROM invoice_tasks WHERE invoice_id = '$invoice_id' AND task_id = '$task_id' LIMIT 1";
-                $task_exists = mysqli_query($conn, $check_task);
+        $task_ids = [];
+        if (isset($_POST['task_id']) && is_array($_POST['task_id'])) {
+            foreach ($_POST['task_id'] as $task_id) {
+                $task_id = dbInt($task_id);
+                if ($task_id > 0) {
+                    $task_ids[] = $task_id;
+                    
+                    // Check if this task already exists for this invoice
+                    $check_task = "SELECT id FROM invoice_tasks WHERE invoice_id = '$invoice_id' AND task_id = '$task_id' LIMIT 1";
+                    $task_exists = mysqli_query($conn, $check_task);
 
-                if ($task_exists && mysqli_num_rows($task_exists) > 0) {
-                    // Task exists, just undelete it
-                    $update_task = "UPDATE invoice_tasks SET is_deleted = 0, updated_by = '$currentUserId' WHERE invoice_id = '$invoice_id' AND task_id = '$task_id'";
-                    if (!mysqli_query($conn, $update_task)) {
-                        throw new Exception("Failed to update task: " . mysqli_error($conn));
-                    }
-                } else {
-                    // Insert new task
-                    $insert_task = "INSERT INTO invoice_tasks (invoice_id, task_id, org_id, created_by, updated_by) 
-                                    VALUES ('$invoice_id', '$task_id', '$orgId', '$currentUserId', '$currentUserId')";
-                    if (!mysqli_query($conn, $insert_task)) {
-                        throw new Exception("Failed to insert task: " . mysqli_error($conn));
+                    if ($task_exists && mysqli_num_rows($task_exists) > 0) {
+                        // Task exists, just undelete it
+                        $update_task = "UPDATE invoice_tasks SET is_deleted = 0, updated_by = '$currentUserId' WHERE invoice_id = '$invoice_id' AND task_id = '$task_id'";
+                        if (!mysqli_query($conn, $update_task)) {
+                            throw new Exception("Failed to update task: " . mysqli_error($conn));
+                        }
+                    } else {
+                        // Insert new task
+                        $insert_task = "INSERT INTO invoice_tasks (invoice_id, task_id, org_id, created_by, updated_by) 
+                                        VALUES ('$invoice_id', '$task_id', '$orgId', '$currentUserId', '$currentUserId')";
+                        if (!mysqli_query($conn, $insert_task)) {
+                            throw new Exception("Failed to insert task: " . mysqli_error($conn));
+                        }
                     }
                 }
             }
@@ -134,55 +137,157 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             throw new Exception("Failed to mark old items as deleted: " . mysqli_error($conn));
         }
 
-        // === 4. Insert/update invoice items ===
-        if (!empty($_POST['product_id']) && is_array($_POST['product_id'])) {
-            foreach ($_POST['product_id'] as $index => $product_id) {
-                // Handle both regular products and task products
-                if (is_string($product_id) && strpos($product_id, 'task_') === 0) {
-                    // This is a task product, skip it as tasks are handled separately
-                    continue;
-                }
-                
-                $product_id = dbInt($product_id);
-                if ($product_id === 0) continue;
-
+        // === 4. Insert/update invoice items - UPDATED FOR PRODUCTS & SERVICES ===
+        if (isset($_POST['item_id']) && is_array($_POST['item_id'])) {
+            foreach ($_POST['item_id'] as $index => $item_id) {
+                $item_id       = dbInt($item_id);
+                $service_name  = dbString($conn, $_POST['service_name'][$index] ?? '');
                 $quantity      = dbFloat($_POST['quantity'][$index] ?? 0);
-                $unit_id       = dbInt($_POST['unit_id'][$index] ?? 0);
                 $selling_price = dbFloat($_POST['selling_price'][$index] ?? 0);
                 $tax_id        = dbInt($_POST['tax_id'][$index] ?? 0);
+                $tax_name      = dbString($conn, $_POST['tax_name'][$index] ?? '');
+                $rate          = dbFloat($_POST['rate'][$index] ?? 0);
                 $item_amount   = dbFloat($_POST['amount'][$index] ?? 0);
+                // $code          = dbString($conn, $_POST['code'][$index] ?? '');
+                
+                // Determine if this is a product or service
+                $isProduct = ($item_id > 0);
+                
+                // Prepare values for database
+                if ($isProduct) {
+                    // Product item
+                    $product_id_sql = $item_id;
+                    $service_name_sql = 'NULL';
+                } else {
+                    // Service item - only save if service name is provided
+                    if (empty($service_name)) {
+                        continue; // Skip if no service name
+                    }
+                    $product_id_sql = 'NULL';
+                    $service_name_sql = "'$service_name'";
+                }
 
-                $check_item = "SELECT id FROM invoice_item 
-                               WHERE invoice_id = '$invoice_id' 
-                               AND product_id = '$product_id' 
-                               LIMIT 1";
+                $tax_id_sql = ($tax_id === 0) ? 'NULL' : $tax_id;
+
+                // Check if item already exists (for update scenario)
+                if ($isProduct) {
+                    $check_item = "SELECT id FROM invoice_item 
+                                   WHERE invoice_id = '$invoice_id' 
+                                   AND product_id = '$product_id_sql'
+                                   LIMIT 1";
+                } else {
+                    $check_item = "SELECT id FROM invoice_item 
+                                   WHERE invoice_id = '$invoice_id' 
+                                   AND service_name = '$service_name'
+                                   LIMIT 1";
+                }
+                
                 $item_exists = mysqli_query($conn, $check_item);
 
                 if ($item_exists && mysqli_num_rows($item_exists) > 0) {
-                    $update_item = "UPDATE invoice_item SET
-                        quantity = '$quantity',
-                        unit_id = '$unit_id',
-                        selling_price = '$selling_price',
-                        tax_id = '$tax_id',
-                        amount = '$item_amount',
-                        is_deleted = 0,
-                        updated_by = '$currentUserId'
-                        WHERE invoice_id = '$invoice_id' AND product_id = '$product_id'";
+                    if ($isProduct) {
+                        $update_item = "UPDATE invoice_item SET
+                            quantity = '$quantity',
+                            selling_price = '$selling_price',
+                            tax_id = $tax_id_sql,
+                            rate = '$rate',
+                            amount = '$item_amount',
+                            is_deleted = 0,
+                            updated_by = '$currentUserId'
+                            WHERE invoice_id = '$invoice_id' 
+                            AND product_id = '$product_id_sql'";
+                    } else {
+                        $update_item = "UPDATE invoice_item SET
+                            quantity = '$quantity',
+                            selling_price = '$selling_price',
+                            tax_id = $tax_id_sql,
+                            rate = '$rate',
+                            amount = '$item_amount',
+                            service_name = '$service_name',
+                            is_deleted = 0,
+                            updated_by = '$currentUserId'
+                            WHERE invoice_id = '$invoice_id' 
+                            AND service_name = '$service_name'";
+                    }
+                    
                     if (!mysqli_query($conn, $update_item)) {
                         throw new Exception("Failed to update item: " . mysqli_error($conn));
                     }
                 } else {
                     $insert_item = "INSERT INTO invoice_item (
-                        invoice_id, product_id, quantity, unit_id, 
-                        selling_price, tax_id, amount, org_id, 
+                        invoice_id, product_id, service_name, quantity, 
+                        selling_price, tax_id,rate, amount, org_id, 
                         created_by, updated_by
                     ) VALUES (
-                        '$invoice_id', '$product_id', '$quantity', '$unit_id',
-                        '$selling_price', '$tax_id', '$item_amount', '$orgId',
-                        '$currentUserId', '$currentUserId'
+                        '$invoice_id', 
+                        " . ($isProduct ? "'$product_id_sql'" : "NULL") . ", 
+                        " . ($isProduct ? "NULL" : "'$service_name'") . ", 
+                        '$quantity',
+                        '$selling_price', 
+                        $tax_id_sql, 
+                        '$rate', 
+                        '$item_amount', 
+                        '$orgId',
+                        '$currentUserId', 
+                        '$currentUserId'
                     )";
+                    
                     if (!mysqli_query($conn, $insert_item)) {
                         throw new Exception("Failed to insert item: " . mysqli_error($conn));
+                    }
+                }
+            }
+        } else {
+            // Fallback to old product-only logic (for backward compatibility)
+            if (!empty($_POST['product_id']) && is_array($_POST['product_id'])) {
+                foreach ($_POST['product_id'] as $index => $product_id) {
+                    // Handle both regular products and task products
+                    if (is_string($product_id) && strpos($product_id, 'task_') === 0) {
+                        // This is a task product, skip it as tasks are handled separately
+                        continue;
+                    }
+                    
+                    $product_id = dbInt($product_id);
+                    if ($product_id === 0) continue;
+
+                    $quantity      = dbFloat($_POST['quantity'][$index] ?? 0);
+                    $unit_id       = dbInt($_POST['unit_id'][$index] ?? 0);
+                    $selling_price = dbFloat($_POST['selling_price'][$index] ?? 0);
+                    $tax_id        = dbInt($_POST['tax_id'][$index] ?? 0);
+                    $item_amount   = dbFloat($_POST['amount'][$index] ?? 0);
+
+                    $check_item = "SELECT id FROM invoice_item 
+                                   WHERE invoice_id = '$invoice_id' 
+                                   AND product_id = '$product_id' 
+                                   LIMIT 1";
+                    $item_exists = mysqli_query($conn, $check_item);
+
+                    if ($item_exists && mysqli_num_rows($item_exists) > 0) {
+                        $update_item = "UPDATE invoice_item SET
+                            quantity = '$quantity',
+                            unit_id = '$unit_id',
+                            selling_price = '$selling_price',
+                            tax_id = '$tax_id',
+                            amount = '$item_amount',
+                            is_deleted = 0,
+                            updated_by = '$currentUserId'
+                            WHERE invoice_id = '$invoice_id' AND product_id = '$product_id'";
+                        if (!mysqli_query($conn, $update_item)) {
+                            throw new Exception("Failed to update item: " . mysqli_error($conn));
+                        }
+                    } else {
+                        $insert_item = "INSERT INTO invoice_item (
+                            invoice_id, product_id, quantity, unit_id, 
+                            selling_price, tax_id, amount, org_id, 
+                            created_by, updated_by
+                        ) VALUES (
+                            '$invoice_id', '$product_id', '$quantity', '$unit_id',
+                            '$selling_price', '$tax_id', '$item_amount', '$orgId',
+                            '$currentUserId', '$currentUserId'
+                        )";
+                        if (!mysqli_query($conn, $insert_item)) {
+                            throw new Exception("Failed to insert item: " . mysqli_error($conn));
+                        }
                     }
                 }
             }
@@ -221,6 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                             selling_price = '$rate_per_hour',
                             tax_id = 0,
                             amount = '$task_amount',
+                            service_name = '$task_name',
                             is_deleted = 0,
                             updated_by = '$currentUserId'
                             WHERE invoice_id = '$invoice_id' AND product_id = 'task_$task_id'";
@@ -230,11 +336,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                     } else {
                         // Insert new task item
                         $insert_task_item = "INSERT INTO invoice_item (
-                            invoice_id, product_id, quantity, unit_id, 
+                            invoice_id, product_id, service_name, quantity, unit_id, 
                             selling_price, tax_id, amount, org_id, 
                             created_by, updated_by
                         ) VALUES (
-                            '$invoice_id', 'task_$task_id', '$hours', '0',
+                            '$invoice_id', 'task_$task_id', '$task_name', '$hours', '0',
                             '$rate_per_hour', '0', '$task_amount', '$orgId',
                             '$currentUserId', '$currentUserId'
                         )";
@@ -277,7 +383,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         mysqli_commit($conn);
         $_SESSION['message'] = "Invoice updated successfully!";
         $_SESSION['message_type'] = "success";
-        header("Location: ../invoices.php");
+        header("Location: ../edit-invoice.php?id=" . $invoice_id);
         exit();
 
     } catch (Exception $e) {
