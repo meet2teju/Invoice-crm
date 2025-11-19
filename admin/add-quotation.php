@@ -763,10 +763,10 @@ $(document).ready(function() {
         updateProductDropdowns();
     });
 
-    // Handle service selection from dropdown
     $(document).on('change', '.service-select', function() {
         const $row = $(this).closest('tr');
         const option = $(this).find('option:selected');
+        const $serviceNameInput = $row.find('.service-name-input');
 
         if (option.val()) {
             const price = parseFloat(option.data('price')) || 0;
@@ -775,40 +775,49 @@ $(document).ready(function() {
             const taxId = option.data('tax-id') || '';
             const taxName = option.data('tax-name') || '';
 
-            // Auto-fill the service name input
-            $row.find('.service-name-input').val(option.text());
+            if ($serviceNameInput.val() === '') {
+                $serviceNameInput.val(option.text());
+            }
+            
             $row.find('.hsn-code').val(hsnCode);
             $row.find('.tax-id').val(taxId);
             $row.find('.tax-name').val(taxName);
             
-            // Check if we're in Non-GST mode
             const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
             const effectiveTax = isNonGST ? 0 : tax;
             
             $row.find('.selling-price').data('value', price).val(formatCurrency(price));
             $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
             
-            // Set service tax select if available and not in Non-GST mode
             if (taxId && !isNonGST) {
                 $row.find('.service-tax-select').val(taxId).trigger('change');
             }
 
             calculateRow($row);
+        } else {
+            $row.find('.hsn-code').val('');
+            $row.find('.tax-id').val('');
+            $row.find('.tax-name').val('');
+            $row.find('.selling-price').val('').removeData('value');
+            $row.find('.tax-rate').val('').removeData('value');
+            $row.find('.amount').val('').removeData('value');
+            $row.find('.tax-amount-line').text('');
+            $row.find('.tax-rate-line').text('');
+            calculateSummary();
         }
 
         updateServiceDropdowns();
     });
 
-    // Handle service name input
     $(document).on('input', '.service-name-input', function() {
         const $row = $(this).closest('tr');
-        // Clear HSN code when manually entering service name
-        $row.find('.hsn-code').val('');
-        // Clear service dropdown selection when typing manually
-        $row.find('.service-select').val('');
+        const $serviceSelect = $row.find('.service-select');
+        
+        if ($serviceSelect.val() === '') {
+            $row.find('.hsn-code').val('');
+        }
     });
 
-    // Handle service price input
     $(document).on('input', '.service-price-input', function() {
         const $row = $(this).closest('tr');
         const price = unformat($(this).val());
@@ -816,7 +825,6 @@ $(document).ready(function() {
         calculateRow($row);
     });
 
-    // Handle service tax selection
     $(document).on('change', '.service-tax-select', function() {
         const $row = $(this).closest('tr');
         const selectedOption = $(this).find('option:selected');
@@ -824,7 +832,6 @@ $(document).ready(function() {
         const taxId = selectedOption.val();
         const taxName = selectedOption.text().split(' (')[0]; // Get tax name without percentage
 
-        // Check if we're in Non-GST mode
         const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
         const effectiveTax = isNonGST ? 0 : taxRate;
         
