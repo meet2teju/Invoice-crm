@@ -41,7 +41,7 @@ if (isset($_POST['submit'])) {
         $shipping_charge = unformat($_POST['shipping_charge'] ?? 0);
         $total_amount    = unformat($_POST['total_amount'] ?? 0);
         
-        // === NEW: GST Type field ===
+        // === GST Type field ===
         $gst_type        = mysqli_real_escape_string($conn, $_POST['gst_type'] ?? 'gst');
 
         // === Insert quotation master ===
@@ -80,11 +80,11 @@ if (isset($_POST['submit'])) {
             }
         }
 
-        // === Insert quotation items - FIXED: Only one entry per item ===
+        // === Insert quotation items - FIXED: Store product_id and service_id separately ===
         if (isset($_POST['item_id']) && is_array($_POST['item_id'])) {
             foreach ($_POST['item_id'] as $index => $item_id) {
-                // Skip completely empty items (no item_id AND no service_name)
-                if (empty($item_id) && empty($_POST['service_name'][$index])) {
+                // Skip completely empty items
+                if (empty($item_id) && empty($_POST['service_name'][$index]) && empty($_POST['selling_price'][$index])) {
                     continue;
                 }
 
@@ -96,27 +96,36 @@ if (isset($_POST['submit'])) {
                 $rate          = unformat($_POST['rate'][$index] ?? 0);
                 $item_amount   = unformat($_POST['amount'][$index] ?? 0);
                 $code          = mysqli_real_escape_string($conn, $_POST['code'][$index] ?? '');
+                $item_type_row = $_POST['item_type_row'][$index] ?? 'product'; // Get the row type
 
-                // Determine if this is a product or service
-                $isProduct = (!empty($item_id) && $item_id != 0);
-                
-                if ($isProduct) {
-                    // Product item - store product_id and service_name as NULL
+                // Initialize product_id and service_id
+                $product_id_sql = 'NULL';
+                $service_id_sql = 'NULL';
+                $service_name_sql = 'NULL';
+
+                // Determine whether it's a product or service and set appropriate values
+                if ($item_type_row === 'product' && !empty($item_id)) {
+                    // This is a product - store in product_id
                     $product_id_sql = (int)$item_id;
-                    $service_name_sql = 'NULL';
-                } else {
-                    // Service item - store service name in service_name column AND item_id in product_id column
-                    $product_id_sql = (!empty($item_id) ? (int)$item_id : 'NULL');
-                    $service_name_sql = "'$service_name'";
+                } else if ($item_type_row === 'service') {
+                    if (!empty($item_id)) {
+                        // This is a service selected from dropdown - store in service_id
+                        $service_id_sql = (int)$item_id;
+                        // Also store the service name for reference
+                        $service_name_sql = "'" . mysqli_real_escape_string($conn, $_POST['service_name'][$index] ?? '') . "'";
+                    } else if (!empty($service_name)) {
+                        // This is a custom service (no dropdown selection) - store in service_name
+                        $service_name_sql = "'$service_name'";
+                    }
                 }
 
                 $tax_id_sql = (empty($tax_id) ? 'NULL' : (int)$tax_id);
 
                 $itemInsertQuery = "INSERT INTO quotation_item (
-                    quotation_id, quantity, product_id, service_name, selling_price,
+                    quotation_id, quantity, product_id, service_id, service_name, selling_price,
                     tax_id, rate, amount, org_id, is_deleted, created_by, updated_by
                 ) VALUES (
-                    '$quotationId', '$quantity', $product_id_sql, $service_name_sql, '$selling_price',
+                    '$quotationId', '$quantity', $product_id_sql, $service_id_sql, $service_name_sql, '$selling_price',
                     $tax_id_sql, '$rate', '$item_amount', '$orgId', 0, '$currentUserId', '$currentUserId'
                 )";
 

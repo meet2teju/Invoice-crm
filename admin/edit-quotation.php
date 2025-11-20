@@ -349,11 +349,13 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
 
                                                         <?php
                                                         $quotation_id = $_GET['id'];
+                                                        // FIXED QUERY: Get products from product_id and services from service_id
                                                         $item_query = "SELECT 
                                                                         qi.*, 
                                                                         p.name AS product_name, 
                                                                         p.code AS hsn_code,
                                                                         p.selling_price AS product_price,
+                                                                        p.item_type,
                                                                         t.rate AS tax_rate,
                                                                         t.name AS tax_name,
                                                                         t.id AS tax_id
@@ -365,17 +367,24 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                                                         $item_result = mysqli_query($conn, $item_query);
                                                         while ($item = mysqli_fetch_assoc($item_result)) {
                                                             $qty = (float)($item['quantity'] ?? 0);
-                                                            $price = (float)($item['product_price'] ?? $item['selling_price'] ?? 0);
+                                                            $price = (float)($item['selling_price'] ?? 0);
                                                             $taxRate = (float)($item['tax_rate'] ?? 0);
                                                             $taxName = $item['tax_name'] ?? '';
-                                                            $productName = $item['product_name'] ?? '';
-                                                            $serviceName = $item['service_name'] ?? '';
                                                             $hsnCode = $item['hsn_code'] ?? '';
                                                             $taxId = $item['tax_id'] ?? '';
                                                             
-                                                            // Determine if this is a product or service
+                                                            // DETERMINE IF IT'S A PRODUCT OR SERVICE BASED ON YOUR NEW LOGIC
                                                             $isProduct = (!empty($item['product_id']) && $item['product_id'] != 0);
-                                                            $displayName = $isProduct ? $productName : $serviceName;
+                                                            $isService = (!empty($item['service_id']) && $item['service_id'] != 0) || !empty($item['service_name']);
+                                                            
+                                                            // Get display name
+                                                            if ($isProduct) {
+                                                                $displayName = $item['product_name'] ?? '';
+                                                                $itemId = $item['product_id'];
+                                                            } else {
+                                                                $displayName = $item['service_name'] ?? '';
+                                                                $itemId = $item['service_id'] ?? '';
+                                                            }
                                                             
                                                             $lineSubtotal = $qty * $price;
                                                             $lineTax = $lineSubtotal * $taxRate / 100;
@@ -386,7 +395,7 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                                                             $displayLineTax = $isNonGST ? 0 : $lineTax;
                                                             $displayAmount = $isNonGST ? $lineSubtotal : $amount;
                                                             
-                                                            // Determine row class based on whether it's a product or service
+                                                            // Determine row class and values
                                                             $rowClass = $isProduct ? 'product-row' : 'service-row';
                                                             $quantityClass = $isProduct ? '' : 'service-quantity';
                                                             $quantityValue = $isProduct ? $qty : ($qty > 0 ? $qty : '');
@@ -404,13 +413,15 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                                                                                     data-tax="<?= $product['tax_rate'] ?>"
                                                                                     data-tax-id="<?= $product['tax_id'] ?>"
                                                                                     data-tax-name="<?= $product['tax_name'] ?>"
-                                                                                    <?= ($isProduct && $product['id'] == $item['product_id']) ? 'selected' : '' ?>>
+                                                                                    <?= ($isProduct && $product['id'] == $itemId) ? 'selected' : '' ?>>
                                                                                     <?= $product['name'] ?>
                                                                                 </option>
                                                                             <?php endforeach; ?>
                                                                         </select>
                                                                         <input type="hidden" class="tax-id" name="tax_id[]" value="<?= $isNonGST ? 0 : $taxId ?>">
                                                                         <input type="hidden" class="tax-name" name="tax_name[]" value="<?= htmlspecialchars($taxName) ?>">
+                                                                        <!-- Hidden field to track item type -->
+                                                                        <input type="hidden" name="item_type_row[]" value="product">
                                                                     </div>
                                                                     <div class="service-fields">
                                                                         <select class="form-select service-select" name="item_id[]">
@@ -422,14 +433,16 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                                                                                     data-tax="<?= $service['tax_rate'] ?>"
                                                                                     data-tax-id="<?= $service['tax_id'] ?>"
                                                                                     data-tax-name="<?= $service['tax_name'] ?>"
-                                                                                    <?= (!$isProduct && $service['id'] == $item['product_id']) ? 'selected' : '' ?>>
+                                                                                    <?= ($isService && $service['id'] == $itemId) ? 'selected' : '' ?>>
                                                                                     <?= $service['name'] ?>
                                                                                 </option>
                                                                             <?php endforeach; ?>
                                                                         </select>
-                                                                        <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name" value="<?= !$isProduct ? htmlspecialchars($displayName) : '' ?>">
+                                                                        <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name" value="<?= $isService ? htmlspecialchars($displayName) : '' ?>">
                                                                         <input type="hidden" class="tax-id" name="tax_id[]" value="<?= $isNonGST ? 0 : $taxId ?>">
                                                                         <input type="hidden" class="tax-name" name="tax_name[]" value="<?= htmlspecialchars($taxName) ?>">
+                                                                        <!-- Hidden field to track item type -->
+                                                                        <input type="hidden" name="item_type_row[]" value="service">
                                                                     </div>
                                                                 </td>
                                                                 <td>
@@ -1218,6 +1231,8 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                             </select>
                             <input type="hidden" class="tax-id" name="tax_id[]">
                             <input type="hidden" class="tax-name" name="tax_name[]">
+                            <!-- Hidden field to track item type -->
+                            <input type="hidden" name="item_type_row[]" value="product">
                         </div>
                         <div class="service-fields">
                             <select class="form-select service-select" name="item_id[]">
@@ -1226,6 +1241,8 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                             <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name">
                             <input type="hidden" class="tax-id" name="tax_id[]">
                             <input type="hidden" class="tax-name" name="tax_name[]">
+                            <!-- Hidden field to track item type -->
+                            <input type="hidden" name="item_type_row[]" value="service">
                         </div>
                     </td>
                     <td>
