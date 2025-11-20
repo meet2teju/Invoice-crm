@@ -204,6 +204,7 @@
                         </th>
                         <th >HSN Code</th>
                         <th >Product</th>
+                        <th >Type</th>
                         <th >Category</th>
                         <th >Unit</th>
                         <th>Quantity</th>
@@ -275,7 +276,7 @@
                                 </div>
                             </td>
                             <td><a href="javascript:void(0);"><?= htmlspecialchars($row['code']) ?></a></td>
-                            <td>
+                            <td style="white-space: normal; word-wrap: break-word;">
                                 <div class="d-flex align-items-center">
                                     <a href="javascript:void(0);" class="avatar avatar-sm rounded-circle me-2 flex-shrink-0">
                                         <img src="<?= $productImg ?>" onerror="this.src='assets/img/users/user-16.jpg';">
@@ -285,6 +286,7 @@
                                     </div>
                                 </div>
                             </td>
+                            <td><?= htmlspecialchars($row['item_type'] == 1 ? 'Product' : 'Service') ?></td>
                             <td><?= htmlspecialchars($row['category_name']) ?></td>
                             <td><?= htmlspecialchars($row['unit_name']) ?></td>
                             <td><?= htmlspecialchars($row['quantity']) ?></td>

@@ -193,13 +193,13 @@ $country_codes = [
                                                     <span id="company_name_error" class="text-danger error-text"></span>
                                                 </div>
                                             </div>
-                                            <div class="col-lg-4 col-md-6">
+                                            <!-- <div class="col-lg-4 col-md-6">
                                                 <div class="mb-3">
                                                     <label class="form-label">Display Name </label>
                                                     <input type="text" class="form-control" name="display_name" id="display_name" readonly>
                                                     <span id="display_name_error" class="text-danger error-text"></span>
                                                 </div>
-                                            </div>
+                                            </div> -->
                                             <div class="col-lg-4 col-md-6">
                                                 <div class="mb-3">
                                                     <label class="form-label">Email</label>
@@ -797,7 +797,7 @@ function validateTab(tabId) {
     
     if (tabId === 'otherTab') {
         // Validate other tab fields
-        const requiredFields = ['first_name', 'last_name', 'company_name', 'display_name', 'email', 'phone_number', 'business_number', 'pan_number', 'salutation'];
+        const requiredFields = ['first_name', 'last_name', 'company_name', 'email', 'phone_number', 'business_number', 'pan_number', 'salutation'];
         
         requiredFields.forEach(field => {
             const value = $(`[name="${field}"]`).val();
@@ -1098,18 +1098,18 @@ function removeRow(button) {
 }
 
 // Display name function
-function updateDisplayName() {
-    const salutation = document.getElementById('salutation').value;
-    let displayName = '';
+// function updateDisplayName() {
+//     const salutation = document.getElementById('salutation').value;
+//     let displayName = '';
 
-    if (salutation === 'Mr') displayName = 'Mr';
-    else if (salutation === 'Mrs') displayName = 'Mrs';
-    else if (salutation === 'Ms') displayName = 'Ms';
-    else if (salutation === 'Miss') displayName = 'Miss';
-    else if (salutation === 'Dr') displayName = 'Dr';
+//     if (salutation === 'Mr') displayName = 'Mr';
+//     else if (salutation === 'Mrs') displayName = 'Mrs';
+//     else if (salutation === 'Ms') displayName = 'Ms';
+//     else if (salutation === 'Miss') displayName = 'Miss';
+//     else if (salutation === 'Dr') displayName = 'Dr';
 
-    document.getElementById('display_name').value = displayName;
-}
+//     document.getElementById('display_name').value = displayName;
+// }
 
 // Initialize display name when page loads
 document.addEventListener('DOMContentLoaded', function() {

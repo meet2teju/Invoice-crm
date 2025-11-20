@@ -48,7 +48,7 @@ if (isset($_POST['submit'])) {
         $company_name = $_POST['company_name'];
         $first_name = $_POST['first_name'];
         $last_name = $_POST['last_name'];
-        $display_name = $_POST['display_name'];
+        // $display_name = $_POST['display_name'];
         $client_type = isset($_POST['client_type']) ? (int)$_POST['client_type'] : 0;
         $phone_number = $_POST['phone_number'];
         $business_number = $_POST['business_number'];
@@ -67,12 +67,12 @@ if (isset($_POST['submit'])) {
 
         // FIXED: Corrected column order in INSERT query
         $query = "INSERT INTO client (
-            customer_image, salutation, company_name, first_name, last_name, display_name, client_type,
+            customer_image, salutation, company_name, first_name, last_name, client_type,
             phone_number, business_number, email, enable_portal, remark, pan_number,
             website_url, department, designation, twitter, skype_name_number, facebook,
             currency, status, org_id, user_id, is_deleted, created_by, updated_by
         ) VALUES (
-            '$imageName', '$salutation', '$company_name', '$first_name', '$last_name', '$display_name', '$client_type',
+            '$imageName', '$salutation', '$company_name', '$first_name', '$last_name', '$client_type',
             '$phone_number', '$business_number', '$email', '$enable_portal', '$remark', '$pan',
             '$website_url', '$department', '$designation', '$twitter', '$skype_name_number', '$facebook',
             '$currency', 1, '$orgId', '$currentUserId', 0, '$currentUserId', '$currentUserId'
