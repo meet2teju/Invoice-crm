@@ -23,13 +23,17 @@ $items_result = mysqli_query($conn, "
     SELECT 
         qi.*, 
         p.name AS product_name,
-        p.code,
+        p.code AS product_code,
+        s.name AS service_name_from_product,
+        s.code AS service_code,
+        COALESCE(p.code, s.code) AS code, -- Get code from either product or service
         t.name AS tax_name, 
         t.rate AS tax_rate,
         qi.service_name,
         qi.rate AS item_tax_rate
     FROM quotation_item qi
     LEFT JOIN product p ON p.id = qi.product_id
+    LEFT JOIN product s ON s.id = qi.service_id -- Join for services too
     LEFT JOIN tax t ON t.id = qi.tax_id
     WHERE qi.quotation_id = $quotationId AND qi.is_deleted = 0
 ");
@@ -40,6 +44,27 @@ if (!$quotation) {
     header("Location: quotations.php");
     exit();
 }
+
+// Check if any item has quantity value (not null and greater than 0)
+$showQuantityColumn = false;
+mysqli_data_seek($items_result, 0); // Reset pointer
+while ($item = mysqli_fetch_assoc($items_result)) {
+    if (!is_null($item['quantity']) && $item['quantity'] > 0) {
+        $showQuantityColumn = true;
+        break;
+    }
+}
+// Reset pointer again for later use
+mysqli_data_seek($items_result, 0);
+
+// Check if notes are available
+$showNotes = !empty($quotation['client_note']);
+
+// Check if documents are available
+$docs = mysqli_query($conn, "SELECT * FROM quotation_document WHERE quotation_id = $quotationId");
+$showDocuments = (mysqli_num_rows($docs) > 0);
+// Reset pointer for documents for later use
+mysqli_data_seek($docs, 0);
 
 // Fetch company info (Bill From)
 $company = mysqli_fetch_assoc(mysqli_query($conn, "
@@ -73,87 +98,7 @@ if (!empty($quotation['client_id'])) {
     $client_address = mysqli_fetch_assoc($client_address_result);
 }
 
-// Function to convert number to words
-// if (!function_exists('numberToWords')) {
-//     function numberToWords($number) {
-//         $ones = array(
-//             0 => "Zero",
-//             1 => "One",
-//             2 => "Two",
-//             3 => "Three",
-//             4 => "Four",
-//             5 => "Five",
-//             6 => "Six",
-//             7 => "Seven",
-//             8 => "Eight",
-//             9 => "Nine",
-//             10 => "Ten",
-//             11 => "Eleven",
-//             12 => "Twelve",
-//             13 => "Thirteen",
-//             14 => "Fourteen",
-//             15 => "Fifteen",
-//             16 => "Sixteen",
-//             17 => "Seventeen",
-//             18 => "Eighteen",
-//             19 => "Nineteen"
-//         );
-        
-//         $tens = array(
-//             2 => "Twenty",
-//             3 => "Thirty",
-//             4 => "Forty",
-//             5 => "Fifty",
-//             6 => "Sixty",
-//             7 => "Seventy",
-//             8 => "Eighty",
-//             9 => "Ninety"
-//         );
-        
-//         $number = floatval($number);
-//         $dollars = intval($number);
-//         $cents = round(($number - $dollars) * 100);
-        
-//         if ($dollars == 0) {
-//             return "Zero";
-//         }
-        
-//         if ($dollars < 20) {
-//             $result = $ones[$dollars];
-//         } elseif ($dollars < 100) {
-//             $result = $tens[floor($dollars / 10)];
-//             if ($dollars % 10 > 0) {
-//                 $result .= " " . $ones[$dollars % 10];
-//             }
-//         } elseif ($dollars < 1000) {
-//             $result = $ones[floor($dollars / 100)] . " Hundred";
-//             if ($dollars % 100 > 0) {
-//                 $result .= " " . numberToWords($dollars % 100);
-//             }
-//         } elseif ($dollars < 100000) {
-//             $result = numberToWords(floor($dollars / 1000)) . " Thousand";
-//             if ($dollars % 1000 > 0) {
-//                 $result .= " " . numberToWords($dollars % 1000);
-//             }
-//         } elseif ($dollars < 10000000) {
-//             $result = numberToWords(floor($dollars / 100000)) . " Lakh";
-//             if ($dollars % 100000 > 0) {
-//                 $result .= " " . numberToWords($dollars % 100000);
-//             }
-//         } else {
-//             $result = numberToWords(floor($dollars / 10000000)) . " Crore";
-//             if ($dollars % 10000000 > 0) {
-//                 $result .= " " . numberToWords($dollars % 10000000);
-//             }
-//         }
-        
-//         if ($cents > 0) {
-//             $result .= " and " . $cents . "/100";
-//         }
-        
-//         return $result;
-//     }
-// }
+
 ?>
 
 <!DOCTYPE html>
@@ -384,7 +329,9 @@ if (!empty($quotation['client_id'])) {
                                                 <th>#</th>
                                                 <th>Product/Service</th>
                                                 <th>HSN Code</th>
-                                                <th>Quantity</th>
+                                                <?php if ($showQuantityColumn): ?>
+                                                    <th>Quantity</th>
+                                                <?php endif; ?>
                                                 <th>Selling Price</th>
                                                 <th>Tax</th>
                                                 <th>Amount</th>
@@ -435,14 +382,16 @@ if (!empty($quotation['client_id'])) {
                                                     <td><?= $i++ ?></td>
                                                     <td>
                                                         <?= htmlspecialchars($itemName) ?>
-                                                        <?php if ($isService): ?>
+                                                        <!-- <?php if ($isService): ?>
                                                             <span class="badge bg-info badge-sm ms-1">Service</span>
                                                         <?php else: ?>
                                                             <span class="badge bg-success badge-sm ms-1">Product</span>
-                                                        <?php endif; ?>
+                                                        <?php endif; ?> -->
                                                     </td>
                                                     <td><?= htmlspecialchars($item['code'] ?? 'N/A') ?></td>
-                                                    <td><?= $item['quantity'] ?></td>
+                                                    <?php if ($showQuantityColumn): ?>
+                                                        <td><?= $item['quantity'] ?></td>
+                                                    <?php endif; ?>
                                                     <td>$&nbsp;<?= number_format($item['selling_price'], 2) ?></td>
                                                     <td>
                                                         <?php if (($quotation['gst_type'] ?? 'gst') === 'non_gst'): ?>
@@ -520,32 +469,33 @@ if (!empty($quotation['client_id'])) {
                             </div>
 
                             <!-- start row -->
+                            <?php if ($showNotes): ?>
                             <div class="row">
                                 <div class="col-lg-12">
                                     <div class="mb-3">
                                         <div class="mb-3">
                                             <h6 class="fs-14 fw-semibold mb-1">Notes</h6>
-                                            <p><?= htmlspecialchars($quotation['client_note'] ?? 'No notes available.') ?></p>
+                                            <p><?= htmlspecialchars($quotation['client_note']) ?></p>
                                         </div>
                                     </div>
                                 </div><!-- end col -->
                             </div>
+                            <?php endif; ?>
                             <!-- end row -->
 
+                            <?php if ($showDocuments): ?>
                             <div class="mt-4 no-print">
                                 <h6 class="fw-bold mb-3">Attached Documents</h6>
                                 <?php
-                                $docs = mysqli_query($conn, "SELECT * FROM quotation_document WHERE quotation_id = $quotationId");
-                                if (mysqli_num_rows($docs) > 0) {
-                                    while ($doc = mysqli_fetch_assoc($docs)) {
-                                        $path = '../uploads/' . $doc['document'];
-                                        echo "<p><a href='$path' target='_blank' class='btn btn-outline-primary btn-sm me-2 mb-2'><i class='fa fa-file me-1'></i>" . basename($doc['document']) . "</a></p>";
-                                    }
-                                } else {
-                                    echo "<p class='text-muted'>No documents attached</p>";
+                                // Reset documents pointer
+                                mysqli_data_seek($docs, 0);
+                                while ($doc = mysqli_fetch_assoc($docs)) {
+                                    $path = '../uploads/' . $doc['document'];
+                                    echo "<p><a href='$path' target='_blank' class='btn btn-outline-primary btn-sm me-2 mb-2'><i class='fa fa-file me-1'></i>" . basename($doc['document']) . "</a></p>";
                                 }
                                 ?>
                             </div>
+                            <?php endif; ?>
                         </div><!-- end card body -->
                     </div><!-- end card -->
                 </div><!-- end col -->

@@ -349,18 +349,22 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
 
                                                         <?php
                                                         $quotation_id = $_GET['id'];
-                                                        // FIXED QUERY: Get products from product_id and services from service_id
+                                                        // FIXED QUERY: Join product table for both product_id AND service_id
                                                         $item_query = "SELECT 
                                                                         qi.*, 
                                                                         p.name AS product_name, 
-                                                                        p.code AS hsn_code,
+                                                                        p.code AS product_hsn_code,
                                                                         p.selling_price AS product_price,
-                                                                        p.item_type,
+                                                                        p.item_type AS product_item_type,
+                                                                        s.name AS service_name_from_product,
+                                                                        s.code AS service_hsn_code,
+                                                                        s.selling_price AS service_price,
                                                                         t.rate AS tax_rate,
                                                                         t.name AS tax_name,
                                                                         t.id AS tax_id
                                                                     FROM quotation_item qi
                                                                     LEFT JOIN product p ON qi.product_id = p.id
+                                                                    LEFT JOIN product s ON qi.service_id = s.id  -- Join for services too
                                                                     LEFT JOIN tax t ON qi.tax_id = t.id
                                                                     WHERE qi.quotation_id = $quotation_id AND qi.is_deleted = 0";
 
@@ -370,10 +374,20 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                                                             $price = (float)($item['selling_price'] ?? 0);
                                                             $taxRate = (float)($item['tax_rate'] ?? 0);
                                                             $taxName = $item['tax_name'] ?? '';
-                                                            $hsnCode = $item['hsn_code'] ?? '';
                                                             $taxId = $item['tax_id'] ?? '';
                                                             
-                                                            // DETERMINE IF IT'S A PRODUCT OR SERVICE BASED ON YOUR NEW LOGIC
+                                                            // FIXED: Get HSN code from appropriate source
+                                                            $hsnCode = '';
+                                                            if (!empty($item['product_id'])) {
+                                                                // This is a product - get HSN from product join
+                                                                $hsnCode = $item['product_hsn_code'] ?? '';
+                                                            } else if (!empty($item['service_id'])) {
+                                                                // This is a service from dropdown - get HSN from service join
+                                                                $hsnCode = $item['service_hsn_code'] ?? '';
+                                                            }
+                                                            // For custom services (service_name without service_id), HSN code remains empty
+                                                            
+                                                            // DETERMINE IF IT'S A PRODUCT OR SERVICE
                                                             $isProduct = (!empty($item['product_id']) && $item['product_id'] != 0);
                                                             $isService = (!empty($item['service_id']) && $item['service_id'] != 0) || !empty($item['service_name']);
                                                             
@@ -386,6 +400,7 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                                                                 $itemId = $item['service_id'] ?? '';
                                                             }
                                                             
+                                                            // FIXED: Calculate amounts properly
                                                             $lineSubtotal = $qty * $price;
                                                             $lineTax = $lineSubtotal * $taxRate / 100;
                                                             $amount = $lineSubtotal + $lineTax;
@@ -962,7 +977,7 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
             updateProductDropdowns();
         });
 
-        // Handle service selection from dropdown
+        // FIXED: Handle service selection from dropdown - DON'T auto-fill service name
         $(document).on('change', '.service-select', function() {
             const $row = $(this).closest('tr');
             const option = $(this).find('option:selected');
@@ -974,8 +989,9 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                 const taxId = option.data('tax-id') || '';
                 const taxName = option.data('tax-name') || '';
 
-                // Auto-fill the service name input
-                $row.find('.service-name-input').val(option.text());
+                // REMOVED: Auto-fill the service name input
+                // $row.find('.service-name-input').val(option.text());
+                
                 $row.find('.hsn-code').val(hsnCode);
                 $row.find('.tax-id').val(taxId);
                 $row.find('.tax-name').val(taxName);
@@ -998,13 +1014,15 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
             updateServiceDropdowns();
         });
 
-        // Handle service name input
+        // FIXED: Handle service name input - DON'T clear service dropdown selection
         $(document).on('input', '.service-name-input', function() {
             const $row = $(this).closest('tr');
             // Clear HSN code when manually entering service name
             $row.find('.hsn-code').val('');
-            // Clear service dropdown selection when typing manually
-            $row.find('.service-select').val('');
+            // REMOVED: Don't clear service dropdown selection when typing manually
+            // $row.find('.service-select').val('');
+            
+            calculateRow($row);
         });
 
         // Handle service price input
@@ -1307,6 +1325,27 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
             return false;
         });
 
+        // FIXED: Calculate all rows on page load to ensure tax amounts and totals display properly
+        function initializeRowCalculations() {
+            $('.add-tbody tr').each(function() {
+                const $row = $(this);
+                
+                // Ensure data-values are set for existing rows
+                const price = unformat($row.find('.selling-price').val());
+                const taxRate = unformat($row.find('.tax-rate').val());
+                const amount = unformat($row.find('.amount').val());
+                
+                $row.find('.selling-price').data('value', price);
+                $row.find('.tax-rate').data('value', taxRate);
+                $row.find('.amount').data('value', amount);
+                
+                // Recalculate the row to update tax display
+                calculateRow($row);
+            });
+            
+            calculateSummary();
+        }
+
         // Trigger GST toggle on page load to apply initial state
         setTimeout(function() {
             const initialGstType = $('input[name="gst_type"]:checked').val();
@@ -1345,13 +1384,19 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                 });
                 
                 calculateSummary();
+            } else {
+                // For GST mode, ensure calculations run on page load
+                initializeRowCalculations();
             }
         }, 100);
 
-        // Initial pass
+        // Initial pass - FIXED: Run calculations on page load
+        setTimeout(function() {
+            initializeRowCalculations();
+        }, 500);
+
         updateProductDropdowns();
         updateServiceDropdowns();
-        calculateSummary();
         
         console.log('Initialization complete - ONE handler attached');
     });
