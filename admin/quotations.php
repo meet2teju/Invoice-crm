@@ -115,6 +115,7 @@ if (!$result) {
                         <a class="btn btn-outline-white fw-normal d-inline-flex align-items-center" href="javascript:void(0);" data-bs-toggle="offcanvas" data-bs-target="#customcanvas">
                             <i class="isax isax-filter me-1"></i>Filter
                         </a>
+                      
 						<div class="dropdown">
 							<a href="javascript:void(0);" class="btn btn-outline-white d-inline-flex align-items-center"  data-bs-toggle="dropdown">
 								<i class="isax isax-export-1 me-1"></i>Export
@@ -128,7 +129,10 @@ if (!$result) {
 								</li>
 							</ul>
 						</div>
-
+    <!-- Multiple Delete Button -->
+            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                <i class="fa-regular fa-trash-can me-1"></i>Delete
+            </a>
                         <div>
                              <?php if (check_is_access_new("add_quotation") == 1) { ?>
 							<a href="add-quotation.php" class="btn btn-primary d-flex align-items-center">
@@ -214,10 +218,7 @@ if (!$result) {
                 </div>
             <?php endif; ?>
 
-            <!-- Multiple Delete Button -->
-            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
-                <i class="fa-regular fa-trash-can me-1"></i>Delete
-            </a>
+          
         </div>
     </div>
 </div>
