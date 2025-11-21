@@ -6,9 +6,11 @@ session_start();
 function dbString($conn, $value) {
     return mysqli_real_escape_string($conn, trim($value ?? ''));
 }
+
 function unformat($value) {
     return (float)str_replace(['$', ',',' '], '', $value);
 }
+
 function dbInt($value) {
     return (is_numeric($value) && $value !== '') ? (int)$value : 0;
 }
@@ -82,11 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
 
         // === 2. Mark old items deleted ===
         $mark_deleted = "UPDATE quotation_item SET is_deleted = 1 WHERE quotation_id = '$quotation_id'";
+        
         if (!mysqli_query($conn, $mark_deleted)) {
             throw new Exception("Failed to mark old items as deleted: " . mysqli_error($conn));
         }
 
-        // === 3. Insert/update quotation items - UPDATED FOR PRODUCTS & SERVICES SEPARATION ===
+        // === 3. Insert/update quotation items ===
         if (isset($_POST['item_id']) && is_array($_POST['item_id'])) {
             foreach ($_POST['item_id'] as $index => $item_id) {
                 $item_id       = dbInt($item_id);
@@ -113,11 +116,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                         // This is a service selected from dropdown - store in service_id
                         $service_id_sql = $item_id;
                         // Also store the service name for reference
-                        $service_name_sql = "'" . dbString($conn, $_POST['service_name'][$index] ?? '') . "'";
+                        $service_name_sql = "'" . dbString($conn, $service_name) . "'";
                     } else if (!empty($service_name)) {
                         // This is a custom service (no dropdown selection) - store in service_name
-                        $service_name_sql = "'$service_name'";
+                        $service_name_sql = "'" . dbString($conn, $service_name) . "'";
+                    } else {
+                        continue;
                     }
+                } else {
+                    continue;
                 }
 
                 // Skip if both product and service are empty
@@ -128,34 +135,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                 $tax_id_sql = ($tax_id === 0) ? 'NULL' : $tax_id;
 
                 // Check if item already exists (using your exact logic)
+                $check_item_query = "";
+                $item_exists = false;
+                $existing_item_id = 0;
+
                 if ($item_type_row === 'product' && !empty($item_id)) {
-                    $check_item = "SELECT id FROM quotation_item 
-                                   WHERE quotation_id = '$quotation_id' 
-                                   AND product_id = '$product_id_sql'
-                                   LIMIT 1";
+                    $check_item_query = "SELECT id FROM quotation_item 
+                                       WHERE quotation_id = '$quotation_id' 
+                                       AND product_id = '$item_id'
+                                       AND is_deleted = 0
+                                       LIMIT 1";
                 } else if ($item_type_row === 'service') {
                     if (!empty($item_id)) {
                         // Service from dropdown - check by service_id
-                        $check_item = "SELECT id FROM quotation_item 
-                                       WHERE quotation_id = '$quotation_id' 
-                                       AND service_id = '$service_id_sql'
-                                       LIMIT 1";
+                        $check_item_query = "SELECT id FROM quotation_item 
+                                           WHERE quotation_id = '$quotation_id' 
+                                           AND service_id = '$item_id'
+                                           AND is_deleted = 0
+                                           LIMIT 1";
                     } else if (!empty($service_name)) {
                         // Custom service - check by service_name
-                        $check_item = "SELECT id FROM quotation_item 
-                                       WHERE quotation_id = '$quotation_id' 
-                                       AND service_name = '$service_name'
-                                       LIMIT 1";
+                        $escaped_service_name = dbString($conn, $service_name);
+                        $check_item_query = "SELECT id FROM quotation_item 
+                                           WHERE quotation_id = '$quotation_id' 
+                                           AND service_name = '$escaped_service_name'
+                                           AND is_deleted = 0
+                                           LIMIT 1";
                     } else {
-                        continue; // Skip if no service identifier
+                        continue;
                     }
                 } else {
-                    continue; // Skip invalid items
+                    continue;
                 }
                 
-                $item_exists = mysqli_query($conn, $check_item);
+                $item_exists_result = mysqli_query($conn, $check_item_query);
+                if ($item_exists_result && mysqli_num_rows($item_exists_result) > 0) {
+                    $item_exists = true;
+                    $existing_item = mysqli_fetch_assoc($item_exists_result);
+                    $existing_item_id = $existing_item['id'];
+                }
 
-                if ($item_exists && mysqli_num_rows($item_exists) > 0) {
+                if ($item_exists) {
                     // UPDATE existing item
                     if ($item_type_row === 'product' && !empty($item_id)) {
                         $update_item = "UPDATE quotation_item SET
@@ -165,8 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                             rate = '$rate',
                             amount = '$item_amount',
                             is_deleted = 0
-                            WHERE quotation_id = '$quotation_id' 
-                            AND product_id = '$product_id_sql'";
+                            WHERE id = '$existing_item_id'";
                     } else if ($item_type_row === 'service') {
                         if (!empty($item_id)) {
                             // Service from dropdown - update by service_id
@@ -178,8 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                                 amount = '$item_amount',
                                 service_name = $service_name_sql,
                                 is_deleted = 0
-                                WHERE quotation_id = '$quotation_id' 
-                                AND service_id = '$service_id_sql'";
+                                WHERE id = '$existing_item_id'";
                         } else if (!empty($service_name)) {
                             // Custom service - update by service_name
                             $update_item = "UPDATE quotation_item SET
@@ -188,14 +206,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                                 tax_id = $tax_id_sql,
                                 rate = '$rate',
                                 amount = '$item_amount',
+                                service_name = $service_name_sql,
                                 is_deleted = 0
-                                WHERE quotation_id = '$quotation_id' 
-                                AND service_name = '$service_name'";
+                                WHERE id = '$existing_item_id'";
                         }
                     }
                     
                     if (!mysqli_query($conn, $update_item)) {
-                        throw new Exception("Failed to update item: " . mysqli_error($conn));
+                        throw new Exception("Failed to update item at index $index: " . mysqli_error($conn));
                     }
                 } else {
                     // INSERT new item
@@ -219,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                     )";
                     
                     if (!mysqli_query($conn, $insert_item)) {
-                        throw new Exception("Failed to insert item: " . mysqli_error($conn));
+                        throw new Exception("Failed to insert item at index $index: " . mysqli_error($conn));
                     }
                 }
             }
@@ -244,6 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                         ) VALUES (
                             '$quotation_id', '$docFileName', '$currentUserId', '$currentUserId'
                         )";
+                        
                         if (!mysqli_query($conn, $docQuery)) {
                             throw new Exception("Document insert failed: " . mysqli_error($conn));
                         }
@@ -254,14 +273,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
 
         // === 5. Commit transaction ===
         mysqli_commit($conn);
+        
         $_SESSION['message'] = "Quotation updated successfully!";
         $_SESSION['message_type'] = "success";
+        
         header("Location: ../edit-quotation.php?id=" . $quotation_id);
         exit();
 
     } catch (Exception $e) {
         mysqli_rollback($conn);
-        $_SESSION['error'] = "Error: " . $e->getMessage();
+        $error_message = "Error: " . $e->getMessage();
+        
+        $_SESSION['error'] = $error_message;
         header("Location: ../edit-quotation.php?id=" . $quotation_id);
         exit();
     }

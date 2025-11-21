@@ -399,6 +399,7 @@ while ($item = mysqli_fetch_assoc($itemResult)) {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
    <script>
 // COMPLETE SCRIPT - Fixed tax dropdown for products
+
 $(document).ready(function() {
     console.log('Document ready - initializing...');
 
@@ -656,7 +657,7 @@ $(document).ready(function() {
         let newRow = '';
         
         if (itemType == 1) {
-            // FIXED: Product row now has tax dropdown like service row
+            // Product row
             newRow = `
                 <tr class="${rowClass}">
                     <td>
@@ -675,10 +676,10 @@ $(document).ready(function() {
                         <input type="text" class="form-control hsn-code" name="code[]" readonly>
                     </td>
                     <td>
-                        <input type="text" class="form-control selling-price" name="selling_price[]" data-value="0">
+                        <input type="text" class="form-control selling-price" name="selling_price[]" value="0.00" data-value="0">
                     </td>
                     <td class="tax-column">
-                        <!-- FIXED: Added tax dropdown for products -->
+                        <!-- Tax dropdown for products -->
                         <select class="form-select product-tax-select" name="tax_id[]">
                             ${taxOptions}
                         </select>
@@ -698,6 +699,7 @@ $(document).ready(function() {
                 </tr>
             `;
         } else {
+            // Service row - FIXED: Quantity remains optional (empty by default)
             newRow = `
                 <tr class="${rowClass}">
                     <td>
@@ -717,7 +719,8 @@ $(document).ready(function() {
                         <input type="text" class="form-control hsn-code" name="code[]" readonly>
                     </td>
                     <td>
-                        <input type="text" class="form-control service-price-input" name="selling_price[]" data-value="0" placeholder="0.00">
+                        <!-- FIXED: Changed to regular text input without currency formatting interference -->
+                        <input type="text" class="form-control service-price-input" name="selling_price[]" value="0.00" data-value="0" placeholder="0.00">
                     </td>
                     <td class="tax-column">
                         <select class="form-select service-tax-select" name="tax_id[]">
@@ -756,7 +759,7 @@ $(document).ready(function() {
         updateServiceDropdowns();
     }
 
-    // Format behaviors
+    // Format behaviors - FIXED: Simplified for service price inputs
     function attachCurrencyBehavior(selector, onChangeCallback) {
         $(document).on('focus', selector, function(){
             const raw = $(this).data('value');
@@ -768,6 +771,8 @@ $(document).ready(function() {
             if (onChangeCallback) onChangeCallback($(this));
         });
         $(document).on('input', selector, function(){
+            const num = unformat($(this).val());
+            $(this).data('value', num);
             if (onChangeCallback) onChangeCallback($(this));
         });
     }
@@ -787,12 +792,30 @@ $(document).ready(function() {
         });
     }
 
+    // FIXED: Attach event handlers properly
     attachCurrencyBehavior('.selling-price', function($el){
         calculateRow($el.closest('tr'));
     });
+    
+    // FIXED: Use direct input handling for service price (no currency formatting interference)
+    $(document).on('input', '.service-price-input', function() {
+        const $row = $(this).closest('tr');
+        const price = unformat($(this).val());
+        $(this).data('value', price);
+        calculateRow($row);
+    });
+    
+    $(document).on('blur', '.service-price-input', function() {
+        const $row = $(this).closest('tr');
+        const price = unformat($(this).val());
+        $(this).data('value', price).val(formatCurrency(price));
+        calculateRow($row);
+    });
+    
     attachPercentBehavior('.tax-rate', function($el){
         calculateRow($el.closest('tr'));
     });
+    
     attachCurrencyBehavior('#shipping-charge', function(){
         calculateSummary();
     });
@@ -833,7 +856,7 @@ $(document).ready(function() {
             $row.find('.selling-price').data('value', price).val(formatCurrency(price));
             $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
 
-            // FIXED: Set the tax dropdown for products
+            // Set the tax dropdown for products
             if (taxId && !isNonGST) {
                 $row.find('.product-tax-select').val(taxId).trigger('change');
             }
@@ -846,11 +869,10 @@ $(document).ready(function() {
         updateProductDropdowns();
     });
 
-    // Service select change handler - FIXED: Service name field stays blank
+    // Service select change handler
     $(document).on('change', '.service-select', function() {
         const $row = $(this).closest('tr');
         const option = $(this).find('option:selected');
-        const $serviceNameInput = $row.find('.service-name-input');
 
         if (option.val()) {
             const price = parseFloat(option.data('price')) || 0;
@@ -859,9 +881,6 @@ $(document).ready(function() {
             const taxId = option.data('tax-id') || '';
             const taxName = option.data('tax-name') || '';
 
-            // REMOVED: Automatic population of service name field
-            // $serviceNameInput.val(option.text());
-            
             $row.find('.hsn-code').val(hsnCode);
             $row.find('.tax-id').val(taxId);
             $row.find('.tax-name').val(taxName);
@@ -869,7 +888,8 @@ $(document).ready(function() {
             const isNonGST = $('input[name="gst_type"]:checked').val() === 'non_gst';
             const effectiveTax = isNonGST ? 0 : tax;
             
-            $row.find('.service-price-input').data('value', price).val(formatCurrency(price));
+            // FIXED: Set service price without formatting interference
+            $row.find('.service-price-input').data('value', price).val(price.toFixed(2));
             $row.find('.tax-rate').data('value', effectiveTax).val(formatPercent(effectiveTax));
             
             if (taxId && !isNonGST) {
@@ -881,7 +901,7 @@ $(document).ready(function() {
             $row.find('.hsn-code').val('');
             $row.find('.tax-id').val('');
             $row.find('.tax-name').val('');
-            $row.find('.service-price-input').val('').removeData('value');
+            $row.find('.service-price-input').val('0.00').data('value', 0);
             $row.find('.tax-rate').val('').removeData('value');
             $row.find('.amount').val('').removeData('value');
             $row.find('.tax-amount-line').text('');
@@ -936,10 +956,11 @@ $(document).ready(function() {
         calculateRow($row);
     });
 
-    $(document).on('input', '.service-price-input', function() {
+    // FIXED: Added direct input event for selling-price to handle real-time changes
+    $(document).on('input', '.selling-price', function() {
         const $row = $(this).closest('tr');
         const price = unformat($(this).val());
-        $row.find('.service-price-input').data('value', price).val(formatCurrency(price));
+        $row.find('.selling-price').data('value', price);
         calculateRow($row);
     });
 
@@ -955,21 +976,33 @@ $(document).ready(function() {
         updateServiceDropdowns();
     });
 
-    // Calculations
+    // Calculations - FIXED: Enhanced to properly handle optional service quantity
     function calculateRow($row) {
         const qtyInput = $row.find('.quantity');
         let qty = unformat(qtyInput.val());
         
         const isService = $row.hasClass('service-row');
+        
+        // FIXED: Service quantity remains optional - if empty or 0, use 1 for calculation
         if (isService && (qty === 0 || qtyInput.val() === '')) {
-            qty = 1;
+            qty = 1; // Use 1 for calculation but keep display empty
         }
         
         let price = 0;
         if (isService) {
             price = $row.find('.service-price-input').data('value') || 0;
+            // If data value is not set, try to get from the input value
+            if (price === 0) {
+                price = unformat($row.find('.service-price-input').val()) || 0;
+                $row.find('.service-price-input').data('value', price);
+            }
         } else {
             price = $row.find('.selling-price').data('value') || 0;
+            // If data value is not set, try to get from the input value
+            if (price === 0) {
+                price = unformat($row.find('.selling-price').val()) || 0;
+                $row.find('.selling-price').data('value', price);
+            }
         }
         
         const taxRate = $row.find('.tax-rate').data('value') || 0;
@@ -1006,15 +1039,22 @@ $(document).ready(function() {
             
             if (isService) {
                 p = $(this).find('.service-price-input').data('value') || 0;
+                if (p === 0) {
+                    p = unformat($(this).find('.service-price-input').val()) || 0;
+                }
             } else {
                 p = $(this).find('.selling-price').data('value') || 0;
+                if (p === 0) {
+                    p = unformat($(this).find('.selling-price').val()) || 0;
+                }
             }
             
             const qtyInput = $(this).find('.quantity');
             let q = unformat(qtyInput.val());
             
+            // FIXED: Service quantity remains optional - if empty or 0, use 1 for calculation
             if (isService && (q === 0 || qtyInput.val() === '')) {
-                q = 1;
+                q = 1; // Use 1 for calculation but keep display empty
             }
             
             const t = $(this).find('.tax-rate').data('value') || 0;
@@ -1045,16 +1085,23 @@ $(document).ready(function() {
                 
                 if (isService) {
                     p = $(this).find('.service-price-input').data('value') || 0;
+                    if (p === 0) {
+                        p = unformat($(this).find('.service-price-input').val()) || 0;
+                    }
                 } else {
                     p = $(this).find('.selling-price').data('value') || 0;
+                    if (p === 0) {
+                        p = unformat($(this).find('.selling-price').val()) || 0;
+                    }
                 }
                 
                 const qtyInput = $(this).find('.quantity');
                 let q = unformat(qtyInput.val());
                 
+                // FIXED: Service quantity remains optional - if empty or 0, use 1 for calculation
                 const isServiceRow = $(this).hasClass('service-row');
                 if (isServiceRow && (q === 0 || qtyInput.val() === '')) {
-                    q = 1;
+                    q = 1; // Use 1 for calculation but keep display empty
                 }
                 
                 const t = $(this).find('.tax-rate').data('value') || 0;
@@ -1087,7 +1134,8 @@ $(document).ready(function() {
     }
     
     function resetRow($row) {
-        $row.find('.quantity').val(1).removeClass('service-quantity');
+        const isService = $row.hasClass('service-row');
+        $row.find('.quantity').val(isService ? '' : '1').removeClass('service-quantity');
         $row.find('.hsn-code, .selling-price, .tax-rate, .amount, .service-name-input, .service-price-input').val('').removeData('value');
         $row.find('.tax-id').val('');
         $row.find('.tax-amount-line').text('');
@@ -1137,7 +1185,7 @@ $(document).ready(function() {
     updateServiceDropdowns();
     calculateSummary();
     
-    console.log('Initialization complete - tax dropdown now works for both products and services');
+    console.log('Initialization complete - service price editing works with optional quantity');
 });
 </script>
 </body>

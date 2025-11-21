@@ -60,6 +60,9 @@ mysqli_data_seek($items_result, 0);
 // Check if notes are available
 $showNotes = !empty($quotation['client_note']);
 
+// Check if terms & conditions are available
+$showTerms = !empty($quotation['description']);
+
 // Check if documents are available
 $docs = mysqli_query($conn, "SELECT * FROM quotation_document WHERE quotation_id = $quotationId");
 $showDocuments = (mysqli_num_rows($docs) > 0);
@@ -410,17 +413,19 @@ if (!empty($quotation['client_id'])) {
                             
                             <div class="border-bottom mb-3">
                                 <div class="row">
+                                    <?php if ($showTerms): ?>
                                     <div class="col-lg-6">
                                         <div class="d-flex align-items-center p-4 mb-3">
                                             <div>
                                                 <h6 class="mb-2">Terms & Conditions</h6>
                                                 <div>
-                                                    <p class="mb-1"><?= htmlspecialchars($quotation['description'] ?? 'No terms specified.') ?></p>
+                                                    <p class="mb-1"><?= htmlspecialchars($quotation['description']) ?></p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div><!-- end col -->
-                                    <div class="col-lg-6">
+                                    <?php endif; ?>
+                                    <div class="<?= $showTerms ? 'col-lg-6' : 'col-lg-12' ?>">
                                         <div class="mb-3 p-4">
                                             <div class="d-flex align-items-center justify-content-between mb-3">
                                                 <h6 class="fs-14 fw-semibold">Sub Amount</h6>
@@ -459,7 +464,7 @@ if (!empty($quotation['client_id'])) {
                                                 <h5 class="fw-bold">$ <?= number_format($quotation['total_amount'], 2) ?></h5>
                                             </div>
 
-                                            <div class="mt-4">
+                                            <div class="mt-2">
                                                 <h6 class="fs-14 fw-semibold mb-1">Total In Words</h6>
                                                 <p class="fst-italic"><?= numberToWords($quotation['total_amount']) ?> Dollars</p>
                                             </div>

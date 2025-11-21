@@ -437,6 +437,8 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                                                                         <input type="hidden" class="tax-name" name="tax_name[]" value="<?= htmlspecialchars($taxName) ?>">
                                                                         <!-- Hidden field to track item type -->
                                                                         <input type="hidden" name="item_type_row[]" value="product">
+                                                                        <!-- FIX: Add empty service_name field for product rows -->
+                                                                        <input type="hidden" name="service_name[]" value="">
                                                                     </div>
                                                                     <div class="service-fields">
                                                                         <select class="form-select service-select" name="item_id[]">
@@ -1251,11 +1253,14 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                             <input type="hidden" class="tax-name" name="tax_name[]">
                             <!-- Hidden field to track item type -->
                             <input type="hidden" name="item_type_row[]" value="product">
+                            <!-- FIX: Add empty service_name field for product rows -->
+                            <input type="hidden" name="service_name[]" value="">
                         </div>
                         <div class="service-fields">
                             <select class="form-select service-select" name="item_id[]">
                                 <option value="">Select Service</option>
                             </select>
+                            <!-- FIX: Always include service_name input -->
                             <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name">
                             <input type="hidden" class="tax-id" name="tax_id[]">
                             <input type="hidden" class="tax-name" name="tax_name[]">
