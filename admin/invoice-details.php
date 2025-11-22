@@ -39,14 +39,35 @@ if (!empty($bank_id)) {
     $bank = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM bank WHERE id = $bank_id"));
 }
 
-// Fetch items
-$items_result = mysqli_query($conn, "SELECT ii.*, p.name AS product_name,p.code, t.name AS tax_name, u.name AS unit_name
+// Fetch items with updated structure for products and services
+$items_result = mysqli_query($conn, "
+    SELECT ii.*, 
+           p.name AS product_name,
+           p.code AS product_code,
+           s.name AS service_name,
+           s.code AS service_code,
+           COALESCE(p.code, s.code) AS code,
+           t.name AS tax_name, 
+           u.name AS unit_name
     FROM invoice_item ii
     LEFT JOIN product p ON p.id = ii.product_id
+    LEFT JOIN product s ON s.id = ii.service_id
     LEFT JOIN units u ON u.id = ii.unit_id
     LEFT JOIN tax t ON t.id = ii.tax_id
-	
-    WHERE ii.invoice_id = $invoice_id AND ii.is_deleted = 0");
+    WHERE ii.invoice_id = $invoice_id AND ii.is_deleted = 0
+");
+
+// Check if any item has quantity value (not null and greater than 0)
+$showQuantityColumn = false;
+mysqli_data_seek($items_result, 0); // Reset pointer
+while ($item = mysqli_fetch_assoc($items_result)) {
+    if (!is_null($item['quantity']) && $item['quantity'] > 0) {
+        $showQuantityColumn = true;
+        break;
+    }
+}
+// Reset pointer again for later use
+mysqli_data_seek($items_result, 0);
 
 // Fetch client address only if client_id is valid
 $client_address = null;
@@ -66,7 +87,7 @@ if (!empty($client_id)) {
     ";
     $client_address = mysqli_fetch_assoc(mysqli_query($conn, $client_address_query));
 }
-// Fetch company info (Bill From)
+
 // Fetch company info (Bill From) with city/state/country names
 $company = mysqli_fetch_assoc(mysqli_query($conn, "
     SELECT ci.*, 
@@ -80,7 +101,17 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
     LIMIT 1
 "));
 
+// Check if notes are available
+$showNotes = !empty($invoice['invoice_note']);
+
+// Check if terms & conditions are available
+$showTerms = !empty($invoice['description']);
+
+// Check if bank details are available
+$showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account_number']) || !empty($bank['ifsc_code']));
+
 // Function to convert number to words
+
 
 ?>
 
@@ -356,7 +387,9 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 															<th>#</th>
 															<th>Product/Service</th>
 															<th>HSN code</th>
-															<th>Quantity</th>
+															<?php if ($showQuantityColumn): ?>
+																<th>Quantity</th>
+															<?php endif; ?>
 															<th>Selling Price</th>
 															<th>Tax</th>
 															<th>Amount</th>
@@ -367,7 +400,9 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 															<th>#</th>
 															<th>Service</th>
 															<th>HSN code</th>
-															<th>Hours</th>
+															<?php if ($showQuantityColumn): ?>
+																<th>Hours</th>
+															<?php endif; ?>
 															<th>Hourly Price</th>
 															<th>Tax</th>
 															<th>Amount</th>
@@ -375,28 +410,30 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 													<?php endif; ?>
 												</thead>
 												<tbody>
-													 <?php 
-													 $i = 1; 
-													 // Reset pointer to beginning for items result
-													 mysqli_data_seek($items_result, 0);
-													 while($item = mysqli_fetch_assoc($items_result)) { 
-													 ?>
-                                                <tr>
-                                                    <td><?= $i++ ?></td>
-                                                    <td><?= htmlspecialchars($item['product_name']) ?></td>
-													<td><?= $item['code'] ?></td>
-                                                    <td><?= $item['quantity'] ?></td>
-                                                    <td><?= $item['selling_price'] ?></td>
-                                                    <td>
-                                                        <?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
-                                                            Non-GST
-                                                        <?php else: ?>
-                                                            <?= $item['tax_name'] ?>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                    <td><?= $item['amount'] ?></td>
-                                                </tr>
-                                            <?php } ?>
+													<?php 
+													$i = 1; 
+													mysqli_data_seek($items_result, 0);
+													while($item = mysqli_fetch_assoc($items_result)) { 
+														$itemName = !empty($item['service_name']) ? $item['service_name'] : $item['product_name'];
+													?>
+													<tr>
+														<td><?= $i++ ?></td>
+														<td><?= htmlspecialchars($itemName) ?></td>
+														<td><?= htmlspecialchars($item['code'] ?? 'N/A') ?></td>
+														<?php if ($showQuantityColumn): ?>
+															<td><?= $item['quantity'] ?></td>
+														<?php endif; ?>
+														<td><?= $item['selling_price'] ?></td>
+														<td>
+															<?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
+																Non-GST
+															<?php else: ?>
+																<?= $item['tax_name'] ?>
+															<?php endif; ?>
+														</td>
+														<td><?= $item['amount'] ?></td>
+													</tr>
+													<?php } ?>
 												</tbody>
 											</table>
 										</div>
@@ -406,7 +443,7 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 										<!-- start row -->
 										<div class="row">
 											<div class="col-lg-6">
-												<?php if ($bank && (!empty($bank['bank_name']) || !empty($bank['account_number']) || !empty($bank['ifsc_code']))): ?>
+												<?php if ($showBankDetails): ?>
 													<div class="d-flex align-items-center p-4 mb-3">
 														<div>
 															<h6 class="mb-2">Bank Details</h6>
@@ -425,7 +462,7 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 													</div>
 												<?php endif; ?>
 												
-												<?php if (!empty($invoice['description'])): ?>
+												<?php if ($showTerms): ?>
 													<div class="p-4">
 														<h6 class="mb-2">Terms & Conditions</h6>
 														<div>
@@ -477,19 +514,18 @@ $company = mysqli_fetch_assoc(mysqli_query($conn, "
 									</div>
 
 									<!-- start row -->
+									<?php if ($showNotes): ?>
 									<div class="row">
-										<div class="col-lg-7">
+										<div class="col-lg-12">
 											<div class="mb-3">
-												<?php if (!empty($invoice['invoice_note'])): ?>
-													<div>
-														<h6 class="fs-14 fw-semibold mb-1">Notes</h6>
-														<p><?= htmlspecialchars($invoice['invoice_note']) ?></p>
-													</div>
-												<?php endif; ?>
+												<div>
+													<h6 class="fs-14 fw-semibold mb-1">Notes</h6>
+													<p><?= htmlspecialchars($invoice['invoice_note']) ?></p>
+												</div>
 											</div>
-										<div><!-- end col -->
-										
+										</div><!-- end col -->
 									</div>
+									<?php endif; ?>
 									<!-- end row -->
 
 									<div class="">

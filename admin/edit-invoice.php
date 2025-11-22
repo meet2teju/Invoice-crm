@@ -410,60 +410,75 @@ if ($project_id > 0) {
         <tbody class="add-tbody" id="product">
             <span class="text-danger error-text" id="product_error"></span>
 
-            <?php
-            $invoice_id = $_GET['id'];
-            // FIXED QUERY: Get products from product_id and services from service_id
-            $item_query = "SELECT 
-                            qi.*, 
-                            p.name AS product_name, 
-                            p.code AS hsn_code,
-                            p.selling_price AS product_price,
-                            p.item_type,
-                            t.rate AS tax_rate,
-                            t.name AS tax_name,
-                            t.id AS tax_id
-                        FROM invoice_item qi
-                        LEFT JOIN product p ON qi.product_id = p.id
-                        LEFT JOIN tax t ON qi.tax_id = t.id
-                        WHERE qi.invoice_id = $invoice_id AND qi.is_deleted = 0";
+           <?php
+$invoice_id = $_GET['id'];
+// FIXED QUERY: Join product table for both product_id AND service_id - EXACTLY LIKE QUOTATION
+$item_query = "SELECT 
+                qi.*, 
+                p.name AS product_name, 
+                p.code AS product_hsn_code,
+                p.selling_price AS product_price,
+                p.item_type AS product_item_type,
+                s.name AS service_name_from_product,
+                s.code AS service_hsn_code,
+                s.selling_price AS service_price,
+                t.rate AS tax_rate,
+                t.name AS tax_name,
+                t.id AS tax_id
+            FROM invoice_item qi
+            LEFT JOIN product p ON qi.product_id = p.id
+            LEFT JOIN product s ON qi.service_id = s.id  -- Join for services too
+            LEFT JOIN tax t ON qi.tax_id = t.id
+            WHERE qi.invoice_id = $invoice_id AND qi.is_deleted = 0";
 
-            $item_result = mysqli_query($conn, $item_query);
-            while ($item = mysqli_fetch_assoc($item_result)) {
-                $qty = (float)($item['quantity'] ?? 0);
-                $price = (float)($item['selling_price'] ?? 0);
-                $taxRate = (float)($item['tax_rate'] ?? 0);
-                $taxName = $item['tax_name'] ?? '';
-                $hsnCode = $item['hsn_code'] ?? '';
-                $taxId = $item['tax_id'] ?? '';
-                
-                // DETERMINE IF IT'S A PRODUCT OR SERVICE BASED ON YOUR NEW LOGIC
-                $isProduct = (!empty($item['product_id']) && $item['product_id'] != 0);
-                $isService = (!empty($item['service_id']) && $item['service_id'] != 0) || !empty($item['service_name']);
-                
-                // Get display name
-                if ($isProduct) {
-                    $displayName = $item['product_name'] ?? '';
-                    $itemId = $item['product_id'];
-                } else {
-                    $displayName = $item['service_name'] ?? '';
-                    $itemId = $item['service_id'] ?? '';
-                }
-                
-                $lineSubtotal = $qty * $price;
-                $lineTax = $lineSubtotal * $taxRate / 100;
-                $amount = $lineSubtotal + $lineTax;
-                
-                // Adjust for Non-GST mode
-                $displayTaxRate = $gst_type == 'non_gst' ? 0 : $taxRate;
-                $displayLineTax = $gst_type == 'non_gst' ? 0 : $lineTax;
-                $displayAmount = $gst_type == 'non_gst' ? $lineSubtotal : $amount;
-                
-                // Determine row class and values
-                $rowClass = $isProduct ? 'product-row' : 'service-row';
-                $quantityClass = $isProduct ? '' : 'service-quantity';
-                $quantityValue = $isProduct ? $qty : ($qty > 0 ? $qty : '');
-                $quantityPlaceholder = $isProduct ? '' : 'Optional';
-            ?>
+$item_result = mysqli_query($conn, $item_query);
+while ($item = mysqli_fetch_assoc($item_result)) {
+    $qty = (float)($item['quantity'] ?? 0);
+    $price = (float)($item['selling_price'] ?? 0);
+    $taxRate = (float)($item['tax_rate'] ?? 0);
+    $taxName = $item['tax_name'] ?? '';
+    $taxId = $item['tax_id'] ?? '';
+    
+    // FIXED: Get HSN code from appropriate source
+    $hsnCode = '';
+    if (!empty($item['product_id'])) {
+        // This is a product - get HSN from product join
+        $hsnCode = $item['product_hsn_code'] ?? '';
+    } else if (!empty($item['service_id'])) {
+        // This is a service from dropdown - get HSN from service join
+        $hsnCode = $item['service_hsn_code'] ?? '';
+    }
+    // For custom services (service_name without service_id), HSN code remains empty
+    
+    // DETERMINE IF IT'S A PRODUCT OR SERVICE
+    $isProduct = (!empty($item['product_id']) && $item['product_id'] != 0);
+    $isService = (!empty($item['service_id']) && $item['service_id'] != 0) || !empty($item['service_name']);
+    
+    // Get display name
+    if ($isProduct) {
+        $displayName = $item['product_name'] ?? '';
+        $itemId = $item['product_id'];
+    } else {
+        $displayName = $item['service_name'] ?? '';
+        $itemId = $item['service_id'] ?? '';
+    }
+    
+    // FIXED: Calculate amounts properly
+    $lineSubtotal = $qty * $price;
+    $lineTax = $lineSubtotal * $taxRate / 100;
+    $amount = $lineSubtotal + $lineTax;
+    
+    // Adjust for Non-GST mode
+    $displayTaxRate = $gst_type == 'non_gst' ? 0 : $taxRate;
+    $displayLineTax = $gst_type == 'non_gst' ? 0 : $lineTax;
+    $displayAmount = $gst_type == 'non_gst' ? $lineSubtotal : $amount;
+    
+    // Determine row class and values
+    $rowClass = $isProduct ? 'product-row' : 'service-row';
+    $quantityClass = $isProduct ? '' : 'service-quantity';
+    $quantityValue = $isProduct ? $qty : ($qty > 0 ? $qty : '');
+    $quantityPlaceholder = $isProduct ? '' : 'Optional';
+?>
                 <tr class="<?= $rowClass ?>">
                     <td>
                         <div class="product-fields">
@@ -485,6 +500,8 @@ if ($project_id > 0) {
                             <input type="hidden" class="tax-name" name="tax_name[]" value="<?= htmlspecialchars($taxName) ?>">
                             <!-- Hidden field to track item type -->
                             <input type="hidden" name="item_type_row[]" value="product">
+                            <!-- FIX: Add empty service_name field for product rows -->
+                            <input type="hidden" name="service_name[]" value="">
                         </div>
                         <div class="service-fields">
                             <select class="form-select service-select" name="item_id[]">
@@ -730,7 +747,7 @@ if ($project_id > 0) {
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
    
 <script>
-// COMPLETE SCRIPT - All features including service name fix and product/service ID separation
+// COMPLETE FIXED SCRIPT - Added client-project-task loading functionality
 $(document).ready(function() {
     console.log('Document ready - initializing...');
 
@@ -770,6 +787,147 @@ $(document).ready(function() {
             $('#file-count-label').text(files[0].name);
         } else {
             $('#file-count-label').text(`${files.length} files selected`);
+        }
+    });
+
+    // =============================================
+    // ADDED: Project and Task Selection (SAME AS ADD INVOICE)
+    // =============================================
+    // When client changes
+    $('#client_id').on('change', function() {
+        const clientId = $(this).val();
+        
+        if (clientId) {
+            // Enable and load projects
+            $('#project_id').prop('disabled', false).html('<option value="">Loading projects...</option>');
+            $('#task_id').prop('disabled', true).html('<option value="">Select Tasks</option>');
+            
+            $.ajax({
+                url: 'process/get_projects_by_client.php',
+                type: 'POST',
+                data: { client_id: clientId },
+                success: function(data) {
+                    $('#project_id').html(data);
+                },
+                error: function() {
+                    $('#project_id').html('<option value="">Error loading projects</option>');
+                }
+            });
+        } else {
+            $('#project_id, #task_id').prop('disabled', true);
+            $('#project_id').html('<option value="">Select Project</option>');
+            $('#task_id').html('<option value="">Select Tasks</option>');
+        }
+    });
+
+    // When project changes
+    $('#project_id').on('change', function() {
+        const projectId = $(this).val();
+        
+        if (projectId) {
+            // Enable and load tasks
+            $('#task_id').prop('disabled', false).html('<option value="">Loading tasks...</option>');
+            
+            $.ajax({
+                url: 'process/get_tasks_by_project.php',
+                type: 'POST',
+                data: { project_id: projectId },
+                success: function(data) {
+                    $('#task_id').html(data);
+                    // Initialize select2 for multi-select
+                    $('#task_id').select2({
+                        placeholder: "Select Tasks",
+                        allowClear: true
+                    });
+                },
+                error: function() {
+                    $('#task_id').html('<option value="">Error loading tasks</option>');
+                }
+            });
+        } else {
+            $('#task_id').prop('disabled', true).html('<option value="">Select Tasks</option>');
+        }
+    });
+
+    // When tasks are selected
+    $('#task_id').on('change', function() {
+        const selectedTasks = $(this).val();
+        
+        if (selectedTasks && selectedTasks.length > 0) {
+            // Clear existing rows first
+            $('.add-tbody').empty();
+            
+            // Set item type to Service when tasks are selected
+            $('#Radio-service').prop('checked', true).trigger('change');
+            
+            // Load details for each selected task
+            selectedTasks.forEach(function(taskId) {
+                if (taskId) {
+                    $.ajax({
+                        url: 'process/get_task_details.php',
+                        type: 'POST',
+                        data: { task_id: taskId },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                // Add task as an invoice item using your existing row structure
+                                const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                                const newRow = `
+                                <tr id="${rowId}" class="service-row">
+                                    <td>
+                                        <div class="service-fields">
+                                            <input type="text" class="form-control service-name-input" value="${response.task_name}" readonly>
+                                            <input type="hidden" name="item_id[]" value="${taskId}">
+                                            <input type="hidden" class="tax-id" name="tax_id[]" value="0">
+                                            <input type="hidden" class="tax-name" name="tax_name[]" value="">
+                                            <!-- Hidden field to track item type for this row -->
+                                            <input type="hidden" name="item_type_row[]" value="service">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control quantity service-quantity" name="quantity[]" value="${response.hours}" min="1" readonly>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control hsn-code" name="code[]" value="" readonly>
+                                    </td>
+                                    <td>
+                                        <div class="service-fields">
+                                            <input type="text" class="form-control service-price-input" name="selling_price[]" value="${response.rate_per_hour}" data-value="${response.rate_per_hour}" readonly>
+                                        </div>
+                                    </td>
+                                    <td class="tax-column">
+                                        <div class="service-fields">
+                                            <input type="text" class="form-control tax-rate" name="rate[]" value="0" data-value="0" readonly style="display: none;">
+                                            <div class="tax-display-container">
+                                                <div class="tax-amount-line">$ 0.00</div>
+                                                <div class="tax-rate-line">0%</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control amount" name="amount[]" value="${response.total_amount}" data-value="${response.total_amount}" readonly>
+                                    </td>
+                                    <td>
+                                        <a href="javascript:void(0);" class="remove-table"><i class="isax isax-trash text-danger"></i></a>
+                                    </td>
+                                </tr>`;
+                                
+                                $('.add-tbody').append(newRow);
+                                
+                                // Update summary
+                                calculateSummary();
+                            }
+                        },
+                        error: function() {
+                            console.log('Error loading task details for task ID: ' + taskId);
+                        }
+                    });
+                }
+            });
+        } else {
+            // If no tasks selected, clear the items table
+            $('.add-tbody').empty();
+            calculateSummary();
         }
     });
 
@@ -884,35 +1042,69 @@ $(document).ready(function() {
     }
 
     // Form validation
-    $('#form').on('submit', function(e) {
-        let isValid = true;
-        $('.error-text').text('');
+    // $('#form').on('submit', function(e) {
+    //     let isValid = true;
+    //     $('.error-text').text('');
 
-        if (!$('#client_id').val()) {
-            $('#clientname_error').text('Client is required.');
-            isValid = false;
-        }
-        if (!$('#invoice_date').val()) {
-            $('#invoice_date_error').text('Invoice Date is required.');
-            isValid = false;
-        }
+    //     if (!$('#client_id').val()) {
+    //         $('#clientname_error').text('Client is required.');
+    //         isValid = false;
+    //     }
+    //     if (!$('#invoice_date').val()) {
+    //         $('#invoice_date_error').text('Invoice Date is required.');
+    //         isValid = false;
+    //     }
 
-        if (!$('#due_date').val()) {
-            $('#invoice_due_error').text('Due Date is required.');
-            isValid = false;
-        }
+    //     if (!$('#due_date').val()) {
+    //         $('#invoice_due_error').text('Due Date is required.');
+    //         isValid = false;
+    //     }
 
-        if (!$('.add-tbody tr').length) {
-            $('#product_error').text('Please add at least one product or service');
-            isValid = false;
-        }
+    //     if (!$('.add-tbody tr').length) {
+    //         $('#product_error').text('Please add at least one product or service');
+    //         isValid = false;
+    //     }
 
-        if (!isValid) {
-            e.preventDefault();
-            $('html, body').animate({ scrollTop: $('.error-text:visible').first().offset().top - 100 }, 500);
-        }
-    });
+    //     if (!isValid) {
+    //         e.preventDefault();
+    //         $('html, body').animate({ scrollTop: $('.error-text:visible').first().offset().top - 100 }, 500);
+    //     }
+    // });
+// Form validation
+$('#form').on('submit', function(e) {
+    let isValid = true;
+    $('.error-text').text('');
 
+    if (!$('#client_id').val()) {
+        $('#clientname_error').text('Client is required.');
+        isValid = false;
+    }
+    if (!$('#invoice_date').val()) {
+        $('#invoice_date_error').text('Invoice Date is required.');
+        isValid = false;
+    }
+
+    if (!$('#due_date').val()) {
+        $('#invoice_due_error').text('Due Date is required.');
+        isValid = false;
+    }
+
+    if (!$('.add-tbody tr').length) {
+        $('#product_error').text('Please add at least one product or service');
+        isValid = false;
+    }
+
+    // ADDED: Bank account validation
+    if (!$('#bank_id').val()) {
+        $('#invoice_account_error').text('Account is required.');
+        isValid = false;
+    }
+
+    if (!isValid) {
+        e.preventDefault();
+        $('html, body').animate({ scrollTop: $('.error-text:visible').first().offset().top - 100 }, 500);
+    }
+});
     function loadProducts(target) {
         let productOptions = '<option value="">Select Product</option>';
         <?php foreach ($products as $product): ?>
@@ -989,7 +1181,7 @@ $(document).ready(function() {
         });
     }
 
-    // Format behaviors
+    // Format behaviors - FIXED: Added service-price-input
     function attachCurrencyBehavior(selector, onChangeCallback) {
         $(document).on('focus', selector, function(){
             const raw = $(this).data('value');
@@ -1023,6 +1215,12 @@ $(document).ready(function() {
     attachCurrencyBehavior('.selling-price', function($el){
         calculateRow($el.closest('tr'));
     });
+    
+    // FIXED: Add currency behavior for service price input
+    attachCurrencyBehavior('.service-price-input', function($el){
+        calculateRow($el.closest('tr'));
+    });
+    
     attachPercentBehavior('.tax-rate', function($el){
         calculateRow($el.closest('tr'));
     });
@@ -1074,7 +1272,7 @@ $(document).ready(function() {
         updateProductDropdowns();
     });
 
-    // FIXED: Service select change handler - ensures service name is always stored
+    // FIXED: Service select change handler - ensures service name is properly handled
     $(document).on('change', '.service-select', function() {
         const $row = $(this).closest('tr');
         const option = $(this).find('option:selected');
@@ -1087,7 +1285,7 @@ $(document).ready(function() {
             const taxId = option.data('tax-id') || '';
             const taxName = option.data('tax-name') || '';
 
-            // FIX: Always set service name when a service is selected from dropdown
+            // FIX: Set service name when service is selected from dropdown
             $serviceNameInput.val(option.text());
             
             $row.find('.hsn-code').val(hsnCode);
@@ -1106,6 +1304,7 @@ $(document).ready(function() {
 
             calculateRow($row);
         } else {
+            // Clear fields when no service is selected
             $row.find('.hsn-code').val('');
             $row.find('.tax-id').val('');
             $row.find('.tax-name').val('');
@@ -1120,21 +1319,24 @@ $(document).ready(function() {
         updateServiceDropdowns();
     });
 
+    // FIXED: Service name input handler
     $(document).on('input', '.service-name-input', function() {
         const $row = $(this).closest('tr');
         const $serviceSelect = $row.find('.service-select');
         
-        if ($serviceSelect.val() === '') {
+        // Clear HSN code when manually entering service name (custom service)
+        if ($(this).val() && $serviceSelect.val() === '') {
             $row.find('.hsn-code').val('');
         }
         
         calculateRow($row);
     });
 
+    // FIXED: Service price input handler - now properly working
     $(document).on('input', '.service-price-input', function() {
         const $row = $(this).closest('tr');
         const price = unformat($(this).val());
-        $row.find('.service-price-input').data('value', price).val(formatCurrency(price));
+        $row.find('.service-price-input').data('value', price);
         calculateRow($row);
     });
 
@@ -1166,7 +1368,7 @@ $(document).ready(function() {
         updateServiceDropdowns();
     });
 
-    // Calculations
+    // FIXED: Calculations - properly handle both product and service rows
     function calculateRow($row) {
         const qtyInput = $row.find('.quantity');
         let qty = unformat(qtyInput.val());
@@ -1375,13 +1577,27 @@ $(document).ready(function() {
             newRow = `
                 <tr class="${rowClass}">
                     <td>
-                        <select class="form-select product-select" name="item_id[]">
-                            <option value="">Select Product</option>
-                        </select>
-                        <input type="hidden" class="tax-id" name="tax_id[]">
-                        <input type="hidden" class="tax-name" name="tax_name[]">
-                        <!-- Hidden field to track item type for this row -->
-                        <input type="hidden" name="item_type_row[]" value="product">
+                        <div class="product-fields">
+                            <select class="form-select product-select" name="item_id[]">
+                                <option value="">Select Product</option>
+                            </select>
+                            <input type="hidden" class="tax-id" name="tax_id[]">
+                            <input type="hidden" class="tax-name" name="tax_name[]">
+                            <!-- Hidden field to track item type -->
+                            <input type="hidden" name="item_type_row[]" value="product">
+                            <!-- FIX: Add empty service_name field for product rows -->
+                            <input type="hidden" name="service_name[]" value="">
+                        </div>
+                        <div class="service-fields">
+                            <select class="form-select service-select" name="item_id[]">
+                                <option value="">Select Service</option>
+                            </select>
+                            <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name">
+                            <input type="hidden" class="tax-id" name="tax_id[]">
+                            <input type="hidden" class="tax-name" name="tax_name[]">
+                            <!-- Hidden field to track item type -->
+                            <input type="hidden" name="item_type_row[]" value="service">
+                        </div>
                     </td>
                     <td>
                         <input type="number" class="form-control quantity" name="quantity[]" value="1" min="1">
@@ -1390,13 +1606,31 @@ $(document).ready(function() {
                         <input type="text" class="form-control hsn-code" name="code[]" readonly>
                     </td>
                     <td>
-                        <input type="text" class="form-control selling-price" name="selling_price[]" data-value="0">
+                        <div class="product-fields">
+                            <input type="text" class="form-control selling-price" name="selling_price[]" data-value="0">
+                        </div>
+                        <div class="service-fields">
+                            <input type="text" class="form-control service-price-input" name="selling_price[]" data-value="0" placeholder="0.00">
+                        </div>
                     </td>
                     <td class="tax-column">
-                        <input type="text" class="form-control tax-rate" name="rate[]" data-value="0" style="display: none;">
-                        <div class="tax-display-container">
-                            <div class="tax-amount-line"></div>
-                            <div class="tax-rate-line"></div>
+                        <div class="product-fields">
+                            <input type="text" class="form-control tax-rate" name="rate[]" data-value="0" style="display: none;">
+                            <div class="tax-display-container">
+                                <div class="tax-amount-line"></div>
+                                <div class="tax-rate-line"></div>
+                            </div>
+                        </div>
+                        <div class="service-fields">
+                            <select class="form-select service-tax-select" name="tax_id[]">
+                                ${taxOptions}
+                            </select>
+                            <input type="hidden" class="tax-rate" name="rate[]" data-value="${isNonGST ? '0' : '0'}">
+                            <input type="hidden" class="tax-name" name="tax_name[]" value="">
+                            <div class="tax-display-container mt-2">
+                                <div class="tax-amount-line"></div>
+                                <div class="tax-rate-line"></div>
+                            </div>
                         </div>
                     </td>
                     <td>
@@ -1411,14 +1645,27 @@ $(document).ready(function() {
             newRow = `
                 <tr class="${rowClass}">
                     <td>
-                        <select class="form-select service-select" name="item_id[]">
-                            <option value="">Select Service</option>
-                        </select>
-                        <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name">
-                        <input type="hidden" class="tax-id" name="tax_id[]">
-                        <input type="hidden" class="tax-name" name="tax_name[]">
-                        <!-- Hidden field to track item type for this row -->
-                        <input type="hidden" name="item_type_row[]" value="service">
+                        <div class="product-fields">
+                            <select class="form-select product-select" name="item_id[]">
+                                <option value="">Select Product</option>
+                            </select>
+                            <input type="hidden" class="tax-id" name="tax_id[]">
+                            <input type="hidden" class="tax-name" name="tax_name[]">
+                            <!-- Hidden field to track item type -->
+                            <input type="hidden" name="item_type_row[]" value="product">
+                            <!-- FIX: Add empty service_name field for product rows -->
+                            <input type="hidden" name="service_name[]" value="">
+                        </div>
+                        <div class="service-fields">
+                            <select class="form-select service-select" name="item_id[]">
+                                <option value="">Select Service</option>
+                            </select>
+                            <input type="text" class="form-control service-name-input service-custom-input" name="service_name[]" placeholder="Or enter custom service name">
+                            <input type="hidden" class="tax-id" name="tax_id[]">
+                            <input type="hidden" class="tax-name" name="tax_name[]">
+                            <!-- Hidden field to track item type -->
+                            <input type="hidden" name="item_type_row[]" value="service">
+                        </div>
                     </td>
                     <td>
                         <input type="number" class="form-control quantity service-quantity" name="quantity[]" value="" placeholder="Optional">
@@ -1427,17 +1674,31 @@ $(document).ready(function() {
                         <input type="text" class="form-control hsn-code" name="code[]" readonly>
                     </td>
                     <td>
-                        <input type="text" class="form-control service-price-input" name="selling_price[]" data-value="0" placeholder="0.00">
+                        <div class="product-fields">
+                            <input type="text" class="form-control selling-price" name="selling_price[]" data-value="0">
+                        </div>
+                        <div class="service-fields">
+                            <input type="text" class="form-control service-price-input" name="selling_price[]" data-value="0" placeholder="0.00">
+                        </div>
                     </td>
                     <td class="tax-column">
-                        <select class="form-select service-tax-select" name="tax_id[]">
-                            ${taxOptions}
-                        </select>
-                        <input type="hidden" class="tax-rate" name="rate[]" data-value="${isNonGST ? '0' : '0'}">
-                        <input type="hidden" class="tax-name" name="tax_name[]" value="">
-                        <div class="tax-display-container mt-2">
-                            <div class="tax-amount-line"></div>
-                            <div class="tax-rate-line"></div>
+                        <div class="product-fields">
+                            <input type="text" class="form-control tax-rate" name="rate[]" data-value="0" style="display: none;">
+                            <div class="tax-display-container">
+                                <div class="tax-amount-line"></div>
+                                <div class="tax-rate-line"></div>
+                            </div>
+                        </div>
+                        <div class="service-fields">
+                            <select class="form-select service-tax-select" name="tax_id[]">
+                                ${taxOptions}
+                            </select>
+                            <input type="hidden" class="tax-rate" name="rate[]" data-value="${isNonGST ? '0' : '0'}">
+                            <input type="hidden" class="tax-name" name="tax_name[]" value="">
+                            <div class="tax-display-container mt-2">
+                                <div class="tax-amount-line"></div>
+                                <div class="tax-rate-line"></div>
+                            </div>
                         </div>
                     </td>
                     <td>
@@ -1471,10 +1732,89 @@ $(document).ready(function() {
         }, 100);
     });
 
-    // Trigger GST toggle on page load to apply initial state
-    setTimeout(function() {
+    // =============================================
+    // FIXED: Initialize existing rows on page load - THIS IS THE MAIN FIX
+    // =============================================
+    function initializeExistingRows() {
+        console.log('Initializing existing rows...');
+        
+        $('.add-tbody tr').each(function() {
+            const $row = $(this);
+            
+            // Get the actual data-value attributes from the HTML
+            const priceDataValue = $row.find('.selling-price').attr('data-value') || $row.find('.service-price-input').attr('data-value');
+            const taxDataValue = $row.find('.tax-rate').attr('data-value');
+            const amountDataValue = $row.find('.amount').attr('data-value');
+            
+            console.log('Raw data-values:', { 
+                priceDataValue, 
+                taxDataValue, 
+                amountDataValue 
+            });
+            
+            // Convert to numbers - use the data-value attribute directly
+            const price = parseFloat(priceDataValue) || 0;
+            const taxRate = parseFloat(taxDataValue) || 0;
+            const amount = parseFloat(amountDataValue) || 0;
+            
+            console.log('Parsed values:', { price, taxRate, amount });
+            
+            // Set data values for JavaScript calculations
+            if ($row.hasClass('product-row')) {
+                $row.find('.selling-price').data('value', price);
+            } else {
+                $row.find('.service-price-input').data('value', price);
+            }
+            
+            $row.find('.tax-rate').data('value', taxRate);
+            $row.find('.amount').data('value', amount);
+            
+            // Get quantity
+            const qtyInput = $row.find('.quantity');
+            let qty = parseFloat(qtyInput.val()) || 0;
+            
+            const isService = $row.hasClass('service-row');
+            if (isService && qty === 0) {
+                qty = 1;
+                qtyInput.val(qty);
+            }
+            
+            // Calculate and update tax display
+            const lineSubtotal = qty * price;
+            const lineTaxAmount = lineSubtotal * (taxRate / 100);
+            const calculatedAmount = lineSubtotal + lineTaxAmount;
+            
+            const taxAmountFormatted = formatCurrency(lineTaxAmount);
+            const taxRateFormatted = `${taxRate}%`;
+            
+            $row.find('.tax-amount-line').text(taxAmountFormatted);
+            $row.find('.tax-rate-line').text(taxRateFormatted);
+            
+            // Update amount field with calculated value
+            $row.find('.amount').data('value', calculatedAmount).val(formatCurrency(calculatedAmount));
+            
+            console.log('Row initialized:', { 
+                qty, 
+                price, 
+                taxRate, 
+                lineSubtotal, 
+                lineTaxAmount, 
+                calculatedAmount 
+            });
+        });
+        
+        calculateSummary();
+    }
+
+    // Initialize on page load - FIXED timing
+    $(window).on('load', function() {
+        console.log('Window loaded - initializing rows...');
+        
         const initialGstType = $('input[name="gst_type"]:checked').val();
         $('#gst_type_field').val(initialGstType);
+        
+        // Initialize existing rows FIRST
+        initializeExistingRows();
         
         if (initialGstType === 'non_gst') {
             // Apply Non-GST mode on page load
@@ -1493,15 +1833,21 @@ $(document).ready(function() {
             $('.add-tbody tr').each(function() {
                 const $row = $(this);
                 const qtyInput = $row.find('.quantity');
-                let qty = unformat(qtyInput.val());
+                let qty = parseFloat(qtyInput.val()) || 0;
                 
                 // For services, if quantity is empty or 0, treat as 1 for calculation
                 const isService = $row.hasClass('service-row');
-                if (isService && (qty === 0 || qtyInput.val() === '')) {
+                if (isService && qty === 0) {
                     qty = 1;
                 }
                 
-                const price = $row.find('.selling-price').data('value') || 0;
+                let price = 0;
+                if (isService) {
+                    price = $row.find('.service-price-input').data('value') || 0;
+                } else {
+                    price = $row.find('.selling-price').data('value') || 0;
+                }
+                
                 const lineSubtotal = qty * price;
                 const lineTotal = lineSubtotal; // No tax in Non-GST mode
                 
@@ -1510,14 +1856,15 @@ $(document).ready(function() {
             
             calculateSummary();
         }
-    }, 100);
+        
+        console.log('Page initialization complete');
+    });
 
     // Initial setup
     updateProductDropdowns();
     updateServiceDropdowns();
-    calculateSummary();
     
-    console.log('Initialization complete - GUARANTEED one row per click');
+    console.log('Initialization complete - CLIENT-PROJECT-TASK LOADING ADDED');
 });
 </script>
 

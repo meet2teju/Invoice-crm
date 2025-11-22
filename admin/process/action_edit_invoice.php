@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         $shipping_charge = unformat($_POST['shipping_charge'] ?? 0);
         $total_amount    = dbFloat($_POST['total_amount'] ?? 0);
         
-        // === NEW: GST Type field ===
+        // === GST Type field ===
         $gst_type        = dbString($conn, $_POST['gst_type'] ?? 'gst');
 
         // --- Handle bank_id properly ---
@@ -133,59 +133,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
 
         // === 3. Mark old items deleted ===
         $mark_deleted = "UPDATE invoice_item SET is_deleted = 1, updated_by = '$currentUserId' WHERE invoice_id = '$invoice_id'";
+        
         if (!mysqli_query($conn, $mark_deleted)) {
             throw new Exception("Failed to mark old items as deleted: " . mysqli_error($conn));
         }
 
-        // === 4. Insert/update invoice items - UPDATED FOR PRODUCTS & SERVICES ===
+        // === 4. Insert/update invoice items - UPDATED TO MATCH QUOTATION LOGIC ===
         if (isset($_POST['item_id']) && is_array($_POST['item_id'])) {
             foreach ($_POST['item_id'] as $index => $item_id) {
                 $item_id       = dbInt($item_id);
                 $service_name  = dbString($conn, $_POST['service_name'][$index] ?? '');
                 $quantity      = dbFloat($_POST['quantity'][$index] ?? 0);
-                $selling_price = dbFloat($_POST['selling_price'][$index] ?? 0);
+                $selling_price = unformat($_POST['selling_price'][$index] ?? 0);
                 $tax_id        = dbInt($_POST['tax_id'][$index] ?? 0);
-                $tax_name      = dbString($conn, $_POST['tax_name'][$index] ?? '');
                 $rate          = dbFloat($_POST['rate'][$index] ?? 0);
-                $item_amount   = dbFloat($_POST['amount'][$index] ?? 0);
-                // $code          = dbString($conn, $_POST['code'][$index] ?? '');
-                
-                // Determine if this is a product or service
-                $isProduct = ($item_id > 0);
-                
-                // Prepare values for database
-                if ($isProduct) {
-                    // Product item
+                $item_amount   = unformat($_POST['amount'][$index] ?? 0);
+                $code          = dbString($conn, $_POST['code'][$index] ?? '');
+                $item_type_row = $_POST['item_type_row'][$index] ?? 'product';
+
+                // Initialize product_id and service_id based on your new logic - EXACTLY LIKE QUOTATION
+                $product_id_sql = 'NULL';
+                $service_id_sql = 'NULL';
+                $service_name_sql = 'NULL';
+
+                // Determine whether it's a product or service and set appropriate values - EXACTLY LIKE QUOTATION
+                if ($item_type_row === 'product' && !empty($item_id)) {
+                    // This is a product - store in product_id
                     $product_id_sql = $item_id;
-                    $service_name_sql = 'NULL';
-                } else {
-                    // Service item - only save if service name is provided
-                    if (empty($service_name)) {
-                        continue; // Skip if no service name
+                } else if ($item_type_row === 'service') {
+                    if (!empty($item_id)) {
+                        // This is a service selected from dropdown - store in service_id
+                        $service_id_sql = $item_id;
+                        // Also store the service name for reference
+                        $service_name_sql = "'" . dbString($conn, $service_name) . "'";
+                    } else if (!empty($service_name)) {
+                        // This is a custom service (no dropdown selection) - store in service_name
+                        $service_name_sql = "'" . dbString($conn, $service_name) . "'";
+                    } else {
+                        continue;
                     }
-                    $product_id_sql = 'NULL';
-                    $service_name_sql = "'$service_name'";
+                } else {
+                    continue;
+                }
+
+                // Skip if both product and service are empty
+                if ($product_id_sql === 'NULL' && $service_id_sql === 'NULL' && $service_name_sql === 'NULL') {
+                    continue;
                 }
 
                 $tax_id_sql = ($tax_id === 0) ? 'NULL' : $tax_id;
 
-                // Check if item already exists (for update scenario)
-                if ($isProduct) {
-                    $check_item = "SELECT id FROM invoice_item 
-                                   WHERE invoice_id = '$invoice_id' 
-                                   AND product_id = '$product_id_sql'
-                                   LIMIT 1";
+                // Check if item already exists (using your exact quotation logic)
+                $check_item_query = "";
+                $item_exists = false;
+                $existing_item_id = 0;
+
+                if ($item_type_row === 'product' && !empty($item_id)) {
+                    $check_item_query = "SELECT id FROM invoice_item 
+                                       WHERE invoice_id = '$invoice_id' 
+                                       AND product_id = '$item_id'
+                                       AND is_deleted = 0
+                                       LIMIT 1";
+                } else if ($item_type_row === 'service') {
+                    if (!empty($item_id)) {
+                        // Service from dropdown - check by service_id
+                        $check_item_query = "SELECT id FROM invoice_item 
+                                           WHERE invoice_id = '$invoice_id' 
+                                           AND service_id = '$item_id'
+                                           AND is_deleted = 0
+                                           LIMIT 1";
+                    } else if (!empty($service_name)) {
+                        // Custom service - check by service_name
+                        $escaped_service_name = dbString($conn, $service_name);
+                        $check_item_query = "SELECT id FROM invoice_item 
+                                           WHERE invoice_id = '$invoice_id' 
+                                           AND service_name = '$escaped_service_name'
+                                           AND is_deleted = 0
+                                           LIMIT 1";
+                    } else {
+                        continue;
+                    }
                 } else {
-                    $check_item = "SELECT id FROM invoice_item 
-                                   WHERE invoice_id = '$invoice_id' 
-                                   AND service_name = '$service_name'
-                                   LIMIT 1";
+                    continue;
                 }
                 
-                $item_exists = mysqli_query($conn, $check_item);
+                $item_exists_result = mysqli_query($conn, $check_item_query);
+                if ($item_exists_result && mysqli_num_rows($item_exists_result) > 0) {
+                    $item_exists = true;
+                    $existing_item = mysqli_fetch_assoc($item_exists_result);
+                    $existing_item_id = $existing_item['id'];
+                }
 
-                if ($item_exists && mysqli_num_rows($item_exists) > 0) {
-                    if ($isProduct) {
+                if ($item_exists) {
+                    // UPDATE existing item - EXACTLY LIKE QUOTATION LOGIC
+                    if ($item_type_row === 'product' && !empty($item_id)) {
                         $update_item = "UPDATE invoice_item SET
                             quantity = '$quantity',
                             selling_price = '$selling_price',
@@ -194,34 +235,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                             amount = '$item_amount',
                             is_deleted = 0,
                             updated_by = '$currentUserId'
-                            WHERE invoice_id = '$invoice_id' 
-                            AND product_id = '$product_id_sql'";
-                    } else {
-                        $update_item = "UPDATE invoice_item SET
-                            quantity = '$quantity',
-                            selling_price = '$selling_price',
-                            tax_id = $tax_id_sql,
-                            rate = '$rate',
-                            amount = '$item_amount',
-                            service_name = '$service_name',
-                            is_deleted = 0,
-                            updated_by = '$currentUserId'
-                            WHERE invoice_id = '$invoice_id' 
-                            AND service_name = '$service_name'";
+                            WHERE id = '$existing_item_id'";
+                    } else if ($item_type_row === 'service') {
+                        if (!empty($item_id)) {
+                            // Service from dropdown - update by service_id
+                            $update_item = "UPDATE invoice_item SET
+                                quantity = '$quantity',
+                                selling_price = '$selling_price',
+                                tax_id = $tax_id_sql,
+                                rate = '$rate',
+                                amount = '$item_amount',
+                                service_name = $service_name_sql,
+                                is_deleted = 0,
+                                updated_by = '$currentUserId'
+                                WHERE id = '$existing_item_id'";
+                        } else if (!empty($service_name)) {
+                            // Custom service - update by service_name
+                            $update_item = "UPDATE invoice_item SET
+                                quantity = '$quantity',
+                                selling_price = '$selling_price',
+                                tax_id = $tax_id_sql,
+                                rate = '$rate',
+                                amount = '$item_amount',
+                                service_name = $service_name_sql,
+                                is_deleted = 0,
+                                updated_by = '$currentUserId'
+                                WHERE id = '$existing_item_id'";
+                        }
                     }
                     
                     if (!mysqli_query($conn, $update_item)) {
-                        throw new Exception("Failed to update item: " . mysqli_error($conn));
+                        throw new Exception("Failed to update item at index $index: " . mysqli_error($conn));
                     }
                 } else {
+                    // INSERT new item - EXACTLY LIKE QUOTATION LOGIC
                     $insert_item = "INSERT INTO invoice_item (
-                        invoice_id, product_id, service_name, quantity, 
-                        selling_price, tax_id,rate, amount, org_id, 
+                        invoice_id, product_id, service_id, service_name, quantity, 
+                        selling_price, tax_id, rate, amount, org_id, 
                         created_by, updated_by
                     ) VALUES (
                         '$invoice_id', 
-                        " . ($isProduct ? "'$product_id_sql'" : "NULL") . ", 
-                        " . ($isProduct ? "NULL" : "'$service_name'") . ", 
+                        $product_id_sql, 
+                        $service_id_sql, 
+                        $service_name_sql, 
                         '$quantity',
                         '$selling_price', 
                         $tax_id_sql, 
@@ -233,61 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                     )";
                     
                     if (!mysqli_query($conn, $insert_item)) {
-                        throw new Exception("Failed to insert item: " . mysqli_error($conn));
-                    }
-                }
-            }
-        } else {
-            // Fallback to old product-only logic (for backward compatibility)
-            if (!empty($_POST['product_id']) && is_array($_POST['product_id'])) {
-                foreach ($_POST['product_id'] as $index => $product_id) {
-                    // Handle both regular products and task products
-                    if (is_string($product_id) && strpos($product_id, 'task_') === 0) {
-                        // This is a task product, skip it as tasks are handled separately
-                        continue;
-                    }
-                    
-                    $product_id = dbInt($product_id);
-                    if ($product_id === 0) continue;
-
-                    $quantity      = dbFloat($_POST['quantity'][$index] ?? 0);
-                    $unit_id       = dbInt($_POST['unit_id'][$index] ?? 0);
-                    $selling_price = dbFloat($_POST['selling_price'][$index] ?? 0);
-                    $tax_id        = dbInt($_POST['tax_id'][$index] ?? 0);
-                    $item_amount   = dbFloat($_POST['amount'][$index] ?? 0);
-
-                    $check_item = "SELECT id FROM invoice_item 
-                                   WHERE invoice_id = '$invoice_id' 
-                                   AND product_id = '$product_id' 
-                                   LIMIT 1";
-                    $item_exists = mysqli_query($conn, $check_item);
-
-                    if ($item_exists && mysqli_num_rows($item_exists) > 0) {
-                        $update_item = "UPDATE invoice_item SET
-                            quantity = '$quantity',
-                            unit_id = '$unit_id',
-                            selling_price = '$selling_price',
-                            tax_id = '$tax_id',
-                            amount = '$item_amount',
-                            is_deleted = 0,
-                            updated_by = '$currentUserId'
-                            WHERE invoice_id = '$invoice_id' AND product_id = '$product_id'";
-                        if (!mysqli_query($conn, $update_item)) {
-                            throw new Exception("Failed to update item: " . mysqli_error($conn));
-                        }
-                    } else {
-                        $insert_item = "INSERT INTO invoice_item (
-                            invoice_id, product_id, quantity, unit_id, 
-                            selling_price, tax_id, amount, org_id, 
-                            created_by, updated_by
-                        ) VALUES (
-                            '$invoice_id', '$product_id', '$quantity', '$unit_id',
-                            '$selling_price', '$tax_id', '$item_amount', '$orgId',
-                            '$currentUserId', '$currentUserId'
-                        )";
-                        if (!mysqli_query($conn, $insert_item)) {
-                            throw new Exception("Failed to insert item: " . mysqli_error($conn));
-                        }
+                        throw new Exception("Failed to insert item at index $index: " . mysqli_error($conn));
                     }
                 }
             }
