@@ -165,16 +165,16 @@ while ($item = mysqli_fetch_assoc($itemResult)) {
                                             <div class="col-lg-4 col-md-6">
                                               <div class="mb-3">
                                                 <label class="form-label">Client Name<span class="text-danger">*</span></label>
-                                                <select class="form-select select2" name="client_id" id="client_id">
+                                               <select class="form-select select2" name="client_id" id="client_id">
                                                     <option value="">Select Client</option>
                                                     <?php
-                                                    // Get selected client ID from URL
                                                     $selectedClient = isset($_GET['client_id']) ? intval($_GET['client_id']) : 0;
 
-                                                    $result = mysqli_query($conn, "SELECT * FROM client");
+                                                    $result = mysqli_query($conn, "SELECT * FROM client WHERE is_deleted = 0");
                                                     while ($row = mysqli_fetch_assoc($result)) {
+
                                                         $isSelected = ($row['id'] == $selectedClient) ? 'selected' : '';
-                                                        $displayName = $row['first_name'];
+                                                        $displayName = trim($row['salutation'] . ' ' . $row['first_name'] . ' ' . $row['last_name']);
                                                         if (!empty($row['company_name'])) {
                                                             $displayName .= ' - ' . $row['company_name'];
                                                         }

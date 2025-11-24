@@ -89,6 +89,7 @@ if (isset($_POST['submit'])) {
         $remark = mysqli_real_escape_string($conn, $_POST['remark']);
         $currency = mysqli_real_escape_string($conn, $_POST['currency']);
         $pan = mysqli_real_escape_string($conn, $_POST['pan_number']);
+        $gst = mysqli_real_escape_string($conn, $_POST['gst_number']);
         $website_url = mysqli_real_escape_string($conn, $_POST['website_url']);
         $department = mysqli_real_escape_string($conn, $_POST['department']);
         $designation = mysqli_real_escape_string($conn, $_POST['designation']);
@@ -111,6 +112,7 @@ if (isset($_POST['submit'])) {
             enable_portal = '$enable_portal',
             remark = '$remark',
             pan_number = '$pan',
+            gst_number = '$gst',
             website_url = '$website_url',
             department = '$department',
             designation = '$designation',

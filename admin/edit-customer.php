@@ -163,14 +163,15 @@ $contacts_query = "SELECT * FROM client_contact_persons WHERE client_id = $clien
                                                 <div class="mb-3">
                                                     <label class="form-label">Work Number</label>
                                                     <input type="text" class="form-control" name="phone_number" id="phone_number" value="<?php echo htmlspecialchars($row['phone_number']); ?>">
-                                                    <!-- <span id="phone_number_error" class="text-danger error-text"></span> -->
+                                                    <span id="phone_number_error" class="text-danger error-text"></span>
                                                 </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6">
                                                 <div class="mb-3">
                                                     <label class="form-label">Mobile Number </label>
                                                     <input type="text" class="form-control" name="business_number" id="business_number" value="<?php echo htmlspecialchars($row['business_number']); ?>">
-                                                    <!-- <span id="business_number_error" class="text-danger error-text"></span> -->
+                                                    <span id="business_number_error" class="text-danger error-text"></span>
+                                              
                                                 </div>
                                             </div>
                                         </div>
@@ -210,8 +211,12 @@ $contacts_query = "SELECT * FROM client_contact_persons WHERE client_id = $clien
                                                         <option value="USD" <?php echo $row['currency'] == 'USD' ? 'selected' : ''; ?>> US Dollar&nbsp;($)</option>
                                                         </select>
                                                     </div>
-                                                    
                                                     <div class="col-md-6 mb-3">
+                                                        <label class="form-label">VAT/GST Number</label>
+                                                        <input type="text" class="form-control" name="gst_number" id="gst_number" value="<?php echo htmlspecialchars($row['gst_number']); ?>">
+                                                        <span id="gst_number_error" class="text-danger error-text"></span>
+                                                    </div>
+                                                    <!-- <div class="col-md-6 mb-3">
                                                         <label class="form-label">Enable Portal?</label><br>
                                                         <div class="form-check">
                                                             <input type="checkbox" class="form-check-input" id="enablePortalCheckbox" name="enable_portal" <?php echo $row['enable_portal'] ? 'checked' : ''; ?>>
@@ -220,7 +225,7 @@ $contacts_query = "SELECT * FROM client_contact_persons WHERE client_id = $clien
                                                             </label>
                                                         </div>
                                                         <span id="emailRequiredNote" class="text-muted ms-1 <?php echo !$row['enable_portal'] ? 'd-none' : ''; ?>">( Email address is mandatory )</span>
-                                                    </div>
+                                                    </div> -->
 
                                                     
                                                     <div class="col-md-6 mb-3">
@@ -377,8 +382,8 @@ $contacts_query = "SELECT * FROM client_contact_persons WHERE client_id = $clien
                                                     <div class="col-md-6">
                                                         <div class="d-flex align-items-center justify-content-between mb-3">
                                                             <h6>Shipping Address</h6>
-                                                     <a href="javascript:void(0);" onclick="copyBillingToShipping()" class="text-primary text-decoration-underline fs-13">
-                                                     <i class="isax isax-document-copy me-1"></i>Copy From Billing</a>
+                                                     <!-- <a href="javascript:void(0);" onclick="copyBillingToShipping()" class="text-primary text-decoration-underline fs-13">
+                                                     <i class="isax isax-document-copy me-1"></i>Copy From Billing</a> -->
                                                         </div>
                                                         <div class="row">
                                                             <div class="col-12 mb-3">
@@ -667,7 +672,7 @@ function validateWorkPhone(e) {
     const errorSpan = e.target.closest("td").querySelector(".error-workphone");
     // allow only digits
     e.target.value = phone.replace(/[^0-9]/g, '');
-    errorSpan.textContent = phone === "" ? "" : (!/^[0-9]{7,10}$/.test(phone) ? "Work Phone must be 7–10 digits" : "");
+    errorSpan.textContent = phone === "" ? "" : (!/^[0-9]{10,12}$/.test(phone) ? "Work Phone must be 10-12 digits" : "");
 }
 
 function validateMobile(e) {
@@ -986,21 +991,21 @@ $(document).ready(function () {
             $(`[data-bs-target="#otherTab"]`).addClass('has-error');
         }
 
-        // Phone number validation
-        // const phone = $('[name="phone_number"]').val().trim();
-        // if (phone && !/^[0-9]{10}$/.test(phone)) {
-        //     $('#phone_number_error').text('Please enter a valid phone number');
-        //     isValid = false;
-        //     $(`[data-bs-target="#otherTab"]`).addClass('has-error');
-        // }
+        Phone number validation
+        const phone = $('[name="phone_number"]').val().trim();
+        if (phone && !/^[0-9]{10}$/.test(phone)) {
+            $('#phone_number_error').text('Please enter a valid phone number');
+            isValid = false;
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        }
 
-        // // Mobile number validation
-        // const mobile = $('[name="business_number"]').val().trim();
-        // if (mobile && !/^[0-9]{10}$/.test(mobile)) {
-        //     $('#business_number_error').text('Please enter a valid mobile number');
-        //     isValid = false;
-        //     $(`[data-bs-target="#otherTab"]`).addClass('has-error');
-        // }
+        // Mobile number validation
+        const mobile = $('[name="business_number"]').val().trim();
+        if (mobile && !/^[0-9]{10}$/.test(mobile)) {
+            $('#business_number_error').text('Please enter a valid mobile number');
+            isValid = false;
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        }
 
         // Validate contact persons if any exist
         $('[name="contact_email[]"]').each(function(index) {
@@ -1123,7 +1128,7 @@ $(document).ready(function () {
     const fieldName = $(this).attr('name');
     const errorId = `${fieldName}_error`;
 
-    if (digitsOnly && !/^[0-9]{7,15}$/.test(digitsOnly)) {
+    if (digitsOnly && !/^[0-9]{10,12}$/.test(digitsOnly)) {
         $(`#${errorId}`).text('Please enter a valid number');
         $(`[data-bs-target="#otherTab"]`).addClass('has-error');
     } else {
@@ -1273,8 +1278,8 @@ function copyBillingToShipping() {
     try {
         // Copy basic fields
         $('#shipping_name').val($('#billing_name').val());
-        $('#shipping_address1').val($('#billing_address1'].val());
-        $('#shipping_address2').val($('#billing_address2'].val());
+        $('#shipping_address1').val($('#billing_address1').val());
+        $('#shipping_address2').val($('#billing_address2').val());
         $('#shipping_pincode').val($('#billing_pincode').val());
         
         // Copy country
@@ -1404,7 +1409,7 @@ function validateWorkPhone(e) {
 
     if (phone === "") {
         errorSpan.textContent = "";
-    } else if (!/^[0-9]{7,10}$/.test(phone)) {
+    } else if (!/^[0-9]{10}$/.test(phone)) {
         errorSpan.textContent = "Work Phone must be 10 digits";
     } else {
         errorSpan.textContent = "";
@@ -1469,7 +1474,6 @@ function removeRow(button) {
 </script>
 
 <script>
-// Image Preview Functionality
 $(document).ready(function() {
     $('#add_image').on('change', function(e) {
         const file = e.target.files[0];

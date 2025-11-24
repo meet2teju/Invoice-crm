@@ -2,7 +2,6 @@
 <?php
 include '../config/config.php';
 
-
 // Get company information if it exists
 $company_info = [];
 $company_query = "SELECT * FROM company_info LIMIT 1";
@@ -369,7 +368,7 @@ if (!empty($company_info['state_id'])) {
                                     </div>
                                     
                                     <div class="d-flex align-items-center justify-content-between settings-bottom-btn mt-0">
-                                        <button type="button" class="btn btn-outline-white me-2">Cancel</button>
+                                        <button type="button" class="btn btn-outline-white me-2" id="cancelBtn">Cancel</button>
                                         <button type="submit" name="submit" class="btn btn-primary">Save Changes</button>
                                     </div>
                                 </form>
@@ -398,6 +397,11 @@ if (!empty($company_info['state_id'])) {
     <?php include 'layouts/vendor-scripts.php'; ?>
     <script>
 $(document).ready(function () {
+    // Cancel button functionality - redirect to dashboard
+    $("#cancelBtn").on("click", function () {
+        window.location.href = 'admin-dashboard.php';
+    });
+
     $("#companyForm").on("submit", function (e) {
         let isValid = true;
 

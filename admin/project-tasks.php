@@ -10,6 +10,23 @@ $role_query = mysqli_query($conn, "SELECT name FROM user_role WHERE id = $role_i
 $role_row   = mysqli_fetch_assoc($role_query);
 $role_name  = strtolower(trim($role_row['name'] ?? ''));
 
+// --- Fetch statuses from project_status table ---
+$statuses = [];
+$status_query = "SELECT id, status_name FROM project_status WHERE is_deleted = 0 ORDER BY id";
+$status_result = mysqli_query($conn, $status_query);
+while ($row = mysqli_fetch_assoc($status_result)) {
+    $statuses[$row['id']] = $row['status_name'];
+}
+
+// Define status colors (you can modify these as needed)
+$statusColors = [
+    1 => '#ffc107', // Pending
+    2 => '#17a2b8', // In Progress
+    3 => '#28a745', // Completed
+    4 => '#6c757d', // On Hold
+    5 => '#dc3545'  // Cancelled
+];
+
 // --- FILTER LOGIC ---
 $filters = [];
 $selected_projects = $_POST['project'] ?? [];
@@ -74,15 +91,6 @@ $result = mysqli_query($conn, $sql);
 
 // Fetch projects for filter
 $projectList = mysqli_query($conn, "SELECT id, project_name FROM project WHERE is_deleted = 0");
-
-// Define status options manually since task_status table doesn't exist
-$statusOptions = [
-    1 => ['name' => 'Pending', 'color' => '#ffc107'],
-    2 => ['name' => 'In Progress', 'color' => '#17a2b8'],
-    3 => ['name' => 'Completed', 'color' => '#28a745'],
-    4 => ['name' => 'On Hold', 'color' => '#6c757d'],
-    5 => ['name' => 'Cancelled', 'color' => '#dc3545']
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -224,8 +232,8 @@ $statusOptions = [
             if (!empty($selected_statuses)) {
                 $status_names = [];
                 foreach ($selected_statuses as $statusId) {
-                    if (isset($statusOptions[$statusId])) {
-                        $status_names[] = $statusOptions[$statusId]['name'];
+                    if (isset($statuses[$statusId])) {
+                        $status_names[] = $statuses[$statusId];
                     }
                 }
                 if (!empty($status_names)) {
@@ -295,10 +303,10 @@ $statusOptions = [
                             $clientImg = !empty($row['client_image']) ? '../uploads/' . htmlspecialchars($row['client_image']) : '';
                             $clientInitials = !empty($row['client_name']) ? strtoupper(substr($row['client_name'], 0, 2)) : 'NA';
                             
-                            // Status handling
+                            // Status handling - get from project_status table
                             $statusId = $row['status_id'] ?? 1;
-                            $statusName = $statusOptions[$statusId]['name'] ?? 'Pending';
-                            $statusColor = $statusOptions[$statusId]['color'] ?? '#6c757d';
+                            $statusName = $statuses[$statusId] ?? 'Pending';
+                            $statusColor = $statusColors[$statusId] ?? '#6c757d';
                         ?>
                         <tr>
                             <!-- Checkbox for each task -->
@@ -483,8 +491,8 @@ while ($row = mysqli_fetch_assoc($result)):
                 $selectedStatusNames = [];
                 if (!empty($selected_statuses)) {
                     foreach ($selected_statuses as $statusId) {
-                        if (isset($statusOptions[$statusId])) {
-                            $selectedStatusNames[] = $statusOptions[$statusId]['name'];
+                        if (isset($statuses[$statusId])) {
+                            $selectedStatusNames[] = $statuses[$statusId];
                         }
                     }
                 }
@@ -515,13 +523,13 @@ while ($row = mysqli_fetch_assoc($result)):
                                 </label>
                                 <a href="javascript:void(0);" class="link-danger fw-medium text-decoration-underline reset-status">Reset</a>
                             </li>
-                            <?php foreach ($statusOptions as $statusId => $status): ?>
+                            <?php foreach ($statuses as $statusId => $statusName): ?>
                             <li>
                                 <label class="dropdown-item px-2 d-flex align-items-center text-dark">
                                     <input class="form-check-input m-0 me-2 status-checkbox" type="checkbox" name="status[]" value="<?= $statusId ?>" 
                                         <?= in_array($statusId, $selected_statuses) ? 'checked' : '' ?>>
-                                    <span class="badge me-2" style="background-color: <?= $status['color'] ?>; width: 12px; height: 12px;"></span>
-                                    <?= htmlspecialchars($status['name']) ?>
+                                    <span class="badge me-2" style="background-color: <?= $statusColors[$statusId] ?? '#6c757d' ?>; width: 12px; height: 12px;"></span>
+                                    <?= htmlspecialchars($statusName) ?>
                                 </label>
                             </li>
                             <?php endforeach; ?>

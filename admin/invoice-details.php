@@ -423,7 +423,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 														<?php if ($showQuantityColumn): ?>
 															<td><?= $item['quantity'] ?></td>
 														<?php endif; ?>
-														<td><?= $item['selling_price'] ?></td>
+														<td>$<?= $item['selling_price'] ?></td>
 														<td>
 															<?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
 																Non-GST
@@ -431,7 +431,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 																<?= $item['tax_name'] ?>
 															<?php endif; ?>
 														</td>
-														<td><?= $item['amount'] ?></td>
+														<td>$<?= $item['amount'] ?></td>
 													</tr>
 													<?php } ?>
 												</tbody>
@@ -475,7 +475,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 												<div class="mb-3 p-4">
 													<div class="d-flex align-items-center justify-content-between mb-3">
 														<h6 class="fs-14 fw-semibold">Sub Amount</h6>
-														<h6 class="fs-14 fw-semibold"><?= $invoice['amount'] ?></h6>
+														<h6 class="fs-14 fw-semibold">$<?= $invoice['amount'] ?></h6>
 													</div>
 													
 													<?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
@@ -486,20 +486,20 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 													<?php else: ?>
 														<div class="d-flex align-items-center justify-content-between mb-3">
 															<h6 class="fs-14 fw-semibold">Tax Amount</h6>
-															<h6 class="fs-14 fw-semibold"><?= $invoice['tax_amount'] ?></h6>
+															<h6 class="fs-14 fw-semibold">$<?= $invoice['tax_amount'] ?></h6>
 														</div>
 													<?php endif; ?>
 													
 													<?php if (!empty($invoice['shipping_charge']) && $invoice['shipping_charge'] > 0): ?>
 														<div class="d-flex align-items-center justify-content-between mb-3">
 															<h6 class="fs-14 fw-semibold">Shipping Charge</h6>
-															<h6 class="fs-14 fw-semibold"><?= $invoice['shipping_charge'] ?></h6>
+															<h6 class="fs-14 fw-semibold">$<?= $invoice['shipping_charge'] ?></h6>
 														</div>
 													<?php endif; ?>
 													
 													<div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
 														<h6>Total</h6>
-														<h6><?= $invoice['total_amount'] ?></h6>
+														<h6>$<?= $invoice['total_amount'] ?></h6>
 													</div>
 													<div>
 														<h6 class="fs-14 fw-semibold mb-1">Total In Words</h6>

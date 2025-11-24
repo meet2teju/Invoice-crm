@@ -238,6 +238,7 @@ $growth_projects = growthPercent($current_projects, $last_projects);
 $sql = "SELECT q.id, q.quotation_id, q.quotation_date, q.status, c.first_name, c.customer_image 
         FROM quotation q
         LEFT JOIN client c ON q.client_id = c.id
+        WHERE q.deleted = 0
         ORDER BY q.id DESC LIMIT 10";
 
 $result = mysqli_query($conn, $sql);

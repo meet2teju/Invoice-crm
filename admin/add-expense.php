@@ -65,7 +65,7 @@ include '../config/config.php';
                                             </div>
                                             <div class="col-lg-4 col-md-6">
                                                 <div class="mb-3">
-                                                    <label class="form-label">Title</label>
+                                                    <label class="form-label">Expense Title</label>
                                                     <input type="text" class="form-control" name="title" id="title">
                                                     <span class="text-danger error-text" id="title_error"></span>
                                                 </div>
@@ -76,16 +76,16 @@ include '../config/config.php';
                                                     <select class="form-select select2" name="client_id" id="client_id">
                                                         <option value="">Select Client</option>
                                                         <?php                                                         
+                                                            // Fixed query: Fetch all active clients (non-deleted)
                                                             $result = mysqli_query($conn, "
-                                                                SELECT * FROM client 
-                                                                WHERE id IN (
-                                                                    SELECT DISTINCT client_id 
-                                                                    FROM invoice 
-                                                                    WHERE client_id IS NOT NULL
-                                                                )
+                                                                SELECT id, first_name, last_name 
+                                                                FROM client 
+                                                                WHERE is_deleted = 0
+                                                                ORDER BY first_name, last_name
                                                             ");                                                                   
                                                                 while ($row = mysqli_fetch_assoc($result)) {
-                                                            echo '<option value="' . $row['id'] . '">' . $row['first_name'] . ' ' . ($row['last_name'] ?? '') . '</option>';
+                                                            $fullName = trim($row['first_name'] . ' ' . ($row['last_name'] ?? ''));
+                                                            echo '<option value="' . $row['id'] . '">' . htmlspecialchars($fullName) . '</option>';
                                                         }
                                                         ?>  
                                                     </select>

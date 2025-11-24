@@ -160,18 +160,18 @@ while ($item = mysqli_fetch_assoc($itemResult)) {
                                               <div class="col-lg-4 col-md-6">
                                                   <div class="mb-3">
                                                     <label class="form-label">Client Name <span class="text-danger">*</span></label>
-                                                    <select class="form-select select2" name="client_id" id="client_id">
+                                                   <select class="form-select select2" name="client_id" id="client_id">
                                                         <option value="">Select Client</option>
-                                                        <?php                                                         
-                                                        $result = mysqli_query($conn, "SELECT * FROM client");
+                                                        <?php
+                                                        $result = mysqli_query($conn, "SELECT * FROM client WHERE is_deleted = 0");
                                                         while ($row = mysqli_fetch_assoc($result)) {
-                                                            $displayName = $row['first_name'];
+                                                            $displayName = trim($row['salutation'] . ' ' . $row['first_name'] . ' ' . $row['last_name']);
                                                             if (!empty($row['company_name'])) {
                                                                 $displayName .= ' - ' . $row['company_name'];
                                                             }
-                                                            echo '<option value="' . $row['id'] . '">' . $displayName . '</option>';
+                                                            echo '<option value="' . $row['id'] . '">' . htmlspecialchars($displayName) . '</option>';
                                                         }
-                                                        ?>  
+                                                        ?>
                                                     </select>
                                                     <span class="text-danger error-text" id="clientname_error"></span>
                                                   </div>

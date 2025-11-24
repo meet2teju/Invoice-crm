@@ -36,7 +36,7 @@ while ($row = mysqli_fetch_assoc($task_result)) {
 }
 
 $clients = [];
-$client_result = mysqli_query($conn, "SELECT id, first_name FROM client WHERE is_deleted = 0 ORDER BY first_name ASC");
+$client_result = mysqli_query($conn, "SELECT id, first_name, last_name,salutation FROM client WHERE is_deleted = 0 ORDER BY first_name ASC");
 while ($row = mysqli_fetch_assoc($client_result)) {
     $clients[] = $row;
 }
@@ -91,7 +91,7 @@ while ($row = mysqli_fetch_assoc($client_result)) {
                                         <input type="text" class="form-control" name="project_code" value="<?php echo $project['project_code'] ?? ''; ?>">
                                     </div>
                                     
-                                   <div class="col-md-6 mb-3">
+                                   <!-- <div class="col-md-6 mb-3">
                                     <label class="form-label">Client Name <span class="text-danger">*</span></label>
                                         <select class="form-select select2" name="client_id[]" multiple="multiple" id="client_id">
                                             <?php foreach ($clients as $client): ?>
@@ -99,7 +99,25 @@ while ($row = mysqli_fetch_assoc($client_result)) {
                                             <?php endforeach; ?>
                                         </select>
                                     <span class="text-danger error-text" id="clientname_error"></span>
-                                    </div>
+                                    </div> -->
+
+                                    <div class="col-md-6 mb-3">
+    <label class="form-label">Client Name <span class="text-danger">*</span></label>
+    <select class="form-select select2" name="client_id[]" multiple="multiple" id="client_id">
+        <?php foreach ($clients as $client): ?>
+            <?php 
+                // Create full name
+                $fullName = trim($client['salutation'] . ' ' . $client['first_name'] . ' ' . $client['last_name']); 
+                
+                // Check selected
+                $selected = in_array($client['id'], explode(',', $project['client_id'])) ? 'selected' : '';
+            ?>
+            <option value="<?= $client['id'] ?>" <?= $selected ?>><?= htmlspecialchars($fullName) ?></option>
+        <?php endforeach; ?>
+    </select>
+    <span class="text-danger error-text" id="clientname_error"></span>
+</div>
+
                                     
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Billing Method <span class="text-danger">*</span></label>

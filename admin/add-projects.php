@@ -76,20 +76,24 @@ mysqli_data_seek($country_result, 0);
                                         <input type="text" class="form-control" name="project_code" id="project_code">
                                     </div>
                                     
-                                   <div class="col-md-6 mb-3">
-                                    <label class="form-label">Client Name <span class="text-danger">*</span></label>
-                                        <select class="form-select select2" name="client_id[]" multiple="multiple" id="client_id">
-                                            <?php
-                                            $query = "SELECT * FROM client WHERE is_deleted = 0 ORDER BY first_name ASC";
-                                            $result = mysqli_query($conn, $query);
-                                            while ($row = mysqli_fetch_assoc($result)) {
-                                                echo '<option value="' . $row['id'] . '">' . htmlspecialchars($row['first_name']) . '</option>';
-                                            }
-                                            ?>
-                                            <!-- <option value="add_new_client" id="add_new_client" class="text-primary">+ Add New Client</option> -->
-                                        </select>
-                                    <span class="text-danger error-text" id="clientname_error"></span>
-                                    </div>
+                                  <div class="col-md-6 mb-3">
+    <label class="form-label">Client Name <span class="text-danger">*</span></label>
+    <select class="form-select select2" name="client_id[]" multiple="multiple" id="client_id">
+        <?php
+        $query = "SELECT * FROM client WHERE is_deleted = 0 ORDER BY salutation, first_name, last_name ASC";
+        $result = mysqli_query($conn, $query);
+
+        while ($row = mysqli_fetch_assoc($result)) {
+            // Prepare full name
+            $fullName = trim($row['salutation'] . ' ' . $row['first_name'] . ' ' . $row['last_name']);
+
+            echo '<option value="' . $row['id'] . '">' . htmlspecialchars($fullName) . '</option>';
+        }
+        ?>
+    </select>
+    <span class="text-danger error-text" id="clientname_error"></span>
+</div>
+
                                     
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Billing Method <span class="text-danger">*</span></label>

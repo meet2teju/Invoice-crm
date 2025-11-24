@@ -60,7 +60,7 @@ while ($item = mysqli_fetch_assoc($itemResult)) {
 }
 
 // Fetch related data
-$clients = mysqli_query($conn, "SELECT id, first_name, company_name FROM client WHERE is_deleted = 0");
+$clients = mysqli_query($conn, "SELECT id, first_name,last_name,salutation,company_name FROM client WHERE is_deleted = 0");
 $users = mysqli_query($conn,  "SELECT login.id, login.name FROM login
     JOIN user_role ON login.role_id = user_role.id
     WHERE   login.is_deleted = 0
@@ -242,17 +242,24 @@ if ($project_id > 0) {
                                             <div class="col-lg-4 col-md-6">
                                               <div class="mb-3">
                                                   <label class="form-label">Client Name<span class="text-danger">*</span></label>
-                                                    <select class="form-select select2" name="client_id" id="client_id" >
-                                                  <option value="">Select Client</option>
-                                                  <?php while ($client = mysqli_fetch_assoc($clients)) {
-                                                  $selected = ($client['id'] == $row['client_id']) ? 'selected' : '';
-                                                  $displayName = $client['first_name'];
-                                                  if (!empty($client['company_name'])) {
-                                                      $displayName .= ' - ' . $client['company_name'];
-                                                  }
-                                                  echo "<option value='{$client['id']}' $selected>" . htmlspecialchars($displayName) . "</option>";
-                                              } ?> 
-                                              </select>
+                                                  <select class="form-select select2" name="client_id" id="client_id">
+                                                        <option value="">Select Client</option>
+                                                        <?php 
+                                                        while ($client = mysqli_fetch_assoc($clients)) {
+
+                                                            $selected = ($client['id'] == $row['client_id']) ? 'selected' : '';
+
+                                                            $displayName = trim($client['salutation'] . ' ' . $client['first_name'] . ' ' . $client['last_name']);
+
+                                                            if (!empty($client['company_name'])) {
+                                                                $displayName .= ' - ' . $client['company_name'];
+                                                            }
+
+                                                            echo "<option value='{$client['id']}' $selected>" . htmlspecialchars($displayName) . "</option>";
+                                                        } 
+                                                        ?>
+                                                    </select>
+
                                               <span class="text-danger error-text" id="clientname_error"></span>
                                               </div>
                                             </div>
