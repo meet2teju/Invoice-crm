@@ -88,7 +88,7 @@ if (!empty($client_id)) {
     $client_address = mysqli_fetch_assoc(mysqli_query($conn, $client_address_query));
 }
 
-// Fetch company info (Bill From) with city/state/country names
+// Fetch company info (Bill From) with city/state/country names and invoice logo
 $company = mysqli_fetch_assoc(mysqli_query($conn, "
     SELECT ci.*, 
            co.name AS country_name,
@@ -131,6 +131,11 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 	<style>
         /* Print-specific styles - Only for PDF */
         @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+            
             body * {
                 visibility: hidden;
             }
@@ -162,9 +167,21 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
             .pdf-hide-empty:empty {
                 display: none !important;
             }
+            /* Hide invoice details section in print */
+            .invoice-details-section {
+                display: none !important;
+            }
             /* Ensure proper page breaks */
             .card-body {
                 padding: 20px !important;
+            }
+            /* Improve readability for A4 */
+            table {
+                font-size: 11px;
+                width: 100%;
+            }
+            h6, .fs-14, .fs-16 {
+                font-size: 12px !important;
             }
         }
 
@@ -204,6 +221,60 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
             background-color: #fff3cd;
             color: #664d03;
             border: 1px solid #ffecb5;
+        }
+
+        /* Bill From and Bill To side by side layout */
+        .billing-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .billing-from, .billing-to {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .billing-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+
+        /* Company logo styles */
+        .company-logo-section {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .company-logo-img {
+            max-width: 120px;
+            max-height: 80px;
+            margin-right: 20px;
+        }
+        .company-info-text {
+            flex: 1;
+        }
+        .company-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .company-tagline {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 0;
         }
     </style>
 </head>
@@ -257,8 +328,8 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 								<!-- PDF Header with Logo -->
 								<div class="pdf-header">
 									<div>
-										<?php if (!empty($company['logo'])): ?>
-											<img src="../uploads/<?= htmlspecialchars($company['logo']) ?>" class="pdf-logo" alt="Company Logo">
+										<?php if (!empty($company['invoice_logo'])): ?>
+											<img src="../uploads/<?= htmlspecialchars($company['invoice_logo']) ?>" class="pdf-logo" alt="Company Logo">
 										<?php else: ?>
 											<h4><?= htmlspecialchars($company['name'] ?? 'Company Name') ?></h4>
 										<?php endif; ?>
@@ -272,10 +343,24 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 								
 								<div class="card">
 									<div class="card-body">
-										<div class="bg-light rounded position-relative mb-3">
+										<!-- Company Logo Section -->
+										<!-- <div class="company-logo-section">
+											<?php if (!empty($company['invoice_logo'])): ?>
+												<img src="../uploads/<?= htmlspecialchars($company['invoice_logo']) ?>" class="company-logo-img" alt="Company Logo">
+											<?php endif; ?>
+											<div class="company-info-text">
+												<h2 class="company-name"><?= htmlspecialchars($company['name'] ?? 'Company Name') ?></h2>
+												<?php if (!empty($company['address'])): ?>
+													<p class="company-tagline"><?= htmlspecialchars($company['address']) ?></p>
+												<?php endif; ?>
+											</div>
+										</div> -->
+
+										<!-- Invoice Details Section - Hidden in Print -->
+										<div class="invoice-details-section bg-light rounded position-relative mb-3">
 											<!-- start row -->
 											<div class="row gy-3 position-relative z-1">
-												<div class="col-lg-4">
+												<div class="col-lg-12">
 													<div>
 														<h6 class="mb-2 fs-16 fw-semibold">Invoice Details</h6>
 														<div class="pdf-hide-empty">
@@ -315,228 +400,223 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 														</div>
 													</div>
 												</div><!-- end col -->
-												<div class="col-lg-4">
-    <div>
-        <h6 class="mb-2 fs-16 fw-semibold">Billing From</h6>
-        <div class="bg-white rounded pdf-hide-empty">
-            <div class="d-flex align-items-center mb-1">
-                <div>
-                    <h6 class="fs-14 fw-semibold"><?= htmlspecialchars($company['name'] ??'') ?></h6>
-                </div>
-            </div>
-            <?php if (!empty($company['address'])): ?>
-                <p class="mb-1"><?= htmlspecialchars($company['address'] ??'') ?></p>
-            <?php endif; ?>
-            <?php if (!empty($company['city_name']) || !empty($company['state_name']) || !empty($company['country_name']) || !empty($company['zipcode'])): ?>
-                <p class="mb-1">
-                    <?= htmlspecialchars($company['city_name'] ??'') ?>, 
-                    <?= htmlspecialchars($company['state_name'] ??'') ?>, 
-                    <?= htmlspecialchars($company['country_name'] ??'') ?>, 
-                    <?= htmlspecialchars($company['zipcode'] ??'') ?>
-                </p>
-            <?php endif; ?>
-            <?php if (!empty($company['mobile_number'])): ?>
-                <p class="mb-1">Phone : <?= htmlspecialchars($company['mobile_number'] ??'') ?></p>
-            <?php endif; ?>
-            <?php if (!empty($company['email'])): ?>
-                <p class="mb-1">Email : <?= htmlspecialchars($company['email'] ??'') ?></p>
-            <?php endif; ?>
-        </div>
-    </div>
-</div>
+											</div>
+											<!-- end row -->
+										</div>
 
+										<!-- Bill From and Bill To Side by Side -->
+										<div class="billing-section mb-3">
+											<!-- Bill From -->
+											<div class="billing-from">
+												<div class="billing-title">Billing From</div>
+												<div class="d-flex align-items-center mb-1">
+													<div>
+														<h6 class="fs-14 fw-semibold"><?= htmlspecialchars($company['name'] ??'') ?></h6>
+													</div>
+												</div>
+												<?php if (!empty($company['address'])): ?>
+													<p class="mb-1"><?= htmlspecialchars($company['address'] ??'') ?></p>
+												<?php endif; ?>
+												<?php if (!empty($company['city_name']) || !empty($company['state_name']) || !empty($company['country_name']) || !empty($company['zipcode'])): ?>
+													<p class="mb-1">
+														<?= htmlspecialchars($company['city_name'] ??'') ?>, 
+														<?= htmlspecialchars($company['state_name'] ??'') ?>, 
+														<?= htmlspecialchars($company['country_name'] ??'') ?>, 
+														<?= htmlspecialchars($company['zipcode'] ??'') ?>
+													</p>
+												<?php endif; ?>
+												<?php if (!empty($company['mobile_number'])): ?>
+													<p class="mb-1">Phone : <?= htmlspecialchars($company['mobile_number'] ??'') ?></p>
+												<?php endif; ?>
+												<?php if (!empty($company['email'])): ?>
+													<p class="mb-1">Email : <?= htmlspecialchars($company['email'] ??'') ?></p>
+												<?php endif; ?>
+											</div>
 
-											<div class="col-lg-4">
-												<div>
-													<h6 class="mb-2 fs-16 fw-semibold">Billing To</h6>
-													<div class="bg-white rounded pdf-hide-empty">
-														<div class="d-flex align-items-center mb-1">
-															
+											<!-- Bill To -->
+											<div class="billing-to">
+												<div class="billing-title">Billing To</div>
+												<div class="d-flex align-items-center mb-1">
+													<div>
+														<h6 class="fs-14 fw-semibold"><?= htmlspecialchars($client['first_name'] ??'') ?></h6>
+													</div>
+												</div>
+												<?php if (!empty($client_address['billing_address1'])): ?>
+													<p class="mb-1"><?= htmlspecialchars($client_address['billing_address1'] ??'') ?></p>
+												<?php endif; ?>
+												<?php if (!empty($client_address['city_name']) || !empty($client_address['state_name']) || !empty($client_address['country_name']) || !empty($client_address['billing_pincode'])): ?>
+													<p class="mb-1"><?= htmlspecialchars($client_address['city_name'] ??'') ?>, <?= htmlspecialchars($client_address['state_name'] ??'') ?>, <?= htmlspecialchars($client_address['country_name'] ??'') ?>, <?= htmlspecialchars($client_address['billing_pincode'] ??'') ?></p>
+												<?php endif; ?>
+												<?php if (!empty($client['phone_number'])): ?>
+													<p class="mb-1">Phone : <?= htmlspecialchars($client['phone_number'] ??'') ?></p>
+												<?php endif; ?>
+												<?php if (!empty($client['email'])): ?>
+													<p class="mb-1">Email : <?= htmlspecialchars($client['email'] ??'') ?></p>
+												<?php endif; ?>
+											</div>
+										</div>
+
+										<div class="mb-3">
+											<h6 class="mb-3">Product / Service Items</h6>
+											<div class="table-responsive rounded border-bottom-0 border table-nowrap">
+												<table class="table m-0">
+													<thead class="table-dark" id="table-heading">
+														<?php if ($item_type == 1): ?>
+															<!-- Product Headings -->
+															<tr>
+																<th>#</th>
+																<th>Product/Service</th>
+																<th>HSN code</th>
+																<?php if ($showQuantityColumn): ?>
+																	<th>Quantity</th>
+																<?php endif; ?>
+																<th>Selling Price</th>
+																<th>Tax</th>
+																<th>Amount</th>
+															</tr>
+														<?php else: ?>
+															<!-- Service Headings -->
+															<tr>
+																<th>#</th>
+																<th>Service</th>
+																<th>HSN code</th>
+																<?php if ($showQuantityColumn): ?>
+																	<th>Hours</th>
+																<?php endif; ?>
+																<th>Hourly Price</th>
+																<th>Tax</th>
+																<th>Amount</th>
+															</tr>
+														<?php endif; ?>
+													</thead>
+													<tbody>
+														<?php 
+														$i = 1; 
+														mysqli_data_seek($items_result, 0);
+														while($item = mysqli_fetch_assoc($items_result)) { 
+															$itemName = !empty($item['service_name']) ? $item['service_name'] : $item['product_name'];
+														?>
+														<tr>
+															<td><?= $i++ ?></td>
+															<td><?= htmlspecialchars($itemName) ?></td>
+															<td><?= htmlspecialchars($item['code'] ?? 'N/A') ?></td>
+															<?php if ($showQuantityColumn): ?>
+																<td><?= $item['quantity'] ?></td>
+															<?php endif; ?>
+															<td>$<?= $item['selling_price'] ?></td>
+															<td>
+																<?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
+																	Non-GST
+																<?php else: ?>
+																	<?= $item['tax_name'] ?>
+																<?php endif; ?>
+															</td>
+															<td>$<?= $item['amount'] ?></td>
+														</tr>
+														<?php } ?>
+													</tbody>
+												</table>
+											</div>
+										</div>
+										<div class="border-bottom mb-3">
+
+											<!-- start row -->
+											<div class="row">
+												<div class="col-lg-6">
+													<?php if ($showBankDetails): ?>
+														<div class="d-flex align-items-center p-4 mb-3">
 															<div>
-																<h6 class="fs-14 fw-semibold"><?= htmlspecialchars($client['first_name'] ??'') ?></h6>
+																<h6 class="mb-2">Bank Details</h6>
+																<div class="pdf-hide-empty">
+																	<?php if (!empty($bank['bank_name'])): ?>
+																		<p class="mb-1">Bank Name :  <span class="text-dark"><?= htmlspecialchars($bank['bank_name']) ?></span></p>
+																	<?php endif; ?>
+																	<?php if (!empty($bank['account_number'])): ?>
+																		<p class="mb-1">Account Number :  <span class="text-dark"> <?= htmlspecialchars($bank['account_number']) ?></span></p>
+																	<?php endif; ?>
+																	<?php if (!empty($bank['ifsc_code'])): ?>
+																		<p class="mb-1">IFSC Code :  <span class="text-dark"><?= htmlspecialchars($bank['ifsc_code']) ?></span></p>
+																	<?php endif; ?>
+																</div>
 															</div>
 														</div>
-														<?php if (!empty($client_address['billing_address1'])): ?>
-															<p class="mb-1"><?= htmlspecialchars($client_address['billing_address1'] ??'') ?></p>
-														<?php endif; ?>
-														<?php if (!empty($client_address['city_name']) || !empty($client_address['state_name']) || !empty($client_address['country_name']) || !empty($client_address['billing_pincode'])): ?>
-															<p class="mb-1"><?= htmlspecialchars($client_address['city_name'] ??'') ?>, <?= htmlspecialchars($client_address['state_name'] ??'') ?>, <?= htmlspecialchars($client_address['country_name'] ??'') ?>, <?= htmlspecialchars($client_address['billing_pincode'] ??'') ?></p>
-														<?php endif; ?>
-														<?php if (!empty($client['phone_number'])): ?>
-															<p class="mb-1">Phone : <?= htmlspecialchars($client['phone_number'] ??'') ?></p>
-														<?php endif; ?>
-														<?php if (!empty($client['email'])): ?>
-															<p class="mb-1">Email : <?= htmlspecialchars($client['email'] ??'') ?></p>
+													<?php endif; ?>
+													
+													<?php if ($showTerms): ?>
+														<div class="p-4">
+															<h6 class="mb-2">Terms & Conditions</h6>
+															<div>
+																<p class="mb-1"><?= htmlspecialchars($invoice['description']) ?>.</p>
+															</div>
+														</div>
+													<?php endif; ?>
+												</div><!-- end col -->
+												<div class="col-lg-6">
+													<div class="mb-3 p-4">
+														<div class="d-flex align-items-center justify-content-between mb-3">
+															<h6 class="fs-14 fw-semibold">Sub Amount</h6>
+															<h6 class="fs-14 fw-semibold">$<?= $invoice['amount'] ?></h6>
+														</div>
+														
+														<?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
+															<div class="d-flex align-items-center justify-content-between mb-3">
+																<h6 class="fs-14 fw-semibold">Tax (Non-GST)</h6>
+																<h6 class="fs-14 fw-semibold">0.00</h6>
+															</div>
+														<?php else: ?>
+															<div class="d-flex align-items-center justify-content-between mb-3">
+																<h6 class="fs-14 fw-semibold">Tax Amount</h6>
+																<h6 class="fs-14 fw-semibold">$<?= $invoice['tax_amount'] ?></h6>
+															</div>
 														<?php endif; ?>
 														
-													</div>
-												</div>
-											</div><!-- end col -->
-										</div>
-										<!-- end row -->
-
-									</div>
-									<div class="mb-3">
-										<h6 class="mb-3">Product / Service Items</h6>
-										<div class="table-responsive rounded border-bottom-0 border table-nowrap">
-											<table class="table m-0">
-												<thead class="table-dark" id="table-heading">
-													<?php if ($item_type == 1): ?>
-														<!-- Product Headings -->
-														<tr>
-															<th>#</th>
-															<th>Product/Service</th>
-															<th>HSN code</th>
-															<?php if ($showQuantityColumn): ?>
-																<th>Quantity</th>
-															<?php endif; ?>
-															<th>Selling Price</th>
-															<th>Tax</th>
-															<th>Amount</th>
-														</tr>
-													<?php else: ?>
-														<!-- Service Headings -->
-														<tr>
-															<th>#</th>
-															<th>Service</th>
-															<th>HSN code</th>
-															<?php if ($showQuantityColumn): ?>
-																<th>Hours</th>
-															<?php endif; ?>
-															<th>Hourly Price</th>
-															<th>Tax</th>
-															<th>Amount</th>
-														</tr>
-													<?php endif; ?>
-												</thead>
-												<tbody>
-													<?php 
-													$i = 1; 
-													mysqli_data_seek($items_result, 0);
-													while($item = mysqli_fetch_assoc($items_result)) { 
-														$itemName = !empty($item['service_name']) ? $item['service_name'] : $item['product_name'];
-													?>
-													<tr>
-														<td><?= $i++ ?></td>
-														<td><?= htmlspecialchars($itemName) ?></td>
-														<td><?= htmlspecialchars($item['code'] ?? 'N/A') ?></td>
-														<?php if ($showQuantityColumn): ?>
-															<td><?= $item['quantity'] ?></td>
+														<?php if (!empty($invoice['shipping_charge']) && $invoice['shipping_charge'] > 0): ?>
+															<div class="d-flex align-items-center justify-content-between mb-3">
+																<h6 class="fs-14 fw-semibold">Shipping Charge</h6>
+																<h6 class="fs-14 fw-semibold">$<?= $invoice['shipping_charge'] ?></h6>
+															</div>
 														<?php endif; ?>
-														<td>$<?= $item['selling_price'] ?></td>
-														<td>
-															<?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
-																Non-GST
-															<?php else: ?>
-																<?= $item['tax_name'] ?>
-															<?php endif; ?>
-														</td>
-														<td>$<?= $item['amount'] ?></td>
-													</tr>
-													<?php } ?>
-												</tbody>
-											</table>
+														
+														<div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+															<h6>Total</h6>
+															<h6>$<?= $invoice['total_amount'] ?></h6>
+														</div>
+														<div class="d-flex justify-content-between align-items-center">
+    <h6 class="fs-14 fw-semibold mb-1 m-0">Total In Words</h6>
+    <p class="m-0"><?= numberToWords($invoice['total_amount']) ?></p>
+</div>
+
+													</div>
+												</div><!-- end col -->
+											</div>
+											<!-- end row -->
+
 										</div>
-									</div>
-									<div class="border-bottom mb-3">
 
 										<!-- start row -->
+										<?php if ($showNotes): ?>
 										<div class="row">
-											<div class="col-lg-6">
-												<?php if ($showBankDetails): ?>
-													<div class="d-flex align-items-center p-4 mb-3">
-														<div>
-															<h6 class="mb-2">Bank Details</h6>
-															<div class="pdf-hide-empty">
-																<?php if (!empty($bank['bank_name'])): ?>
-																	<p class="mb-1">Bank Name :  <span class="text-dark"><?= htmlspecialchars($bank['bank_name']) ?></span></p>
-																<?php endif; ?>
-																<?php if (!empty($bank['account_number'])): ?>
-																	<p class="mb-1">Account Number :  <span class="text-dark"> <?= htmlspecialchars($bank['account_number']) ?></span></p>
-																<?php endif; ?>
-																<?php if (!empty($bank['ifsc_code'])): ?>
-																	<p class="mb-1">IFSC Code :  <span class="text-dark"><?= htmlspecialchars($bank['ifsc_code']) ?></span></p>
-																<?php endif; ?>
-															</div>
-														</div>
-													</div>
-												<?php endif; ?>
-												
-												<?php if ($showTerms): ?>
-													<div class="p-4">
-														<h6 class="mb-2">Terms & Conditions</h6>
-														<div>
-															<p class="mb-1"><?= htmlspecialchars($invoice['description']) ?>.</p>
-														</div>
-													</div>
-												<?php endif; ?>
-											</div><!-- end col -->
-											<div class="col-lg-6">
-												<div class="mb-3 p-4">
-													<div class="d-flex align-items-center justify-content-between mb-3">
-														<h6 class="fs-14 fw-semibold">Sub Amount</h6>
-														<h6 class="fs-14 fw-semibold">$<?= $invoice['amount'] ?></h6>
-													</div>
-													
-													<?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
-														<div class="d-flex align-items-center justify-content-between mb-3">
-															<h6 class="fs-14 fw-semibold">Tax (Non-GST)</h6>
-															<h6 class="fs-14 fw-semibold">0.00</h6>
-														</div>
-													<?php else: ?>
-														<div class="d-flex align-items-center justify-content-between mb-3">
-															<h6 class="fs-14 fw-semibold">Tax Amount</h6>
-															<h6 class="fs-14 fw-semibold">$<?= $invoice['tax_amount'] ?></h6>
-														</div>
-													<?php endif; ?>
-													
-													<?php if (!empty($invoice['shipping_charge']) && $invoice['shipping_charge'] > 0): ?>
-														<div class="d-flex align-items-center justify-content-between mb-3">
-															<h6 class="fs-14 fw-semibold">Shipping Charge</h6>
-															<h6 class="fs-14 fw-semibold">$<?= $invoice['shipping_charge'] ?></h6>
-														</div>
-													<?php endif; ?>
-													
-													<div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
-														<h6>Total</h6>
-														<h6>$<?= $invoice['total_amount'] ?></h6>
-													</div>
+											<div class="col-lg-12">
+												<div class="mb-3">
 													<div>
-														<h6 class="fs-14 fw-semibold mb-1">Total In Words</h6>
-														<p><?= numberToWords($invoice['total_amount']) ?> </p>
-
+														<h6 class="fs-14 fw-semibold mb-1">Notes</h6>
+														<p><?= htmlspecialchars($invoice['invoice_note']) ?></p>
 													</div>
 												</div>
 											</div><!-- end col -->
 										</div>
+										<?php endif; ?>
 										<!-- end row -->
 
-									</div>
-
-									<!-- start row -->
-									<?php if ($showNotes): ?>
-									<div class="row">
-										<div class="col-lg-12">
-											<div class="mb-3">
-												<div>
-													<h6 class="fs-14 fw-semibold mb-1">Notes</h6>
-													<p><?= htmlspecialchars($invoice['invoice_note']) ?></p>
-												</div>
-											</div>
-										</div><!-- end col -->
-									</div>
-									<?php endif; ?>
-									<!-- end row -->
-
-									<div class="">
-										<!-- <div>
-											<h6 class="fs-14 fw-semibold mb-1">Dreams Technologies Pvt Ltd.,</h6>
-											<p>15 Hodges Mews, High Wycombe HP12 3JL, United Kingdom</p>
-										</div> -->
-										
-									</div>
-								</div><!-- end card body -->
-							</div><!-- end card -->
+										<div class="">
+											<!-- <div>
+												<h6 class="fs-14 fw-semibold mb-1">Dreams Technologies Pvt Ltd.,</h6>
+												<p>15 Hodges Mews, High Wycombe HP12 3JL, United Kingdom</p>
+											</div> -->
+											
+										</div>
+									</div><!-- end card body -->
+								</div><!-- end card -->
 							</div><!-- end pdf-content -->
 						</div>
 					</div><!-- end col -->
