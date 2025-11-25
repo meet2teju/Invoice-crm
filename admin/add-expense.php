@@ -78,13 +78,13 @@ include '../config/config.php';
                                                         <?php                                                         
                                                             // Fixed query: Fetch all active clients (non-deleted)
                                                             $result = mysqli_query($conn, "
-                                                                SELECT id, first_name, last_name 
+                                                                SELECT id, first_name, last_name ,salutation
                                                                 FROM client 
                                                                 WHERE is_deleted = 0
-                                                                ORDER BY first_name, last_name
+                                                                ORDER BY first_name, last_name ,salutation
                                                             ");                                                                   
                                                                 while ($row = mysqli_fetch_assoc($result)) {
-                                                            $fullName = trim($row['first_name'] . ' ' . ($row['last_name'] ?? ''));
+                                                            $fullName = trim($row['salutation'] . ' ' .$row['first_name'] . ' ' . ($row['last_name'] ?? ''));
                                                             echo '<option value="' . $row['id'] . '">' . htmlspecialchars($fullName) . '</option>';
                                                         }
                                                         ?>  

@@ -84,10 +84,10 @@ $documents = mysqli_query($conn, "SELECT * FROM expense_document WHERE expense_i
                                                     <select class="form-select select2" name="client_id" id="client_id">
                                                         <option value="">Select Client</option>
                                                         <?php
-                                                        $clientResult = mysqli_query($conn, "SELECT id, first_name, last_name FROM client");
+                                                        $clientResult = mysqli_query($conn, "SELECT id,salutation, first_name, last_name FROM client");
                                                         while ($row = mysqli_fetch_assoc($clientResult)) {
                                                             $selected = ($expense['client_id'] == $row['id']) ? 'selected' : '';
-                                                            echo '<option value="' . $row['id'] . '" ' . $selected . '>' . $row['first_name'] . ' ' . ($row['last_name'] ?? '') . '</option>';
+                                                            echo '<option value="' . $row['id'] . '" ' . $selected . '>' . $row['salutation'] . ' ' .  $row['first_name'] . ' ' . ($row['last_name'] ?? '') . '</option>';
                                                         }
                                                         ?>
                                                     </select>
