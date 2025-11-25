@@ -1,6 +1,9 @@
 <?php include 'layouts/session.php'; ?>
 
 <?php 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 include '../config/config.php'; // DB connection
 
 
