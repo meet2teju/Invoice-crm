@@ -439,7 +439,7 @@ $(document).ready(function() {
         var fields = [
             {id: prefix+'bank_name', name:'Bank name', type:'text', required: true},
             {id: prefix+'account_holder', name:'Account holder', type:'text', required: true},
-            // {id: prefix+'account_number', name:'Account number', type:'number', required: true},
+            {id: prefix+'account_number', name:'Account number', type:'number', required: true},
              {id: prefix+'account_number', name:'Account number', type:'number', required: true},
             {id: prefix+'ifsc_code', name:'IFSC code', type:'ifsc', required: false},
             {id: prefix+'opening_balance', name:'Opening balance', type:'decimal', required: false}
