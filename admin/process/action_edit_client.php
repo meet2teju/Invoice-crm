@@ -204,6 +204,9 @@ if (isset($_POST['submit'])) {
         $routing_number = mysqli_real_escape_string($conn, $_POST['routing_number'] ?? '');
         $ifsc = mysqli_real_escape_string($conn, $_POST['IFSC_code'] ?? '');
 
+        // Handle empty account_number - convert to NULL if empty
+        $account_number_sql = ($account_number === '') ? 'NULL' : "'$account_number'";
+
         // Check if bank record exists for this client
         $checkBankQuery = "SELECT id FROM client_bank WHERE client_id = '$clientId'";
         $bankResult = mysqli_query($conn, $checkBankQuery);
@@ -211,12 +214,12 @@ if (isset($_POST['submit'])) {
         if (mysqli_num_rows($bankResult) > 0) {
             // Bank record exists - UPDATE
             $bankQuery = "UPDATE client_bank SET 
-                bank_name = '$bank_name',
-                bank_branch = '$bank_branch',
-                account_holder = '$account_holder',
-                account_number = '$account_number',
-                routing_number = '$routing_number',
-                IFSC_code = '$ifsc',
+                bank_name = " . ($bank_name === '' ? 'NULL' : "'$bank_name'") . ",
+                bank_branch = " . ($bank_branch === '' ? 'NULL' : "'$bank_branch'") . ",
+                account_holder = " . ($account_holder === '' ? 'NULL' : "'$account_holder'") . ",
+                account_number = $account_number_sql,
+                routing_number = " . ($routing_number === '' ? 'NULL' : "'$routing_number'") . ",
+                IFSC_code = " . ($ifsc === '' ? 'NULL' : "'$ifsc'") . ",
                 updated_by = '$currentUserId',
                 updated_at = NOW()
             WHERE client_id = '$clientId'";
@@ -224,12 +227,12 @@ if (isset($_POST['submit'])) {
             // Bank record doesn't exist - INSERT
             $bankQuery = "INSERT INTO client_bank SET 
                 client_id = '$clientId',
-                bank_name = '$bank_name',
-                bank_branch = '$bank_branch',
-                account_holder = '$account_holder',
-                account_number = '$account_number',
-                routing_number = '$routing_number',
-                IFSC_code = '$ifsc',
+                bank_name = " . ($bank_name === '' ? 'NULL' : "'$bank_name'") . ",
+                bank_branch = " . ($bank_branch === '' ? 'NULL' : "'$bank_branch'") . ",
+                account_holder = " . ($account_holder === '' ? 'NULL' : "'$account_holder'") . ",
+                account_number = $account_number_sql,
+                routing_number = " . ($routing_number === '' ? 'NULL' : "'$routing_number'") . ",
+                IFSC_code = " . ($ifsc === '' ? 'NULL' : "'$ifsc'") . ",
                 created_by = '$currentUserId',
                 updated_by = '$currentUserId',
                 created_at = NOW(),

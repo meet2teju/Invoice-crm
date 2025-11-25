@@ -1593,6 +1593,159 @@ $(document).ready(function() {
         }, 100);
     });
 });
+
+
+
+// Add this JavaScript to your edit page
+
+$(document).ready(function () {
+    // === PAN Card Validation ===
+    $(document).on('input', '[name="pan_number"]', function() {
+        const pan = $(this).val().trim().toUpperCase();
+        $(this).val(pan); // Convert to uppercase automatically
+        
+        if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+            $('#pan_number_error').text('Invalid PAN format (e.g. AAAAA9999A)');
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        } else {
+            $('#pan_number_error').text('');
+            $(`[data-bs-target="#otherTab"]`).removeClass('has-error');
+        }
+    });
+
+    // === Allow only uppercase letters and numbers for PAN ===
+    $(document).on('input', '[name="pan_number"]', function() {
+        this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    });
+
+    // === Form Validation (include PAN validation) ===
+    $('#form').on('submit', function(e) {
+        let isValid = true;
+        $('.error-text').text('');
+        $('.is-invalid').removeClass('is-invalid');
+        $('.nav-link').removeClass('has-error');
+
+        // Required fields validation
+        const requiredFields = [
+            {name: 'first_name', errorId: 'first_name_error', message: 'First name is required', tab: 'otherTab'},
+            {name: 'last_name', errorId: 'last_name_error', message: 'Last name is required', tab: 'otherTab'},
+            // Add other required fields as needed
+        ];
+
+        requiredFields.forEach(field => {
+            const value = $(`[name="${field.name}"]`).val();
+            if (!value) {
+                $(`#${field.errorId}`).text(field.message);
+                isValid = false;
+                $(`[data-bs-target="#${field.tab}"]`).addClass('has-error');
+            }
+        });
+
+        // PAN format validation
+        const pan = $('[name="pan_number"]').val().trim();
+        if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+            $('#pan_number_error').text('Invalid PAN format (e.g. AAAAA9999A)');
+            isValid = false;
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        }
+
+        // Email format validation
+        const email = $('[name="email"]').val().trim();
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            $('#email_error').text('Please enter a valid email address');
+            isValid = false;
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        }
+
+        // Phone number validation
+        const workPhone = $('[name="phone_number"]').val().trim();
+        if (workPhone && !/^[0-9]{10}$/.test(workPhone)) {
+            $('#phone_number_error').text('Please enter a valid phone number (10 digits)');
+            isValid = false;
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        }
+
+        // Mobile number validation
+        const mobile = $('[name="business_number"]').val().trim();
+        if (mobile && !/^[0-9]{10}$/.test(mobile)) {
+            $('#business_number_error').text('Please enter a valid mobile number (10 digits)');
+            isValid = false;
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        }
+
+        // Prevent form submission if validation fails
+        if (!isValid) {
+            e.preventDefault();
+            
+            // Find the first tab with errors and activate it
+            const firstErrorTab = $('.nav-link.has-error').first();
+            if (firstErrorTab.length) {
+                firstErrorTab.tab('show');
+                
+                firstErrorTab.on('shown.bs.tab', function() {
+                    const firstError = $('.error-text').filter(function() {
+                        return $(this).text().length > 0;
+                    }).first();
+                    
+                    if (firstError.length) {
+                        $('html, body').animate({
+                            scrollTop: firstError.offset().top - 100
+                        }, 500);
+                    }
+                    
+                    firstErrorTab.off('shown.bs.tab');
+                });
+            }
+        }
+    });
+
+    // Real-time validation for other fields
+    $('[name="email"]').on('input', function() {
+        const email = $(this).val().trim();
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            $('#email_error').text('Please enter a valid email address');
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        } else {
+            $('#email_error').text('');
+            $(`[data-bs-target="#otherTab"]`).removeClass('has-error');
+        }
+    });
+
+    $('[name="phone_number"], [name="business_number"]').on('input', function() {
+        const number = $(this).val().trim();
+        const fieldName = $(this).attr('name');
+        const errorId = `${fieldName}_error`;
+        
+        if (number && !/^[0-9]{10}$/.test(number)) {
+            $(`#${errorId}`).text('Please enter a valid number (10 digits)');
+            $(`[data-bs-target="#otherTab"]`).addClass('has-error');
+        } else {
+            $(`#${errorId}`).text('');
+            $(`[data-bs-target="#otherTab"]`).removeClass('has-error');
+        }
+    });
+});
+
+// Add character limit and auto-format for PAN
+function formatPanInput(input) {
+    // Remove any non-alphanumeric characters and convert to uppercase
+    let value = input.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    
+    // Limit to 10 characters
+    if (value.length > 10) {
+        value = value.substring(0, 10);
+    }
+    
+    input.value = value;
+    
+    // Validate format in real-time
+    const panError = document.getElementById('pan_number_error');
+    if (value && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
+        panError.textContent = 'Invalid PAN format (e.g. AAAAA9999A)';
+    } else {
+        panError.textContent = '';
+    }
+}
 </script>
 </body>
 </html>
