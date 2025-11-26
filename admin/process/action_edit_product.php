@@ -111,10 +111,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        $_SESSION['message'] = 'Product updated successfully';
-        $_SESSION['message_type'] = 'success';
-        header("Location: ../products.php");
-        exit();
+      $_SESSION['message'] = 'Product updated successfully';
+$_SESSION['message_type'] = 'success';
+header("Location: ../edit-product.php?id=$id");
+exit();
+        // exit();
     } else {
    
         echo "Error updating product: " . mysqli_error($conn);

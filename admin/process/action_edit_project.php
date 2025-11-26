@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // On success
     $_SESSION['message'] = 'Project updated successfully';
     $_SESSION['message_type'] = 'success';
-    header("Location: ../projects.php");
+    header("Location: ../edit-project.php?id=$project_id");
     exit();
 }
 ?>
