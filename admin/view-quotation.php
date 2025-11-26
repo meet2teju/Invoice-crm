@@ -101,6 +101,8 @@ if (!empty($quotation['client_id'])) {
     $client_address = mysqli_fetch_assoc($client_address_result);
 }
 
+// Function to convert number to words
+
 
 ?>
 
@@ -173,21 +175,21 @@ if (!empty($quotation['client_id'])) {
 
         /* PDF-only header */
         .pdf-header {
-            display: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .pdf-logo {
+            max-width: 150px;
+            max-height: 80px;
         }
         
-        @media print {
+        @media screen {
             .pdf-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 20px;
-                border-bottom: 2px solid #333;
-                padding-bottom: 10px;
-            }
-            .pdf-logo {
-                max-width: 150px;
-                max-height: 80px;
+                display: none;
             }
         }
 
@@ -262,6 +264,20 @@ if (!empty($quotation['client_id'])) {
             color: #6c757d;
             margin-bottom: 0;
         }
+        
+        /* PDF specific styles */
+        .pdf-only {
+            display: none;
+        }
+        
+        @media print {
+            .pdf-only {
+                display: block;
+            }
+            .no-pdf {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -301,7 +317,7 @@ if (!empty($quotation['client_id'])) {
 
                         <!-- PDF Content Section - This is what gets converted to PDF -->
                         <div id="pdf-content">
-                            <!-- PDF Header with Logo -->
+                            <!-- PDF Header with Logo - Only visible in PDF -->
                             <div class="pdf-header">
                                 <div>
                                     <?php if (!empty($company['invoice_logo'])): ?>
@@ -319,21 +335,21 @@ if (!empty($quotation['client_id'])) {
                             
                             <div class="card">
                                 <div class="card-body">
-                                    <!-- Company Logo Section -->
-                                    <!-- <div class="company-logo-section">
+                                    <!-- Company Logo Section - Visible on screen but not in PDF -->
+                                    <div class="company-logo-section no-pdf">
                                         <?php if (!empty($company['invoice_logo'])): ?>
                                             <img src="../uploads/<?= htmlspecialchars($company['invoice_logo']) ?>" class="company-logo-img" alt="Company Logo">
                                         <?php endif; ?>
-                                        <div class="company-info-text">
+                                        <!-- <div class="company-info-text">
                                             <h2 class="company-name"><?= htmlspecialchars($company['name'] ?? 'Company Name') ?></h2>
                                             <?php if (!empty($company['address'])): ?>
                                                 <p class="company-tagline"><?= htmlspecialchars($company['address']) ?></p>
                                             <?php endif; ?>
-                                        </div>
-                                    </div> -->
+                                        </div> -->
+                                    </div>
 
-                                    <!-- Quotation Details Section - Hidden in Print -->
-                                    <div class="quotation-details-section bg-light rounded position-relative mb-3">
+                                    <!-- Quotation Details Section - Hidden in Print/PDF -->
+                                    <div class="quotation-details-section bg-light rounded position-relative mb-3 no-pdf">
                                         <!-- start row -->
                                         <div class="row gy-3 position-relative z-1">
                                             <div class="col-lg-12">
@@ -722,7 +738,147 @@ if (!empty($quotation['client_id'])) {
 <?php include 'layouts/vendor-scripts.php'; ?>
 
 <script>
-// Fixed Function to download quotation as PDF
+// Enhanced Function to download quotation as PDF with better formatting
+// function downloadQuotationAsPDF(event) {
+//     // Get the element to convert to PDF
+//     const element = document.getElementById('pdf-content');
+    
+//     // Get the button that was clicked to show loading state
+//     const loadingBtn = event.currentTarget;
+//     const originalText = loadingBtn.innerHTML;
+//     loadingBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Generating PDF...';
+//     loadingBtn.disabled = true;
+    
+//     // Show PDF header temporarily for capture
+//     const pdfHeader = element.querySelector('.pdf-header');
+//     if (pdfHeader) {
+//         pdfHeader.style.display = 'flex';
+//     }
+    
+//     // Hide elements that shouldn't be in PDF
+//     const noPdfElements = element.querySelectorAll('.no-pdf');
+//     noPdfElements.forEach(el => {
+//         el.style.display = 'none';
+//     });
+    
+//     // Show PDF-only elements
+//     const pdfOnlyElements = element.querySelectorAll('.pdf-only');
+//     pdfOnlyElements.forEach(el => {
+//         el.style.display = 'block';
+//     });
+    
+//     // Hide empty elements before generating PDF
+//     const emptyElements = element.querySelectorAll('.pdf-hide-empty');
+//     emptyElements.forEach(el => {
+//         if (el.textContent.trim() === '' || el.innerHTML.trim() === '<p class="mb-1"></p>') {
+//             el.style.display = 'none';
+//         }
+//     });
+    
+//     // Use html2canvas to capture the content with better options
+//     html2canvas(element, {
+//         scale: 2, // Higher scale for better quality
+//         useCORS: true,
+//         logging: false,
+//         backgroundColor: '#ffffff',
+//         width: element.scrollWidth,
+//         height: element.scrollHeight,
+//         windowWidth: element.scrollWidth,
+//         windowHeight: element.scrollHeight,
+//         onclone: function(clonedDoc) {
+//             // Ensure proper styling in the cloned document
+//             const clonedElement = clonedDoc.getElementById('pdf-content');
+//             if (clonedElement) {
+//                 // Force show PDF header in cloned document
+//                 const clonedPdfHeader = clonedElement.querySelector('.pdf-header');
+//                 if (clonedPdfHeader) {
+//                     clonedPdfHeader.style.display = 'flex';
+//                 }
+                
+//                 // Hide no-pdf elements in cloned document
+//                 const clonedNoPdf = clonedElement.querySelectorAll('.no-pdf');
+//                 clonedNoPdf.forEach(el => {
+//                     el.style.display = 'none';
+//                 });
+                
+//                 // Show PDF-only elements in cloned document
+//                 const clonedPdfOnly = clonedElement.querySelectorAll('.pdf-only');
+//                 clonedPdfOnly.forEach(el => {
+//                     el.style.display = 'block';
+//                 });
+//             }
+//         }
+//     }).then(function(canvas) {
+//         // Create PDF with proper dimensions
+//         const pdf = new jspdf.jsPDF({
+//             orientation: 'portrait',
+//             unit: 'mm',
+//             format: 'a4'
+//         });
+        
+//         const imgData = canvas.toDataURL('image/png');
+//         const pdfWidth = pdf.internal.pageSize.getWidth();
+//         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+//         // Add image to PDF
+//         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        
+//         // Download the PDF with proper filename
+//         pdf.save('quotation-<?= $quotation['quotation_id'] ?>.pdf');
+        
+//         // Restore original display states
+//         if (pdfHeader) {
+//             pdfHeader.style.display = 'none';
+//         }
+        
+//         noPdfElements.forEach(el => {
+//             el.style.display = '';
+//         });
+        
+//         pdfOnlyElements.forEach(el => {
+//             el.style.display = 'none';
+//         });
+        
+//         emptyElements.forEach(el => {
+//             el.style.display = '';
+//         });
+        
+//         // Reset button
+//         loadingBtn.innerHTML = originalText;
+//         loadingBtn.disabled = false;
+        
+//     }).catch(function(error) {
+//         console.error('Error generating PDF:', error);
+//         alert('Error generating PDF. Please try again.');
+        
+//         // Restore original states on error
+//         if (pdfHeader) {
+//             pdfHeader.style.display = 'none';
+//         }
+        
+//         noPdfElements.forEach(el => {
+//             el.style.display = '';
+//         });
+        
+//         pdfOnlyElements.forEach(el => {
+//             el.style.display = 'none';
+//         });
+        
+//         emptyElements.forEach(el => {
+//             el.style.display = '';
+//         });
+        
+//         loadingBtn.innerHTML = originalText;
+//         loadingBtn.disabled = false;
+//     });
+    
+//     // Prevent default link behavior
+//     if (event) {
+//         event.preventDefault();
+//     }
+//     return false;
+// }
+// Fixed Function to download quotation as PDF with proper formatting
 function downloadQuotationAsPDF(event) {
     // Get the element to convert to PDF
     const element = document.getElementById('pdf-content');
@@ -730,52 +886,136 @@ function downloadQuotationAsPDF(event) {
     // Get the button that was clicked to show loading state
     const loadingBtn = event.currentTarget;
     const originalText = loadingBtn.innerHTML;
-    loadingBtn.innerHTML = 'Converting...';
+    loadingBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Generating PDF...';
     loadingBtn.disabled = true;
     
-    // Hide empty elements before generating PDF
-    const emptyElements = element.querySelectorAll('.pdf-hide-empty');
-    emptyElements.forEach(el => {
-        if (el.textContent.trim() === '' || el.innerHTML.trim() === '<p class="mb-1"></p>') {
-            el.style.display = 'none';
+    // Create a temporary container for PDF generation
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '210mm'; // A4 width
+    tempContainer.style.minHeight = '297mm'; // A4 height
+    tempContainer.style.padding = '20mm';
+    tempContainer.style.backgroundColor = 'white';
+    tempContainer.style.boxSizing = 'border-box';
+    tempContainer.style.fontFamily = 'Arial, sans-serif';
+    
+    // Clone the content
+    const contentClone = element.cloneNode(true);
+    
+    // Apply PDF-specific styles to the clone
+    contentClone.style.width = '100%';
+    contentClone.style.margin = '0';
+    contentClone.style.padding = '0';
+    contentClone.style.backgroundColor = 'white';
+    
+    // Show PDF header in clone
+    const pdfHeader = contentClone.querySelector('.pdf-header');
+    if (pdfHeader) {
+        pdfHeader.style.display = 'flex';
+        pdfHeader.style.marginBottom = '20px';
+        pdfHeader.style.borderBottom = '2px solid #333';
+        pdfHeader.style.paddingBottom = '10px';
+    }
+    
+    // Hide elements that shouldn't be in PDF
+    const noPdfElements = contentClone.querySelectorAll('.no-pdf');
+    noPdfElements.forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // Hide quotation details section
+    const quotationDetails = contentClone.querySelector('.quotation-details-section');
+    if (quotationDetails) {
+        quotationDetails.style.display = 'none';
+    }
+    
+    // Hide company logo section (we're using PDF header instead)
+    const companyLogo = contentClone.querySelector('.company-logo-section');
+    if (companyLogo) {
+        companyLogo.style.display = 'none';
+    }
+    
+    // Apply PDF-specific table styles
+    const tables = contentClone.querySelectorAll('table');
+    tables.forEach(table => {
+        table.style.width = '100%';
+        table.style.fontSize = '11px';
+        table.style.borderCollapse = 'collapse';
+    });
+    
+    const tableHeaders = contentClone.querySelectorAll('thead');
+    tableHeaders.forEach(header => {
+        header.style.backgroundColor = '#2c3e50';
+        header.style.color = 'white';
+    });
+    
+    const tableCells = contentClone.querySelectorAll('th, td');
+    tableCells.forEach(cell => {
+        cell.style.padding = '8px';
+        cell.style.border = '1px solid #dee2e6';
+    });
+    
+    // Apply PDF-specific text styles
+    const allElements = contentClone.querySelectorAll('*');
+    allElements.forEach(el => {
+        const computedStyle = window.getComputedStyle(el);
+        if (computedStyle.fontSize) {
+            const currentSize = parseFloat(computedStyle.fontSize);
+            if (currentSize > 12) {
+                el.style.fontSize = '12px';
+            }
         }
     });
     
+    // Add the clone to temporary container
+    tempContainer.appendChild(contentClone);
+    document.body.appendChild(tempContainer);
+    
     // Use html2canvas to capture the content
-    html2canvas(element, {
+    html2canvas(tempContainer, {
         scale: 2,
         useCORS: true,
-        logging: true,
-        backgroundColor: '#ffffff'
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: tempContainer.offsetWidth,
+        height: tempContainer.offsetHeight,
+        windowWidth: tempContainer.scrollWidth,
+        windowHeight: tempContainer.scrollHeight
     }).then(function(canvas) {
-        // Create PDF
-        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        // Create PDF with proper dimensions
+        const pdf = new jspdf.jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
         const imgData = canvas.toDataURL('image/png');
-        const imgWidth = pdf.internal.pageSize.getWidth();
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         
         // Add image to PDF
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         
-        // Download the PDF
+        // Download the PDF with proper filename
         pdf.save('quotation-<?= $quotation['quotation_id'] ?>.pdf');
         
-        // Restore hidden elements
-        emptyElements.forEach(el => {
-            el.style.display = '';
-        });
+        // Clean up
+        document.body.removeChild(tempContainer);
         
         // Reset button
         loadingBtn.innerHTML = originalText;
         loadingBtn.disabled = false;
+        
     }).catch(function(error) {
         console.error('Error generating PDF:', error);
         alert('Error generating PDF. Please try again.');
         
-        // Restore hidden elements on error
-        emptyElements.forEach(el => {
-            el.style.display = '';
-        });
+        // Clean up on error
+        if (document.body.contains(tempContainer)) {
+            document.body.removeChild(tempContainer);
+        }
         
         loadingBtn.innerHTML = originalText;
         loadingBtn.disabled = false;
@@ -787,7 +1027,6 @@ function downloadQuotationAsPDF(event) {
     }
     return false;
 }
-
 // Status dropdown functionality
 function updateDropdownBtn() {
     let selected = document.querySelector("input[name='status']:checked");
