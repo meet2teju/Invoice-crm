@@ -40,11 +40,27 @@ if (!empty($bank_id)) {
 }
 
 // Fetch items with updated structure for products and services
+// $items_result = mysqli_query($conn, "
+//     SELECT ii.*, 
+//            p.name AS product_name,
+//            p.code AS product_code,
+//            s.name AS service_name,
+//            s.code AS service_code,
+//            COALESCE(p.code, s.code) AS code,
+//            t.name AS tax_name, 
+//            u.name AS unit_name
+//     FROM invoice_item ii
+//     LEFT JOIN product p ON p.id = ii.product_id
+//     LEFT JOIN product s ON s.id = ii.service_id
+//     LEFT JOIN units u ON u.id = ii.unit_id
+//     LEFT JOIN tax t ON t.id = ii.tax_id
+//     WHERE ii.invoice_id = $invoice_id AND ii.is_deleted = 0
+// ");
 $items_result = mysqli_query($conn, "
     SELECT ii.*, 
            p.name AS product_name,
            p.code AS product_code,
-           s.name AS service_name,
+           s.name AS service_product_name,  -- Changed alias to avoid conflict
            s.code AS service_code,
            COALESCE(p.code, s.code) AS code,
            t.name AS tax_name, 
@@ -56,7 +72,6 @@ $items_result = mysqli_query($conn, "
     LEFT JOIN tax t ON t.id = ii.tax_id
     WHERE ii.invoice_id = $invoice_id AND ii.is_deleted = 0
 ");
-
 // Check if any item has quantity value (not null and greater than 0)
 $showQuantityColumn = false;
 mysqli_data_seek($items_result, 0); // Reset pointer
@@ -502,32 +517,42 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 															</tr>
 														<?php endif; ?>
 													</thead>
-													<tbody>
-														<?php 
-														$i = 1; 
-														mysqli_data_seek($items_result, 0);
-														while($item = mysqli_fetch_assoc($items_result)) { 
-															$itemName = !empty($item['service_name']) ? $item['service_name'] : $item['product_name'];
-														?>
-														<tr>
-															<td><?= $i++ ?></td>
-															<td><?= htmlspecialchars($itemName) ?></td>
-															<td><?= htmlspecialchars($item['code'] ?? 'N/A') ?></td>
-															<?php if ($showQuantityColumn): ?>
-																<td><?= $item['quantity'] ?></td>
-															<?php endif; ?>
-															<td>$<?= $item['selling_price'] ?></td>
-															<td>
-																<?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
-																	Non-GST
-																<?php else: ?>
-																	<?= $item['tax_name'] ?>
-																<?php endif; ?>
-															</td>
-															<td>$<?= $item['amount'] ?></td>
-														</tr>
-														<?php } ?>
-													</tbody>
+													
+                                                    <tbody>
+                                                        <?php 
+                                                        $i = 1; 
+                                                        mysqli_data_seek($items_result, 0);
+                                                        while($item = mysqli_fetch_assoc($items_result)) { 
+                                                            // Combine product name (from product table) and service name (from invoice_item)
+                                                            if (!empty($item['service_id'])) {
+                                                                // If it's a service, combine both names with hyphen
+                                                                $productName = !empty($item['service_product_name']) ? $item['service_product_name'] : '';
+                                                                $serviceName = !empty($item['service_name']) ? $item['service_name'] : '';
+                                                                $itemName = $productName .' '. '-' . ' '. $serviceName;
+                                                            } else {
+                                                                // If it's a product, use only product name
+                                                                $itemName = !empty($item['product_name']) ? $item['product_name'] : 'Product';
+                                                            }
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $i++ ?></td>
+                                                            <td><?= htmlspecialchars($itemName) ?></td>
+                                                            <td><?= htmlspecialchars($item['code'] ?? 'N/A') ?></td>
+                                                            <?php if ($showQuantityColumn): ?>
+                                                                <td><?= $item['quantity'] ?></td>
+                                                            <?php endif; ?>
+                                                            <td>$<?= $item['selling_price'] ?></td>
+                                                            <td>
+                                                                <?php if (($invoice['gst_type'] ?? 'gst') === 'non_gst'): ?>
+                                                                    Non-GST
+                                                                <?php else: ?>
+                                                                    <?= $item['tax_name'] ?>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td>$<?= $item['amount'] ?></td>
+                                                        </tr>
+                                                        <?php } ?>
+                                                    </tbody>
 												</table>
 											</div>
 										</div>

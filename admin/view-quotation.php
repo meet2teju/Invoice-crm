@@ -19,25 +19,42 @@ $result = mysqli_query($conn, $sql);
 $quotation = mysqli_fetch_assoc($result);
 
 // Fetch items with updated structure for products and services
+// $items_result = mysqli_query($conn, "
+//     SELECT 
+//         qi.*, 
+//         p.name AS product_name,
+//         p.code AS product_code,
+//         s.name AS service_name_from_product,
+//         s.code AS service_code,
+//         COALESCE(p.code, s.code) AS code, -- Get code from either product or service
+//         t.name AS tax_name, 
+//         t.rate AS tax_rate,
+//         qi.service_name,
+//         qi.rate AS item_tax_rate
+//     FROM quotation_item qi
+//     LEFT JOIN product p ON p.id = qi.product_id
+//     LEFT JOIN product s ON s.id = qi.service_id -- Join for services too
+//     LEFT JOIN tax t ON t.id = qi.tax_id
+//     WHERE qi.quotation_id = $quotationId AND qi.is_deleted = 0
+// ");
 $items_result = mysqli_query($conn, "
     SELECT 
         qi.*, 
         p.name AS product_name,
         p.code AS product_code,
-        s.name AS service_name_from_product,
+        s.name AS service_name_from_product,  -- Changed alias
         s.code AS service_code,
-        COALESCE(p.code, s.code) AS code, -- Get code from either product or service
+        COALESCE(p.code, s.code) AS code,
         t.name AS tax_name, 
         t.rate AS tax_rate,
-        qi.service_name,
+        qi.service_name,  -- This comes from quotation_item table
         qi.rate AS item_tax_rate
     FROM quotation_item qi
     LEFT JOIN product p ON p.id = qi.product_id
-    LEFT JOIN product s ON s.id = qi.service_id -- Join for services too
+    LEFT JOIN product s ON s.id = qi.service_id
     LEFT JOIN tax t ON t.id = qi.tax_id
     WHERE qi.quotation_id = $quotationId AND qi.is_deleted = 0
 ");
-
 if (!$quotation) {
     $_SESSION['message'] = "Quotation not found.";
     $_SESSION['message_type'] = "danger";
@@ -457,68 +474,77 @@ if (!empty($quotation['client_id'])) {
                                                         <th>Amount</th>
                                                     </tr>
                                                 </thead>
+                                                
                                                 <tbody>
-                                                    <?php
-                                                    $taxSummary = [];
-                                                    $subtotal = 0;
-                                                    $i = 1;
-                                                    
-                                                    // Reset pointer to beginning for items result
-                                                    mysqli_data_seek($items_result, 0);
-                                                    
-                                                    while ($item = mysqli_fetch_assoc($items_result)) {
-                                                        $itemAmount = $item['amount'];
-                                                        $subtotal += $itemAmount;
+                                                        <?php
+                                                        $taxSummary = [];
+                                                        $subtotal = 0;
+                                                        $i = 1;
                                                         
-                                                        // Determine if this is a product or service
-                                                        $isService = !empty($item['service_name']);
-                                                        $itemName = $isService ? $item['service_name'] : $item['product_name'];
-                                                        $itemClass = $isService ? 'service-item' : 'product-item';
+                                                        // Reset pointer to beginning for items result
+                                                        mysqli_data_seek($items_result, 0);
                                                         
-                                                        // Calculate tax for this item
-                                                        $effectiveTaxRate = $item['item_tax_rate'] ?? $item['tax_rate'] ?? 0;
-                                                        $taxName = $item['tax_name'] ?? 'Tax';
-                                                        
-                                                        // For Non-GST quotations, tax should be 0
-                                                        if (($quotation['gst_type'] ?? 'gst') === 'non_gst') {
-                                                            $effectiveTaxRate = 0;
-                                                            $lineTax = 0;
-                                                        } else {
-                                                            $lineTax = ($itemAmount * $effectiveTaxRate) / 100;
-                                                        }
-                                                        
-                                                        // Build tax label
-                                                        if ($effectiveTaxRate > 0) {
-                                                            $taxKey = $taxName . ' (' . $effectiveTaxRate . '%)';
+                                                        while ($item = mysqli_fetch_assoc($items_result)) {
+                                                            $itemAmount = $item['amount'];
+                                                            $subtotal += $itemAmount;
                                                             
-                                                            // Add to summary
-                                                            if (!isset($taxSummary[$taxKey])) {
-                                                                $taxSummary[$taxKey] = 0;
+                                                            // Combine product name (from product table) and service name (from quotation_item)
+                                                            if (!empty($item['service_id'])) {
+                                                                // If it's a service, combine both names with hyphen
+                                                                $productName = !empty($item['service_name_from_product']) ? $item['service_name_from_product'] : '';
+                                                                $serviceName = !empty($item['service_name']) ? $item['service_name'] : '';
+                                                                $itemName = $productName .' '. '-' .' '. $serviceName;
+                                                                $itemClass = 'service-item';
+                                                            } else {
+                                                                // If it's a product, use only product name
+                                                                $itemName = !empty($item['product_name']) ? $item['product_name'] : 'Product';
+                                                                $itemClass = 'product-item';
                                                             }
-                                                            $taxSummary[$taxKey] += $lineTax;
-                                                        }
-                                                    ?>
-                                                        <tr class="<?= $itemClass ?>">
-                                                            <td><?= $i++ ?></td>
-                                                            <td>
-                                                                <?= htmlspecialchars($itemName) ?>
-                                                            </td>
-                                                            <td><?= htmlspecialchars($item['code'] ?? 'N/A') ?></td>
-                                                            <?php if ($showQuantityColumn): ?>
-                                                                <td><?= $item['quantity'] ?></td>
-                                                            <?php endif; ?>
-                                                            <td>$&nbsp;<?= number_format($item['selling_price'], 2) ?></td>
-                                                            <td>
-                                                                <?php if (($quotation['gst_type'] ?? 'gst') === 'non_gst'): ?>
-                                                                    Non-GST
-                                                                <?php else: ?>
-                                                                    <?= $taxName . ($effectiveTaxRate > 0 ? ' (' . $effectiveTaxRate . '%)' : '') ?>
+                                                            
+                                                            // Calculate tax for this item
+                                                            $effectiveTaxRate = $item['item_tax_rate'] ?? $item['tax_rate'] ?? 0;
+                                                            $taxName = $item['tax_name'] ?? 'Tax';
+                                                            
+                                                            // For Non-GST quotations, tax should be 0
+                                                            if (($quotation['gst_type'] ?? 'gst') === 'non_gst') {
+                                                                $effectiveTaxRate = 0;
+                                                                $lineTax = 0;
+                                                            } else {
+                                                                $lineTax = ($itemAmount * $effectiveTaxRate) / 100;
+                                                            }
+                                                            
+                                                            // Build tax label
+                                                            if ($effectiveTaxRate > 0) {
+                                                                $taxKey = $taxName . ' (' . $effectiveTaxRate . '%)';
+                                                                
+                                                                // Add to summary
+                                                                if (!isset($taxSummary[$taxKey])) {
+                                                                    $taxSummary[$taxKey] = 0;
+                                                                }
+                                                                $taxSummary[$taxKey] += $lineTax;
+                                                            }
+                                                        ?>
+                                                            <tr class="<?= $itemClass ?>">
+                                                                <td><?= $i++ ?></td>
+                                                                <td>
+                                                                    <?= htmlspecialchars($itemName) ?>
+                                                                </td>
+                                                                <td><?= htmlspecialchars($item['code'] ?? 'N/A') ?></td>
+                                                                <?php if ($showQuantityColumn): ?>
+                                                                    <td><?= $item['quantity'] ?></td>
                                                                 <?php endif; ?>
-                                                            </td>
-                                                            <td>$&nbsp;<?= number_format($itemAmount, 2) ?></td>
-                                                        </tr>
-                                                    <?php } ?>
-                                                </tbody>
+                                                                <td>$&nbsp;<?= number_format($item['selling_price'], 2) ?></td>
+                                                                <td>
+                                                                    <?php if (($quotation['gst_type'] ?? 'gst') === 'non_gst'): ?>
+                                                                        Non-GST
+                                                                    <?php else: ?>
+                                                                        <?= $taxName . ($effectiveTaxRate > 0 ? ' (' . $effectiveTaxRate . '%)' : '') ?>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td>$&nbsp;<?= number_format($itemAmount, 2) ?></td>
+                                                            </tr>
+                                                        <?php } ?>
+                                                    </tbody>
                                             </table>
                                         </div>
                                     </div>
