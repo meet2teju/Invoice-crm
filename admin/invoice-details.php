@@ -410,21 +410,17 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 																</span>
 															</p>
 															<!-- <p class="mb-1">Recurring Invoice  :  <span class="text-dark">Monthly</span></p> -->
-															<?php 
-																$status = $invoice['status'] ?? 'Pending';
-
-																$badgeClass = match(strtolower($status)) {
-																	'paid'    => 'bg-success',
-																	'unpaid'  => 'bg-warning text-dark',
-																	'cancelled'  => 'bg-danger',
-																	default   => 'bg-secondary'
-																};
-																?>
-
-																<span id="invoice-status" class="badge <?= $badgeClass ?> badge-sm">
-																	<?= ucfirst($status) ?>
-																</span>
-
+														
+                                                                <?php 
+                                                                $status = $invoice['status'] ?? 'Pending';
+                                                                $badgeClass = match(strtolower($status)) {
+                                                                    'paid' => 'bg-success',
+                                                                    'unpaid' => 'bg-warning text-dark',
+                                                                    'cancelled' => 'bg-danger',
+                                                                    default => 'bg-secondary'
+                                                                };
+                                                                ?>
+                                                                <p class="mb-1">Status : <span class="badge <?= $badgeClass ?> badge-sm"><?= ucfirst($status) ?></span></p>
 														</div>
 													</div>
 												</div><!-- end col -->
