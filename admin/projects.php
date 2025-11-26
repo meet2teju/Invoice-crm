@@ -145,6 +145,10 @@ $projectList = mysqli_query($conn, "SELECT id, project_name FROM project WHERE i
                             <li><a class="dropdown-item" href="import_contact_excel.php">Import Contacts</a></li>
                         </ul>
                     </div> -->
+                      <!-- Multiple Delete Button -->
+            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                <i class="fa-regular fa-trash-can me-1"></i>Delete
+            </a>
                 <?php if (check_is_access_new("add_project") == 1) { ?> 
                     <div>
                         <a href="add-projects.php" class="btn btn-primary d-flex align-items-center">
@@ -253,10 +257,7 @@ $projectList = mysqli_query($conn, "SELECT id, project_name FROM project WHERE i
                 </div>
             <?php endif; ?>
 
-            <!-- Multiple Delete Button -->
-            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
-                <i class="fa-regular fa-trash-can me-1"></i>Delete
-            </a>
+          
         </div>
     </div>
 </div>

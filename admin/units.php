@@ -36,6 +36,10 @@
                                 </a>
                             </div>
                         </div>
+                            <!-- Delete Button -->
+                             <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                        <i class="fa-regular fa-trash-can me-1"></i>Delete
+                        </a>
                         <a href="#" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#add_modal">
                             <i class="isax isax-add-circle5 me-1"></i>New Unit
                         </a>
@@ -55,10 +59,7 @@
                                 </div>
                             </div> -->
 
-                            <!-- Delete Button -->
-                             <a href="#" class="btn btn-outline-danger delete-multiple d-none">
-                        <i class="fa-regular fa-trash-can me-1"></i>Delete
-                        </a>
+                        
                         </div>
                     </div>
                 </div>
