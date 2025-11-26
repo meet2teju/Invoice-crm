@@ -112,7 +112,6 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 
 // Function to convert number to words
 
-
 ?>
 
 <!DOCTYPE html>
@@ -128,155 +127,166 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 	
-	<style>
-        /* Print-specific styles - Only for PDF */
-        @media print {
-            @page {
-                size: A4;
-                margin: 15mm;
-            }
-            
-            body * {
-                visibility: hidden;
-            }
-            #pdf-content, #pdf-content * {
-                visibility: visible;
-            }
-            #pdf-content {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white;
-                margin: 0;
-                padding: 0;
-            }
-            .no-print, .btn, .alert, .offcanvas, .modal {
-                display: none !important;
-            }
-            .card {
-                border: none !important;
-                box-shadow: none !important;
-                margin-bottom: 0 !important;
-            }
-            .table-dark {
-                background-color: #2c3e50 !important;
-                color: white !important;
-            }
-            /* Hide empty elements in PDF */
-            .pdf-hide-empty:empty {
-                display: none !important;
-            }
-            /* Hide invoice details section in print */
-            .invoice-details-section {
-                display: none !important;
-            }
-            /* Ensure proper page breaks */
-            .card-body {
-                padding: 20px !important;
-            }
-            /* Improve readability for A4 */
-            table {
-                font-size: 11px;
-                width: 100%;
-            }
-            h6, .fs-14, .fs-16 {
-                font-size: 12px !important;
-            }
+<style>
+    /* Print-specific styles - Only for PDF */
+    @media print {
+        @page {
+            size: A4;
+            margin: 15mm;
         }
+        
+        body * {
+            visibility: hidden;
+        }
+        #pdf-content, #pdf-content * {
+            visibility: visible;
+        }
+        #pdf-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white;
+            margin: 0;
+            padding: 0;
+        }
+        .no-print, .btn, .alert, .offcanvas, .modal {
+            display: none !important;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            margin-bottom: 0 !important;
+        }
+        .table-dark {
+            background-color: #2c3e50 !important;
+            color: white !important;
+        }
+        /* Hide empty elements in PDF */
+        .pdf-hide-empty:empty {
+            display: none !important;
+        }
+        /* Hide invoice details section in print */
+        .invoice-details-section {
+            display: none !important;
+        }
+        /* Ensure proper page breaks */
+        .card-body {
+            padding: 20px !important;
+        }
+        /* Improve readability for A4 */
+        table {
+            font-size: 11px;
+            width: 100%;
+        }
+        h6, .fs-14, .fs-16 {
+            font-size: 12px !important;
+        }
+    }
 
-        /* PDF-only header */
+    /* PDF-only header - EXACTLY LIKE QUOTATION FILE */
+    .pdf-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #333;
+        padding-bottom: 10px;
+    }
+    .pdf-logo {
+        max-width: 150px;
+        max-height: 80px;
+    }
+    
+    @media screen {
         .pdf-header {
             display: none;
         }
-        
-        @media print {
-            .pdf-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 20px;
-                border-bottom: 2px solid #333;
-                padding-bottom: 10px;
-            }
-            .pdf-logo {
-                max-width: 150px;
-                max-height: 80px;
-            }
-        }
+    }
 
-        /* GST Badge Styles */
-        .gst-badge {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .gst-badge.gst {
-            background-color: #d1e7dd;
-            color: #0f5132;
-            border: 1px solid #badbcc;
-        }
-        .gst-badge.non-gst {
-            background-color: #fff3cd;
-            color: #664d03;
-            border: 1px solid #ffecb5;
-        }
+    /* Rest of your existing CSS remains exactly the same */
+    .gst-badge {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .gst-badge.gst {
+        background-color: #d1e7dd;
+        color: #0f5132;
+        border: 1px solid #badbcc;
+    }
+    .gst-badge.non-gst {
+        background-color: #fff3cd;
+        color: #664d03;
+        border: 1px solid #ffecb5;
+    }
 
-        /* Bill From and Bill To side by side layout */
-        .billing-section {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .billing-from, .billing-to {
-            flex: 1;
-            min-width: 300px;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-        }
-        .billing-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #2c3e50;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 5px;
-        }
+    .billing-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .billing-from, .billing-to {
+        flex: 1;
+        min-width: 300px;
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    .billing-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #2c3e50;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+    }
 
-        /* Company logo styles */
-        .company-logo-section {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
+    .company-logo-section {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    .company-logo-img {
+        max-width: 120px;
+        max-height: 80px;
+        margin-right: 20px;
+    }
+    .company-info-text {
+        flex: 1;
+    }
+    .company-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    .company-tagline {
+        font-size: 14px;
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+    
+    .pdf-only {
+        display: none;
+    }
+    
+    @media print {
+        .pdf-only {
+            display: block;
         }
-        .company-logo-img {
-            max-width: 120px;
-            max-height: 80px;
-            margin-right: 20px;
+        .no-pdf {
+            display: none;
         }
-        .company-info-text {
-            flex: 1;
-        }
-        .company-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-        .company-tagline {
-            font-size: 14px;
-            color: #6c757d;
-            margin-bottom: 0;
-        }
-    </style>
+    }
+</style>
 </head>
 
 <body>
@@ -293,9 +303,9 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 		<div class="page-wrapper">
 
 			<!-- Start Content -->
-			<div class="content">
+			<div class="content content-two">
 			  <?php if (isset($_SESSION['message'])): ?>
-                    <div class="alert alert-<?= $_SESSION['message_type'] ?>">
+                    <div class="alert alert-<?= $_SESSION['message_type'] ?> no-print">
                         <?= $_SESSION['message']; unset($_SESSION['message']); ?>
                     </div>
                 <?php endif; ?>
@@ -303,10 +313,12 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 				<div class="row">
 					<div class="col-md-12 mx-auto">
 						<div>
-							<div class="d-flex align-items-center justify-content-between flex-wrap row-gap-3 mb-3">
+							<div class="d-flex align-items-center justify-content-between flex-wrap row-gap-3 mb-3 no-print">
 								<h6>Invoice Detail</h6>
 								<div class="d-flex align-items-center flex-wrap row-gap-3">
-									<a href="javascript:void(0);" onclick="downloadAsPDF(event)" class="btn btn-outline-white d-inline-flex align-items-center me-3">Download PDF</a>
+									<a href="javascript:void(0);" onclick="downloadInvoiceAsPDF(event)" class="btn btn-outline-white d-inline-flex align-items-center me-3">
+										<i class="isax isax-document-download me-1"></i>Download PDF
+									</a>
 									<a href="process/action_send_invoice_email.php?invoice_id=<?= $invoiceId ?>" 
 										class="btn btn-outline-white d-inline-flex align-items-center me-3">
 											<i class="isax isax-message-notif me-1"></i>Send Email
@@ -325,39 +337,40 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 							
 							<!-- PDF Content Section - This is what gets converted to PDF -->
 							<div id="pdf-content">
-								<!-- PDF Header with Logo -->
-								<div class="pdf-header">
-									<div>
-										<?php if (!empty($company['invoice_logo'])): ?>
-											<img src="../uploads/<?= htmlspecialchars($company['invoice_logo']) ?>" class="pdf-logo" alt="Company Logo">
-										<?php else: ?>
-											<h4><?= htmlspecialchars($company['name'] ?? 'Company Name') ?></h4>
-										<?php endif; ?>
-									</div>
-									<div class="text-end">
-										<h5>INVOICE</h5>
-										<p class="mb-0">Invoice No: <?= htmlspecialchars($invoice['invoice_id']) ?></p>
-										<p class="mb-0">Date: <?= htmlspecialchars($invoice['invoice_date']) ?></p>
-									</div>
-								</div>
+								<!-- PDF Header with Logo - Only visible in PDF -->
+							<!-- PDF Header with Logo - Only visible in PDF - EXACTLY LIKE QUOTATION FILE -->
+<div class="pdf-header">
+    <div>
+        <?php if (!empty($company['invoice_logo'])): ?>
+            <img src="../uploads/<?= htmlspecialchars($company['invoice_logo']) ?>" class="pdf-logo" alt="Company Logo">
+        <?php else: ?>
+            <h4><?= htmlspecialchars($company['name'] ?? 'Company Name') ?></h4>
+        <?php endif; ?>
+    </div>
+    <div class="text-end">
+        <h5>INVOICE</h5>
+        <p class="mb-0">Invoice No: <?= htmlspecialchars($invoice['invoice_id']) ?></p>
+        <p class="mb-0">Date: <?= htmlspecialchars($invoice['invoice_date']) ?></p>
+    </div>
+</div>
 								
 								<div class="card">
 									<div class="card-body">
-										<!-- Company Logo Section -->
-										<!-- <div class="company-logo-section">
+										<!-- Company Logo Section - Visible on screen but not in PDF -->
+										<div class="company-logo-section no-pdf">
 											<?php if (!empty($company['invoice_logo'])): ?>
 												<img src="../uploads/<?= htmlspecialchars($company['invoice_logo']) ?>" class="company-logo-img" alt="Company Logo">
 											<?php endif; ?>
-											<div class="company-info-text">
+											<!-- <div class="company-info-text">
 												<h2 class="company-name"><?= htmlspecialchars($company['name'] ?? 'Company Name') ?></h2>
 												<?php if (!empty($company['address'])): ?>
 													<p class="company-tagline"><?= htmlspecialchars($company['address']) ?></p>
 												<?php endif; ?>
-											</div>
-										</div> -->
+											</div> -->
+										</div>
 
-										<!-- Invoice Details Section - Hidden in Print -->
-										<div class="invoice-details-section bg-light rounded position-relative mb-3">
+										<!-- Invoice Details Section - Hidden in Print/PDF -->
+										<div class="invoice-details-section bg-light rounded position-relative mb-3 no-pdf">
 											<!-- start row -->
 											<div class="row gy-3 position-relative z-1">
 												<div class="col-lg-12">
@@ -583,7 +596,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 														</div>
 														<div class="d-flex justify-content-between align-items-center">
     <h6 class="fs-14 fw-semibold mb-1 m-0">Total In Words</h6>
-    <p class="m-0"><?= numberToWords($invoice['total_amount']) ?></p>
+    <p class="m-0"><?= numberToWords($invoice['total_amount']) ?> Dollars</p>
 </div>
 
 													</div>
@@ -635,7 +648,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 		========================= -->
 
 		<!-- Start Filter -->
-		<div class="offcanvas offcanvas-offset offcanvas-end" tabindex="-1" id="customcanvas">                                      
+		<div class="offcanvas offcanvas-offset offcanvas-end no-print" tabindex="-1" id="customcanvas">                                      
 			<div class="offcanvas-header d-block pb-0">
 				<div class="border-bottom d-flex align-items-center justify-content-between pb-3">
 					<h6 class="offcanvas-title">Details</h6>
@@ -710,71 +723,164 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 	<?php include 'layouts/vendor-scripts.php'; ?>
 
 	<script>
-	// Fixed Function to download invoice as PDF
-	function downloadAsPDF(event) {
-		// Get the element to convert to PDF
-		const element = document.getElementById('pdf-content');
-		
-		// Get the button that was clicked to show loading state
-		const loadingBtn = event.currentTarget;
-		const originalText = loadingBtn.innerHTML;
-		loadingBtn.innerHTML = 'Converting...';
-		loadingBtn.disabled = true;
-		
-		// Hide empty elements before generating PDF
-		const emptyElements = element.querySelectorAll('.pdf-hide-empty');
-		emptyElements.forEach(el => {
-			if (el.textContent.trim() === '' || el.innerHTML.trim() === '<p class="mb-1"></p>') {
-				el.style.display = 'none';
-			}
-		});
-		
-		// Use html2canvas to capture the content
-		html2canvas(element, {
-			scale: 2,
-			useCORS: true,
-			logging: true,
-			backgroundColor: '#ffffff'
-		}).then(function(canvas) {
-			// Create PDF
-			const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-			const imgData = canvas.toDataURL('image/png');
-			const imgWidth = pdf.internal.pageSize.getWidth();
-			const imgHeight = (canvas.height * imgWidth) / canvas.width;
-			
-			// Add image to PDF
-			pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-			
-			// Download the PDF
-			pdf.save('invoice-<?= $invoice['invoice_id'] ?>.pdf');
-			
-			// Restore hidden elements
-			emptyElements.forEach(el => {
-				el.style.display = '';
-			});
-			
-			// Reset button
-			loadingBtn.innerHTML = originalText;
-			loadingBtn.disabled = false;
-		}).catch(function(error) {
-			console.error('Error generating PDF:', error);
-			alert('Error generating PDF. Please try again.');
-			
-			// Restore hidden elements on error
-			emptyElements.forEach(el => {
-				el.style.display = '';
-			});
-			
-			loadingBtn.innerHTML = originalText;
-			loadingBtn.disabled = false;
-		});
-		
-		// Prevent default link behavior
-		if (event) {
-			event.preventDefault();
-		}
-		return false;
-	}
+	// Fixed Function to download invoice as PDF with proper formatting - EXACTLY LIKE QUOTATION FILE
+function downloadInvoiceAsPDF(event) {
+    // Get the element to convert to PDF
+    const element = document.getElementById('pdf-content');
+    
+    // Get the button that was clicked to show loading state
+    const loadingBtn = event.currentTarget;
+    const originalText = loadingBtn.innerHTML;
+    loadingBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Generating PDF...';
+    loadingBtn.disabled = true;
+    
+    // Create a temporary container for PDF generation
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '210mm'; // A4 width
+    tempContainer.style.minHeight = '297mm'; // A4 height
+    tempContainer.style.padding = '20mm';
+    tempContainer.style.backgroundColor = 'white';
+    tempContainer.style.boxSizing = 'border-box';
+    tempContainer.style.fontFamily = 'Arial, sans-serif';
+    
+    // Clone the content
+    const contentClone = element.cloneNode(true);
+    
+    // Apply PDF-specific styles to the clone
+    contentClone.style.width = '100%';
+    contentClone.style.margin = '0';
+    contentClone.style.padding = '0';
+    contentClone.style.backgroundColor = 'white';
+    
+    // Show PDF header in clone - EXACTLY LIKE QUOTATION FILE
+    const pdfHeader = contentClone.querySelector('.pdf-header');
+    if (pdfHeader) {
+        pdfHeader.style.display = 'flex';
+        pdfHeader.style.marginBottom = '20px';
+        pdfHeader.style.borderBottom = '2px solid #333';
+        pdfHeader.style.paddingBottom = '10px';
+    }
+    
+    // Force logo size to match quotation file (150px x 80px)
+    const pdfLogo = contentClone.querySelector('.pdf-logo');
+    if (pdfLogo) {
+        pdfLogo.style.maxWidth = '150px';
+        pdfLogo.style.maxHeight = '80px';
+        pdfLogo.style.width = 'auto';
+        pdfLogo.style.height = 'auto';
+    }
+    
+    // Hide elements that shouldn't be in PDF
+    const noPdfElements = contentClone.querySelectorAll('.no-pdf');
+    noPdfElements.forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // Hide invoice details section
+    const invoiceDetails = contentClone.querySelector('.invoice-details-section');
+    if (invoiceDetails) {
+        invoiceDetails.style.display = 'none';
+    }
+    
+    // Hide company logo section (we're using PDF header instead)
+    const companyLogo = contentClone.querySelector('.company-logo-section');
+    if (companyLogo) {
+        companyLogo.style.display = 'none';
+    }
+    
+    // Apply PDF-specific table styles
+    const tables = contentClone.querySelectorAll('table');
+    tables.forEach(table => {
+        table.style.width = '100%';
+        table.style.fontSize = '11px';
+        table.style.borderCollapse = 'collapse';
+    });
+    
+    const tableHeaders = contentClone.querySelectorAll('thead');
+    tableHeaders.forEach(header => {
+        header.style.backgroundColor = '#2c3e50';
+        header.style.color = 'white';
+    });
+    
+    const tableCells = contentClone.querySelectorAll('th, td');
+    tableCells.forEach(cell => {
+        cell.style.padding = '8px';
+        cell.style.border = '1px solid #dee2e6';
+    });
+    
+    // Apply PDF-specific text styles
+    const allElements = contentClone.querySelectorAll('*');
+    allElements.forEach(el => {
+        const computedStyle = window.getComputedStyle(el);
+        if (computedStyle.fontSize) {
+            const currentSize = parseFloat(computedStyle.fontSize);
+            if (currentSize > 12) {
+                el.style.fontSize = '12px';
+            }
+        }
+    });
+    
+    // Add the clone to temporary container
+    tempContainer.appendChild(contentClone);
+    document.body.appendChild(tempContainer);
+    
+    // Use html2canvas to capture the content
+    html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: tempContainer.offsetWidth,
+        height: tempContainer.offsetHeight,
+        windowWidth: tempContainer.scrollWidth,
+        windowHeight: tempContainer.scrollHeight
+    }).then(function(canvas) {
+        // Create PDF with proper dimensions
+        const pdf = new jspdf.jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        // Add image to PDF
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        
+        // Download the PDF with proper filename
+        pdf.save('invoice-<?= $invoice['invoice_id'] ?>.pdf');
+        
+        // Clean up
+        document.body.removeChild(tempContainer);
+        
+        // Reset button
+        loadingBtn.innerHTML = originalText;
+        loadingBtn.disabled = false;
+        
+    }).catch(function(error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF. Please try again.');
+        
+        // Clean up on error
+        if (document.body.contains(tempContainer)) {
+            document.body.removeChild(tempContainer);
+        }
+        
+        loadingBtn.innerHTML = originalText;
+        loadingBtn.disabled = false;
+    });
+    
+    // Prevent default link behavior
+    if (event) {
+        event.preventDefault();
+    }
+    return false;
+}
 	</script>
 <script>
 function sendInvoiceEmail(invoiceId) {
