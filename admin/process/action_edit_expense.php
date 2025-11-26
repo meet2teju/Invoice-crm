@@ -85,7 +85,7 @@ $update = "
     // -------- 3. Success Message --------
     $_SESSION['message'] = "Expense updated successfully.";
     $_SESSION['message_type'] = "success";
-    header("Location: ../expense.php");
+    header("Location: ../edit-expense.php?id=$expense_id");
     exit();
 
 } else {
