@@ -127,12 +127,12 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
                             <i class="isax isax-filter me-1"></i>Filter
                         </a>
                        <!-- Export Dropdown -->
-               <div class="dropdown d-inline-block me-2">
+               <!-- <div class="dropdown d-inline-block me-2">
                 <a href="#" class="btn btn-outline-white d-inline-flex align-items-center" data-bs-toggle="dropdown">
                     <i class="isax isax-export-1 me-1"></i> Export
                 </a>
                 <ul class="dropdown-menu p-3" style="min-width: 250px;">
-                    <!-- Export Client -->
+                    <!-- Export Client --
                     <li>
                     <a href="#" class="dropdown-item fw-semibold toggle-submenu" data-target="#exportClient">Export Client</a>
                     <ul class="collapse list-unstyled ps-3 mt-1" id="exportClient">
@@ -141,7 +141,7 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
                     </ul>
                     </li>
 
-                    <!-- Export Contact Person -->
+                    <!-- Export Contact Person --
                     <li>
                     <a href="#" class="dropdown-item fw-semibold toggle-submenu" data-target="#exportContact">Export Contact Person</a>
                     <ul class="collapse list-unstyled ps-3 mt-1" id="exportContact">
@@ -150,7 +150,7 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
                     </ul>
                     </li>
 
-                    <!-- Export Current View -->
+                    <!-- Export Current View --
                     <li>
                     <a href="#" class="dropdown-item fw-semibold toggle-submenu" data-target="#exportCurrent">Current View</a>
                     <ul class="collapse list-unstyled ps-3 mt-1" id="exportCurrent">
@@ -159,7 +159,7 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
                     </ul>
                     </li>
                 </ul>
-                    </div>
+                    </div> -->
 
                 <!-- Import Dropdown -->
                 <div class="dropdown d-inline-block">
@@ -171,6 +171,10 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
                         <!-- <li><a class="dropdown-item" href="import_contact_excel.php">Import Contacts</a></li> -->
                     </ul>
                 </div>
+                    <!-- Multiple Delete Button -->
+            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
+                <i class="fa-regular fa-trash-can me-1"></i>Delete
+            </a>
                 <?php if (check_is_access_new("add_client") == 1) { ?> 
                         <div>
                             <a href="add-customer.php" class="btn btn-primary d-flex align-items-center">
@@ -269,10 +273,7 @@ $balance_query = mysqli_query($conn, "SELECT DISTINCT current_amount FROM client
                 </div>
             <?php endif; ?>
 
-            <!-- Multiple Delete Button -->
-            <a href="#" class="btn btn-outline-danger delete-multiple d-none">
-                <i class="fa-regular fa-trash-can me-1"></i>Delete
-            </a>
+        
         </div>
     </div>
 </div>
