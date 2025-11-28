@@ -331,9 +331,18 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 							<div class="d-flex align-items-center justify-content-between flex-wrap row-gap-3 mb-3 no-print">
 								<h6>Invoice Detail</h6>
 								<div class="d-flex align-items-center flex-wrap row-gap-3">
-									<a href="javascript:void(0);" onclick="downloadInvoiceAsPDF(event)" class="btn btn-outline-white d-inline-flex align-items-center me-3">
-										<i class="isax isax-document-download me-1"></i>Download PDF
-									</a>
+								
+                                   <!-- <a href="invoice-pdfview.php?id=<?= $invoiceId ?>" class="btn btn-outline-white d-inline-flex align-items-center me-3" target="_blank"  download>
+                                        <i class="isax isax-document-download me-1"></i>Download PDF
+                                    </a> -->
+                                   
+<!-- <a href="generate-invoice-pdf.php?id=<?= $invoiceId ?>" class="btn btn-outline-white d-inline-flex align-items-center me-3">
+    <i class="isax isax-document-download me-1"></i>Download PDF
+</a> -->
+
+<a href="generate-invoice-pdf.php?id=<?= $invoiceId ?>" class="btn btn-outline-white d-inline-flex align-items-center me-3">
+    <i class="isax isax-document-download me-1"></i>Download PDF
+</a>
 									<a href="process/action_send_invoice_email.php?invoice_id=<?= $invoiceId ?>" 
 										class="btn btn-outline-white d-inline-flex align-items-center me-3">
 											<i class="isax isax-message-notif me-1"></i>Send Email
@@ -743,166 +752,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 
 	<?php include 'layouts/vendor-scripts.php'; ?>
 
-	<script>
-	// Fixed Function to download invoice as PDF with proper formatting - EXACTLY LIKE QUOTATION FILE
-function downloadInvoiceAsPDF(event) {
-    // Get the element to convert to PDF
-    const element = document.getElementById('pdf-content');
-    
-    // Get the button that was clicked to show loading state
-    const loadingBtn = event.currentTarget;
-    const originalText = loadingBtn.innerHTML;
-    loadingBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Generating PDF...';
-    loadingBtn.disabled = true;
-    
-    // Create a temporary container for PDF generation
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'fixed';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.top = '0';
-    tempContainer.style.width = '210mm'; // A4 width
-    tempContainer.style.minHeight = '297mm'; // A4 height
-    tempContainer.style.padding = '20mm';
-    tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.boxSizing = 'border-box';
-    tempContainer.style.fontFamily = 'Arial, sans-serif';
-    
-    // Clone the content
-    const contentClone = element.cloneNode(true);
-    
-    // Apply PDF-specific styles to the clone
-    contentClone.style.width = '100%';
-    contentClone.style.margin = '0';
-    contentClone.style.padding = '0';
-    contentClone.style.backgroundColor = 'white';
-    
-    // Show PDF header in clone - EXACTLY LIKE QUOTATION FILE
-    const pdfHeader = contentClone.querySelector('.pdf-header');
-    if (pdfHeader) {
-        pdfHeader.style.display = 'flex';
-        pdfHeader.style.marginBottom = '20px';
-        pdfHeader.style.borderBottom = '2px solid #333';
-        pdfHeader.style.paddingBottom = '10px';
-    }
-    
-    // Force logo size to match quotation file (150px x 80px)
-    const pdfLogo = contentClone.querySelector('.pdf-logo');
-    if (pdfLogo) {
-        pdfLogo.style.maxWidth = '150px';
-        pdfLogo.style.maxHeight = '80px';
-        pdfLogo.style.width = 'auto';
-        pdfLogo.style.height = 'auto';
-    }
-    
-    // Hide elements that shouldn't be in PDF
-    const noPdfElements = contentClone.querySelectorAll('.no-pdf');
-    noPdfElements.forEach(el => {
-        el.style.display = 'none';
-    });
-    
-    // Hide invoice details section
-    const invoiceDetails = contentClone.querySelector('.invoice-details-section');
-    if (invoiceDetails) {
-        invoiceDetails.style.display = 'none';
-    }
-    
-    // Hide company logo section (we're using PDF header instead)
-    const companyLogo = contentClone.querySelector('.company-logo-section');
-    if (companyLogo) {
-        companyLogo.style.display = 'none';
-    }
-    
-    // Apply PDF-specific table styles
-    const tables = contentClone.querySelectorAll('table');
-    tables.forEach(table => {
-        table.style.width = '100%';
-        table.style.fontSize = '11px';
-        table.style.borderCollapse = 'collapse';
-    });
-    
-    const tableHeaders = contentClone.querySelectorAll('thead');
-    tableHeaders.forEach(header => {
-        header.style.backgroundColor = '#2c3e50';
-        header.style.color = 'white';
-    });
-    
-    const tableCells = contentClone.querySelectorAll('th, td');
-    tableCells.forEach(cell => {
-        cell.style.padding = '8px';
-        cell.style.border = '1px solid #dee2e6';
-    });
-    
-    // Apply PDF-specific text styles
-    const allElements = contentClone.querySelectorAll('*');
-    allElements.forEach(el => {
-        const computedStyle = window.getComputedStyle(el);
-        if (computedStyle.fontSize) {
-            const currentSize = parseFloat(computedStyle.fontSize);
-            if (currentSize > 12) {
-                el.style.fontSize = '12px';
-            }
-        }
-    });
-    
-    // Add the clone to temporary container
-    tempContainer.appendChild(contentClone);
-    document.body.appendChild(tempContainer);
-    
-    // Use html2canvas to capture the content
-    html2canvas(tempContainer, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: tempContainer.offsetWidth,
-        height: tempContainer.offsetHeight,
-        windowWidth: tempContainer.scrollWidth,
-        windowHeight: tempContainer.scrollHeight
-    }).then(function(canvas) {
-        // Create PDF with proper dimensions
-        const pdf = new jspdf.jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-        
-        const imgData = canvas.toDataURL('image/png');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        // Add image to PDF
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        
-        // Download the PDF with proper filename
-        pdf.save('invoice-<?= $invoice['invoice_id'] ?>.pdf');
-        
-        // Clean up
-        document.body.removeChild(tempContainer);
-        
-        // Reset button
-        loadingBtn.innerHTML = originalText;
-        loadingBtn.disabled = false;
-        
-    }).catch(function(error) {
-        console.error('Error generating PDF:', error);
-        alert('Error generating PDF. Please try again.');
-        
-        // Clean up on error
-        if (document.body.contains(tempContainer)) {
-            document.body.removeChild(tempContainer);
-        }
-        
-        loadingBtn.innerHTML = originalText;
-        loadingBtn.disabled = false;
-    });
-    
-    // Prevent default link behavior
-    if (event) {
-        event.preventDefault();
-    }
-    return false;
-}
-	</script>
+	
 <script>
 function sendInvoiceEmail(invoiceId) {
     fetch('process/action_send_invoice_email.php', {
