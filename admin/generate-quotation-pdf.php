@@ -191,8 +191,11 @@ $html = '<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Quotation ' . htmlspecialchars($quotation['quotation_id']) . '</title>
+    <title>Quotation ' . htmlspecialchars($invoice['invoice_id']) . '</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -206,8 +209,8 @@ $html = '<!DOCTYPE html>
 
         body {
             background: #fff;
-            font-family: Arial, sans-serif;
-            color: #0a0a0aff;
+            font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-size: 14px;
             line-height: 1.4;
         }
@@ -226,26 +229,29 @@ $html = '<!DOCTYPE html>
         }
 
         .invoice-title {
-            color: #2c3e50;
+        font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-weight: bold;
             font-size: 24px;
             margin: 0;
         }
 
         .invoice-top {
-            border-top: 1px solid #ccc;
-            border-bottom: 1px solid #ccc;
+            border-top: 1px solid #cfcfcf;
+            border-bottom: 1px solid #cfcfcf;
             padding: 10px;
-            margin: 15px 0;
+            margin: 10px 0;
         }
 
         .tittle-text {
-            color: #2c3e50;
+        font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-weight: bold;
             font-size: 16px;
         }
 
         .to-title {
+        font-family: "Instrument Sans", sans-serif;
             color: #000;
             font-weight: 600;
             font-size: 14px;
@@ -257,13 +263,15 @@ $html = '<!DOCTYPE html>
         }
 
         .address-deatils-box {
+        font-family: "Instrument Sans", sans-serif;
             color: #5d6772;
             font-weight: 500;
-            font-size: 12px;
+            font-size: 14px;
         }
 
         .bank-deatils-title {
-            color: #2c3e50;
+        font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-weight: 500;
             font-size: 16px;
         }
@@ -275,46 +283,50 @@ $html = '<!DOCTYPE html>
         }
 
         .table th, .table td {
+        font-family: "Instrument Sans", sans-serif;
             padding: 6px;
-            border: 1px solid #ddd;
-            font-size: 11px;
+            font-size: 14px;
+            border: 1px solid #cfcfcf;
         }
 
         .table .bg-light {
-            background-color: #2c3e50 !important;
+            background-color: #000 !important;
             color: white !important;
         }
 
         .bank-details-ul {
+        font-family: "Instrument Sans", sans-serif;
             list-style: none;
             padding-left: 0;
-            font-size: 11px;
+            font-size: 14px;
         }
 
         .bank-details-ul li {
             margin-bottom: 4px;
         }
 
-        .subtotal-box {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-            font-size: 11px;
+        .subtotal-box{
+           text-align: right;
         }
 
-        .subtotal-box h4 {
-            color: #2c3e50;
+        .subtotal-box .subtotal-title {
+         font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-weight: 500;
             margin-bottom: 0;
+            text-align: right;
         }
 
-        .subtotal-box p {
+        .subtotal-box .subtotal-amount {
+         font-family: "Instrument Sans", sans-serif;
             color: #5d6772;
             font-weight: 500;
             margin-bottom: 0;
+            text-align: right;
         }
 
         .terms-conditions-title {
+        font-family: "Instrument Sans", sans-serif;
             color: #000;
             font-weight: 500;
             font-size: 14px;
@@ -322,14 +334,16 @@ $html = '<!DOCTYPE html>
         }
 
         .terms-conditions {
+        font-family: "Instrument Sans", sans-serif;
             background-color: #ddeeff;
             border-radius: 4px;
             padding: 10px;
             margin-top: 15px;
-            font-size: 11px;
+            font-size: 14px;
         }
         
         .gst-badge {
+        font-family: "Instrument Sans", sans-serif;
             font-size: 10px;
             padding: 2px 6px;
             border-radius: 3px;
@@ -360,20 +374,14 @@ $html = '<!DOCTYPE html>
 
         .billing-from, .billing-to {
             display: table-cell;
-            width: 50%;
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #e9ecef;
             vertical-align: top;
         }
 
         .billing-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #2c3e50;
-            padding-bottom: 3px;
+        font-family: "Instrument Sans", sans-serif;
+            color: #000;
+            font-weight: 700;
+            font-size: 18px;
         }
 
         .header-table {
@@ -394,19 +402,17 @@ $html = '<!DOCTYPE html>
         .mb-3 { margin-bottom: 15px; }
         .mt-3 { margin-top: 15px; }
         
-        .bank-details-section {
-            margin-bottom: 15px;
-        }
         
         .bank-detail-row {
+        font-family: "Instrument Sans", sans-serif;
             display: flex;
             margin-bottom: 4px;
-            font-size: 11px;
+            font-size: 14px;
         }
         
         .bank-detail-label {
             font-weight: 600;
-            color: #2c3e50;
+            color: #000;
             min-width: 100px;
         }
         
@@ -422,15 +428,16 @@ $html = '<!DOCTYPE html>
         }
         
         .total-row {
+        font-family: "Instrument Sans", sans-serif;
             display: flex;
             justify-content: space-between;
             margin-bottom: 6px;
-            font-size: 11px;
+            font-size: 14px;
         }
         
         .total-label {
             font-weight: 600;
-            color: #2c3e50;
+            color: #000;
         }
         
         .total-value {
@@ -439,18 +446,20 @@ $html = '<!DOCTYPE html>
         }
         
         .total-main {
+        font-family: "Instrument Sans", sans-serif;
             border-top: 1px solid #ddd;
             padding-top: 8px;
             margin-top: 8px;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 14px;
         }
         
         .words-section {
+        font-family: "Instrument Sans", sans-serif;
             margin-top: 10px;
             padding-top: 10px;
             border-top: 1px dashed #ddd;
-            font-size: 11px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -458,7 +467,7 @@ $html = '<!DOCTYPE html>
     <div class="main-body">
         <table class="header-table">
             <tr>
-                <td width="60%">';
+                <td width="60%" vertical-align: middle;>';
                 
 if (!empty($logoPath)) {
     $html .= '<img src="' . $logoPath . '" class="logo" alt="logo">';
@@ -467,10 +476,8 @@ if (!empty($logoPath)) {
 }
 
 $html .= '</td>
-                <td width="40%" class="text-right">
+                <td width="40%" class="text-right" vertical-align: middle;>
                     <h1 class="invoice-title">QUOTATION</h1>
-                    <p class="mb-1"><strong>Quotation No:</strong> ' . htmlspecialchars($quotation['quotation_id']) . '</p>
-                    <p class="mb-1"><strong>Date:</strong> ' . htmlspecialchars($quotation['quotation_date']) . '</p>
                 </td>
             </tr>
         </table>
@@ -497,50 +504,50 @@ $html .= '</td>
                     <div class="to-title">' . htmlspecialchars($company['name'] ?? '') . '</div>';
                     
 if (!empty($company['address'])) {
-    $html .= '<p class="address-deatils-box mb-1">' . htmlspecialchars($company['address'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box mb-0">' . htmlspecialchars($company['address'] ?? '') . '</div>';
 }
 
 if (!empty($company['city_name']) || !empty($company['state_name']) || !empty($company['country_name']) || !empty($company['zipcode'])) {
-    $html .= '<p class="address-deatils-box mb-1">' . 
+    $html .= '<div class="address-deatils-box">' . 
         htmlspecialchars($company['city_name'] ?? '') . ', ' . 
         htmlspecialchars($company['state_name'] ?? '') . ', ' . 
         htmlspecialchars($company['country_name'] ?? '') . ', ' . 
         htmlspecialchars($company['zipcode'] ?? '') . 
-    '</p>';
+    '</div>';
 }
 
 if (!empty($company['mobile_number'])) {
-    $html .= '<p class="address-deatils-box mb-1"><strong>Phone:</strong> ' . htmlspecialchars($company['mobile_number'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box"><span class="bold-text">Phone:</span> ' . htmlspecialchars($company['mobile_number'] ?? '') . '</div>';
 }
 
 if (!empty($company['email'])) {
-    $html .= '<p class="address-deatils-box mb-1"><strong>Email:</strong> ' . htmlspecialchars($company['email'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box"><span class="bold-text">Email:</span> ' . htmlspecialchars($company['email'] ?? '') . '</div>';
 }
 
 $html .= '</div>
                 <div class="billing-to">
-                    <div class="billing-title">Billing To</div>
-                    <div class="to-title">' . htmlspecialchars($quotation['first_name'] ?? '') . ' ' . htmlspecialchars($quotation['last_name'] ?? '') . '</div>';
+                    <div class="billing-title text-right">Billing To</div>
+                    <div class="to-title text-right">' . htmlspecialchars($quotation['first_name'] ?? '') . ' ' . htmlspecialchars($quotation['last_name'] ?? '') . '</div>';
                     
 if (!empty($client_address['billing_address1'])) {
-    $html .= '<p class="address-deatils-box mb-1">' . htmlspecialchars($client_address['billing_address1'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box mb-0 text-right">' . htmlspecialchars($client_address['billing_address1'] ?? '') . '</div>';
 }
 
 if (!empty($client_address['city_name']) || !empty($client_address['state_name']) || !empty($client_address['country_name']) || !empty($client_address['billing_pincode'])) {
-    $html .= '<p class="address-deatils-box mb-1">' . 
+    $html .= '<div class="address-deatils-box text-right">' . 
         htmlspecialchars($client_address['city_name'] ?? '') . ', ' . 
         htmlspecialchars($client_address['state_name'] ?? '') . ', ' . 
         htmlspecialchars($client_address['country_name'] ?? '') . ', ' . 
         htmlspecialchars($client_address['billing_pincode'] ?? '') . 
-    '</p>';
+    '</div>';
 }
 
 if (!empty($quotation['phone_number'])) {
-    $html .= '<p class="address-deatils-box mb-1"><strong>Phone:</strong> ' . htmlspecialchars($quotation['phone_number'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box text-right"><span class="bold-text">Phone:</span> ' . htmlspecialchars($quotation['phone_number'] ?? '') . '</div>';
 }
 
 if (!empty($quotation['email'])) {
-    $html .= '<p class="address-deatils-box mb-1"><strong>Email:</strong> ' . htmlspecialchars($quotation['email'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box text-right"><span class="bold-text">Email:</span> ' . htmlspecialchars($quotation['email'] ?? '') . '</div>';
 }
 
 $html .= '</div>
@@ -548,7 +555,7 @@ $html .= '</div>
         </div>
 
         <div class="mb-3">
-            <h4 style="color: #2c3e50; margin-bottom: 10px;">Product / Service Items</h4>
+           <h4 class="billing-title">Product / Service Items</h4>
             <table class="table">
                 <thead>
                     <tr class="bg-light">
@@ -611,55 +618,44 @@ $html .= '</tbody>
         <div style="border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 15px;">
             <table width="100%">
                 <tr>
-                    <td width="50%" style="vertical-align: top;">';
-                    
-if ($showTerms) {
-    $html .= '<div class="bank-details-section">
-                <h5 class="bank-deatils-title">Terms & Conditions</h5>
-                <p class="address-deatils-box">' . htmlspecialchars($quotation['description']) . '</p>
-            </div>';
-}
-
-$html .= '</td>
-                    <td width="50%" style="vertical-align: top;">
-                        <div style="max-width: 300px; margin-left: auto;">
-                            <div class="total-row">
-                                <span class="total-label">Sub Amount:</span>
-                                <span class="total-value">$' . number_format($subtotal, 2) . '</span>
-                            </div>';
+                    <td width="50%" style="vertical-align: top;"></td>
+                    <td width="50%" style="vertical-align: top;" text-align: right;">
+                        <table style="width:100%;">
+                            <tr class="subtotal-box">
+                                <td class="subtotal-title">Sub Amount:</td>
+                                <td class="subtotal-amount">$' . number_format($subtotal, 2) . '</td>
+                            </tr>';
                             
 if (($quotation['gst_type'] ?? 'gst') === 'non_gst') {
-    $html .= '<div class="total-row">
-                    <span class="total-label">Tax (Non-GST):</span>
-                    <span class="total-value">$0.00</span>
-                </div>';
+    $html .= '<tr class="subtotal-box">
+                    <td class="subtotal-title">Tax (Non-GST):</td>
+                    <td class="subtotal-amount">$0.00</td>
+                </tr>';
 } else {
     foreach ($taxSummary as $taxLabel => $taxAmount) {
-        $html .= '<div class="total-row">
-                        <span class="total-label">' . $taxLabel . ':</span>
-                        <span class="total-value">$' . number_format($taxAmount, 2) . '</span>
-                    </div>';
+        $html .= '<tr class="subtotal-box">
+                        <td class="subtotal-title">' . $taxLabel . ':</td>
+                        <td class="subtotal-amount">$' . number_format($taxAmount, 2) . '</td>
+                    </tr>';
     }
 }
 
 if (!empty($quotation['shipping_charge']) && $quotation['shipping_charge'] > 0) {
-    $html .= '<div class="total-row">
-                    <span class="total-label">Shipping Charge:</span>
-                    <span class="total-value">$' . number_format($quotation['shipping_charge'], 2) . '</span>
-                </div>';
+    $html .= '<tr class="subtotal-box">
+                    <td class="subtotal-title">Shipping Charge:</td>
+                    <td class="subtotal-amount">$' . number_format($quotation['shipping_charge'], 2) . '</td>
+                </tr>';
 }
 
-$html .= '<div class="total-row total-main">
-                    <span class="total-label">Total:</span>
-                    <span class="total-value">$' . number_format($quotation['total_amount'], 2) . '</span>
-                </div>
-                
-               <div class="words-section">
-                    <div class="total-row">
-                        <span class="total-label">Total In Words:</span>
-                        <span class="total-value" style="font-size: 11px; color: #5d6772; font-weight: 500;">' . numberToWords($quotation['total_amount']) . ' Dollars</span>
-                    </div>
-                </div>
+$html .= '<tr class="subtotal-box">
+                    <td class="subtotal-title">Total:</td>
+                    <td class="subtotal-amount">$' . number_format($quotation['total_amount'], 2) . '</td>
+                </tr>
+            </table>
+
+            <div class="address-deatils-box text-right">
+                <span class="bold-text">Total In Words:</span>
+                 ' . numberToWords($quotation['total_amount']) . ' Dollars
             </div>
         </td>';
 
@@ -673,6 +669,14 @@ if ($showNotes) {
             <p>' . htmlspecialchars($quotation['client_note']) . '</p>
         </div>';
 }
+                
+if ($showTerms) {
+    $html .= '<div class="terms-conditions">
+                <p class="terms-conditions-title">Terms & Conditions</p>
+                <p>' . htmlspecialchars($quotation['description']) . '</p>
+            </div>';
+}
+
 
 $html .= '</div>
 </body>

@@ -564,7 +564,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 										<div class="border-bottom mb-3">
 
 											<!-- start row -->
-											<div class="row">
+											<div class="row justify-content-between">
 												<div class="col-lg-6">
 													<?php if ($showBankDetails): ?>
 														<div class="d-flex align-items-center p-4 mb-3">
@@ -594,7 +594,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 														</div>
 													<?php endif; ?>
 												</div><!-- end col -->
-												<div class="col-lg-6">
+												<div class="col-lg-4">
 													<div class="mb-3 p-4">
 														<div class="d-flex align-items-center justify-content-between mb-3">
 															<h6 class="fs-14 fw-semibold">Sub Amount</h6>

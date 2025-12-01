@@ -14,7 +14,7 @@ if ($invoice_id <= 0) {
     die('Invalid Invoice ID!');
 }
 
-// Fetch all your data (same as your existing code)
+// Fetch invoice data
 $invoice_result = mysqli_query($conn, "
     SELECT i.*, l.name AS salesperson_name
     FROM invoice i
@@ -65,14 +65,25 @@ $items_result = mysqli_query($conn, "
 
 // Check quantity column
 $showQuantityColumn = false;
-mysqli_data_seek($items_result, 0);
+$hasItems = false;
+$itemCount = 0;
+
+// Store items in array first
+$items = [];
 while ($item = mysqli_fetch_assoc($items_result)) {
+    $items[] = $item;
     if (!is_null($item['quantity']) && $item['quantity'] > 0) {
         $showQuantityColumn = true;
-        break;
     }
+    $itemCount++;
 }
-mysqli_data_seek($items_result, 0);
+$hasItems = ($itemCount > 0);
+
+// Calculate column count
+$colCount = 6; // #, Product/Service, HSN Code, Selling Price, Tax, Amount
+if ($showQuantityColumn) {
+    $colCount = 7; // Add QTY/Hours column
+}
 
 // Fetch client address
 $client_address = null;
@@ -168,14 +179,14 @@ if (!empty($company['invoice_logo']) && file_exists('../uploads/' . $company['in
     $logoPath = getAbsolutePath('../uploads/' . $company['company_logo']);
 }
 
-// Start building HTML (YOUR EXACT HTML TEMPLATE)
+// Start building HTML
 $html = '<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <title>Invoice ' . htmlspecialchars($invoice['invoice_id']) . '</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
     <style>
@@ -191,8 +202,8 @@ $html = '<!DOCTYPE html>
 
         body {
             background: #fff;
-            font-family: Arial, sans-serif;
-            color: #0a0a0aff;
+            font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-size: 14px;
             line-height: 1.4;
         }
@@ -211,26 +222,29 @@ $html = '<!DOCTYPE html>
         }
 
         .invoice-title {
-            color: #2c3e50;
+        font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-weight: bold;
             font-size: 24px;
             margin: 0;
         }
 
         .invoice-top {
-            border-top: 1px solid #ccc;
-            border-bottom: 1px solid #ccc;
+            border-top: 1px solid #cfcfcf;
+            border-bottom: 1px solid #cfcfcf;
             padding: 10px;
-            margin: 15px 0;
+            margin: 10px 0;
         }
 
         .tittle-text {
-            color: #2c3e50;
+        font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-weight: bold;
             font-size: 16px;
         }
 
         .to-title {
+        font-family: "Instrument Sans", sans-serif;
             color: #000;
             font-weight: 600;
             font-size: 14px;
@@ -242,13 +256,15 @@ $html = '<!DOCTYPE html>
         }
 
         .address-deatils-box {
+        font-family: "Instrument Sans", sans-serif;
             color: #5d6772;
             font-weight: 500;
-            font-size: 12px;
+            font-size: 14px;
         }
 
         .bank-deatils-title {
-            color: #2c3e50;
+        font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-weight: 500;
             font-size: 16px;
         }
@@ -260,46 +276,50 @@ $html = '<!DOCTYPE html>
         }
 
         .table th, .table td {
+        font-family: "Instrument Sans", sans-serif;
             padding: 6px;
-            border: 1px solid #ddd;
-            font-size: 11px;
+            font-size: 14px;
+            border: 1px solid #cfcfcf;
         }
 
         .table .bg-light {
-            background-color: #2c3e50 !important;
+            background-color: #000 !important;
             color: white !important;
         }
 
         .bank-details-ul {
+        font-family: "Instrument Sans", sans-serif;
             list-style: none;
             padding-left: 0;
-            font-size: 11px;
+            font-size: 14px;
         }
 
         .bank-details-ul li {
             margin-bottom: 4px;
         }
 
-        .subtotal-box {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-            font-size: 11px;
+        .subtotal-box{
+           text-align: right;
         }
 
-        .subtotal-box h4 {
-            color: #2c3e50;
+        .subtotal-box .subtotal-title {
+         font-family: "Instrument Sans", sans-serif;
+            color: #000;
             font-weight: 500;
             margin-bottom: 0;
+            text-align: right;
         }
 
-        .subtotal-box p {
+        .subtotal-box .subtotal-amount {
+         font-family: "Instrument Sans", sans-serif;
             color: #5d6772;
             font-weight: 500;
             margin-bottom: 0;
+            text-align: right;
         }
 
         .terms-conditions-title {
+        font-family: "Instrument Sans", sans-serif;
             color: #000;
             font-weight: 500;
             font-size: 14px;
@@ -307,14 +327,16 @@ $html = '<!DOCTYPE html>
         }
 
         .terms-conditions {
+        font-family: "Instrument Sans", sans-serif;
             background-color: #ddeeff;
             border-radius: 4px;
             padding: 10px;
             margin-top: 15px;
-            font-size: 11px;
+            font-size: 14px;
         }
         
         .gst-badge {
+        font-family: "Instrument Sans", sans-serif;
             font-size: 10px;
             padding: 2px 6px;
             border-radius: 3px;
@@ -345,20 +367,14 @@ $html = '<!DOCTYPE html>
 
         .billing-from, .billing-to {
             display: table-cell;
-            width: 50%;
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #e9ecef;
             vertical-align: top;
         }
 
         .billing-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #2c3e50;
-            padding-bottom: 3px;
+        font-family: "Instrument Sans", sans-serif;
+            color: #000;
+            font-weight: 700;
+            font-size: 18px;
         }
 
         .header-table {
@@ -379,19 +395,17 @@ $html = '<!DOCTYPE html>
         .mb-3 { margin-bottom: 15px; }
         .mt-3 { margin-top: 15px; }
         
-        .bank-details-section {
-            margin-bottom: 15px;
-        }
         
         .bank-detail-row {
+        font-family: "Instrument Sans", sans-serif;
             display: flex;
             margin-bottom: 4px;
-            font-size: 11px;
+            font-size: 14px;
         }
         
         .bank-detail-label {
             font-weight: 600;
-            color: #2c3e50;
+            color: #000;
             min-width: 100px;
         }
         
@@ -407,15 +421,16 @@ $html = '<!DOCTYPE html>
         }
         
         .total-row {
+        font-family: "Instrument Sans", sans-serif;
             display: flex;
             justify-content: space-between;
             margin-bottom: 6px;
-            font-size: 11px;
+            font-size: 14px;
         }
         
         .total-label {
             font-weight: 600;
-            color: #2c3e50;
+            color: #000;
         }
         
         .total-value {
@@ -424,18 +439,20 @@ $html = '<!DOCTYPE html>
         }
         
         .total-main {
+        font-family: "Instrument Sans", sans-serif;
             border-top: 1px solid #ddd;
             padding-top: 8px;
             margin-top: 8px;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 14px;
         }
         
         .words-section {
+        font-family: "Instrument Sans", sans-serif;
             margin-top: 10px;
             padding-top: 10px;
             border-top: 1px dashed #ddd;
-            font-size: 11px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -443,19 +460,17 @@ $html = '<!DOCTYPE html>
     <div class="main-body">
         <table class="header-table">
             <tr>
-                <td width="60%">';
+                <td width="60%" vertical-align: middle;>';
                 
 if (!empty($logoPath)) {
     $html .= '<img src="' . $logoPath . '" class="logo" alt="logo">';
 } else {
-    $html .= '<h2 style="margin:0; color: #2c3e50;">' . htmlspecialchars($company['name'] ?? 'Company Name') . '</h2>';
+    $html .= '<h2 style="margin:0; color: #000;">' . htmlspecialchars($company['name'] ?? 'Company Name') . '</h2>';
 }
 
 $html .= '</td>
-                <td width="40%" class="text-right">
+                <td width="40%" class="text-right" vertical-align: middle;>
                     <h1 class="invoice-title">INVOICE</h1>
-                    <p class="mb-1"><strong>Invoice No:</strong> ' . htmlspecialchars($invoice['invoice_id']) . '</p>
-                    <p class="mb-1"><strong>Date:</strong> ' . htmlspecialchars($invoice['invoice_date']) . '</p>
                 </td>
             </tr>
         </table>
@@ -482,50 +497,50 @@ $html .= '</td>
                     <div class="to-title">' . htmlspecialchars($company['name'] ?? '') . '</div>';
                     
 if (!empty($company['address'])) {
-    $html .= '<p class="address-deatils-box mb-1">' . htmlspecialchars($company['address'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box mb-0">' . htmlspecialchars($company['address'] ?? '') . '</div>';
 }
 
 if (!empty($company['city_name']) || !empty($company['state_name']) || !empty($company['country_name']) || !empty($company['zipcode'])) {
-    $html .= '<p class="address-deatils-box mb-1">' . 
+    $html .= '<div class="address-deatils-box">' . 
         htmlspecialchars($company['city_name'] ?? '') . ', ' . 
         htmlspecialchars($company['state_name'] ?? '') . ', ' . 
         htmlspecialchars($company['country_name'] ?? '') . ', ' . 
         htmlspecialchars($company['zipcode'] ?? '') . 
-    '</p>';
+    '</div>';
 }
 
 if (!empty($company['mobile_number'])) {
-    $html .= '<p class="address-deatils-box mb-1"><strong>Phone:</strong> ' . htmlspecialchars($company['mobile_number'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box"><span class="bold-text">Phone:</span> ' . htmlspecialchars($company['mobile_number'] ?? '') . '</div>';
 }
 
 if (!empty($company['email'])) {
-    $html .= '<p class="address-deatils-box mb-1"><strong>Email:</strong> ' . htmlspecialchars($company['email'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box"><span class="bold-text">Email:</span> ' . htmlspecialchars($company['email'] ?? '') . '</div>';
 }
 
 $html .= '</div>
                 <div class="billing-to">
-                    <div class="billing-title">Billing To</div>
-                    <div class="to-title">' . htmlspecialchars($client['first_name'] ?? '') . '</div>';
+                    <div class="billing-title text-right">Billing To</div>
+                    <div class="to-title text-right">' . htmlspecialchars($client['first_name'] ?? '') . '</div>';
                     
 if (!empty($client_address['billing_address1'])) {
-    $html .= '<p class="address-deatils-box mb-1">' . htmlspecialchars($client_address['billing_address1'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box text-right mb-0">' . htmlspecialchars($client_address['billing_address1'] ?? '') . '</div>';
 }
 
 if (!empty($client_address['city_name']) || !empty($client_address['state_name']) || !empty($client_address['country_name']) || !empty($client_address['billing_pincode'])) {
-    $html .= '<p class="address-deatils-box mb-1">' . 
+    $html .= '<div class="address-deatils-box text-right">' . 
         htmlspecialchars($client_address['city_name'] ?? '') . ', ' . 
         htmlspecialchars($client_address['state_name'] ?? '') . ', ' . 
         htmlspecialchars($client_address['country_name'] ?? '') . ', ' . 
         htmlspecialchars($client_address['billing_pincode'] ?? '') . 
-    '</p>';
+    '</div>';
 }
 
 if (!empty($client['phone_number'])) {
-    $html .= '<p class="address-deatils-box mb-1"><strong>Phone:</strong> ' . htmlspecialchars($client['phone_number'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box text-right"><span class="bold-text">Phone:</span> ' . htmlspecialchars($client['phone_number'] ?? '') . '</div>';
 }
 
 if (!empty($client['email'])) {
-    $html .= '<p class="address-deatils-box mb-1"><strong>Email:</strong> ' . htmlspecialchars($client['email'] ?? '') . '</p>';
+    $html .= '<div class="address-deatils-box text-right"><span class="bold-text">Email:</span> ' . htmlspecialchars($client['email'] ?? '') . '</div>';
 }
 
 $html .= '</div>
@@ -533,40 +548,31 @@ $html .= '</div>
         </div>
 
         <div class="mb-3">
-            <h4 style="color: #2c3e50; margin-bottom: 10px;">Product / Service Items</h4>
+            <h4 class="billing-title">Product / Service Items</h4>
             <table class="table">
                 <thead>
-                    <tr class="bg-light">';
+                    <tr style="background-color: #000; color: white;">';
 
-if ($item_type == 1) {
-    $html .= '<th width="5%">#</th>
-              <th width="35%">Product/Service</th>
-              <th width="15%">HSN Code</th>';
-    if ($showQuantityColumn) {
-        $html .= '<th width="10%" class="text-center">QTY</th>';
-    }
-    $html .= '<th width="15%">Selling Price</th>
-              <th width="10%">Tax</th>
-              <th width="10%">Amount</th>';
-} else {
-    $html .= '<th width="5%">#</th>
-              <th width="35%">Service</th>
-              <th width="15%">HSN Code</th>';
-    if ($showQuantityColumn) {
-        $html .= '<th width="10%" class="text-center">Hours</th>';
-    }
-    $html .= '<th width="15%">Hourly Price</th>
-              <th width="10%">Tax</th>
-              <th width="10%">Amount</th>';
+// Build table headers with consistent structure
+$html .= '<th width="5%">#</th>
+          <th width="' . ($showQuantityColumn ? '30%' : '35%') . '">Product/Service</th>
+          <th width="15%">HSN Code</th>';
+
+if ($showQuantityColumn) {
+    $html .= '<th width="10%" class="text-center">' . ($item_type == 1 ? 'QTY' : 'Hours') . '</th>';
 }
+
+$html .= '<th width="15%">Selling Price</th>
+          <th width="10%">Tax</th>
+          <th width="' . ($showQuantityColumn ? '10%' : '15%') . '">Amount</th>';
 
 $html .= '</tr>
                 </thead>
                 <tbody>';
 
+// Add items to table
 $i = 1;
-mysqli_data_seek($items_result, 0);
-while($item = mysqli_fetch_assoc($items_result)) {
+foreach ($items as $item) {
     if (!empty($item['service_id'])) {
         $productName = !empty($item['service_product_name']) ? $item['service_product_name'] : '';
         $serviceName = !empty($item['service_name']) ? $item['service_name'] : '';
@@ -581,21 +587,26 @@ while($item = mysqli_fetch_assoc($items_result)) {
         <td>' . htmlspecialchars($item['code'] ?? 'N/A') . '</td>';
     
     if ($showQuantityColumn) {
-        $html .= '<td class="text-center">' . $item['quantity'] . '</td>';
+        $html .= '<td class="text-center">' . ($item['quantity'] ?? '0') . '</td>';
     }
     
-    $html .= '<td>$' . $item['selling_price'] . '</td>
+    $html .= '<td>$' . number_format($item['selling_price'], 2) . '</td>
         <td>';
     
     if (($invoice['gst_type'] ?? 'gst') === 'non_gst') {
         $html .= 'Non-GST';
     } else {
-        $html .= $item['tax_name'];
+        $html .= htmlspecialchars($item['tax_name'] ?? '');
     }
     
     $html .= '</td>
-        <td>$' . $item['amount'] . '</td>
+        <td>$' . number_format($item['amount'], 2) . '</td>
     </tr>';
+}
+
+// If no items, add a placeholder row with correct colspan
+if (!$hasItems) {
+    $html .= '<tr><td colspan="' . $colCount . '" style="text-align: center; padding: 20px;">No items found</td></tr>';
 }
 
 $html .= '</tbody>
@@ -607,26 +618,26 @@ $html .= '</tbody>
                 <tr>';
 
 if ($showBankDetails) {
-    $html .= '<td width="50%" style="vertical-align: top;">
+    $html .= '<td>
         <div class="bank-details-section">
-            <h5 class="bank-deatils-title">Bank Details</h5>';
+            <h5 class="terms-conditions-title">Bank Details</h5>';
     
     if (!empty($bank['bank_name'])) {
-        $html .= '<div class="bank-detail-row">
-                <span class="bank-detail-label">Bank Name:</span>
-                <span class="bank-detail-value">' . htmlspecialchars($bank['bank_name']) . '</span>
+        $html .= '<div class="address-deatils-box">
+                <span class="bold-text">Bank Name:</span>
+                 '. htmlspecialchars($bank['bank_name']) .'
             </div>';
     }
     if (!empty($bank['account_number'])) {
-        $html .= '<div class="bank-detail-row">
-                <span class="bank-detail-label">A/C No:</span>
-                <span class="bank-detail-value">' . htmlspecialchars($bank['account_number']) . '</span>
+        $html .= '<div class="address-deatils-box">
+                <span class="bold-text">A/C No:</span>
+                 '. htmlspecialchars($bank['account_number']) .'
             </div>';
     }
     if (!empty($bank['ifsc_code'])) {
-        $html .= '<div class="bank-detail-row">
-                <span class="bank-detail-label">IFSC Code:</span>
-                <span class="bank-detail-value">' . htmlspecialchars($bank['ifsc_code']) . '</span>
+        $html .= '<div class="address-deatils-box">
+                <span class="bold-text">IFSC Code:</span>
+                 '. htmlspecialchars($bank['ifsc_code']) .'
             </div>';
     }
     
@@ -636,46 +647,45 @@ if ($showBankDetails) {
     $totalsWidth = '100%';
 }
 
-$html .= '<td width="' . $totalsWidth . '" style="vertical-align: top;">
-        <div style="max-width: 300px; margin-left: auto;">
-            <div class="total-row">
-                <span class="total-label">Sub Amount:</span>
-                <span class="total-value">$' . $invoice['amount'] . '</span>
-            </div>';
+$html .= '<td width="' . $totalsWidth . '" style="vertical-align: top; text-align: right;">
+        <table style="width:100%;">
+            <tr class="subtotal-box">
+                <td class="subtotal-title">Sub Amount:</td>
+                <td class="subtotal-amount">$' . number_format($invoice['amount'], 2) . '</td>
+            </tr>';
             
 if (($invoice['gst_type'] ?? 'gst') === 'non_gst') {
-    $html .= '<div class="total-row">
-                <span class="total-label">Tax (Non-GST):</span>
-                <span class="total-value">$0.00</span>
-            </div>';
+    $html .= '<tr class="subtotal-box">
+                <td class="subtotal-title">Tax (Non-GST):</td>
+                <td class="subtotal-amount">$0.00</td>
+            </tr>';
 } else {
-    $html .= '<div class="total-row">
-                <span class="total-label">Tax Amount:</span>
-                <span class="total-value">$' . $invoice['tax_amount'] . '</span>
-            </div>';
+    $html .= '<tr class="subtotal-box">
+                <td class="subtotal-title">Tax Amount:</td>
+                <td class="subtotal-amount">$' . number_format($invoice['tax_amount'], 2) . '</td>
+            </tr>';
 }
 
 if (!empty($invoice['shipping_charge']) && $invoice['shipping_charge'] > 0) {
-    $html .= '<div class="total-row">
-                <span class="total-label">Shipping Charge:</span>
-                <span class="total-value">$' . $invoice['shipping_charge'] . '</span>
-            </div>';
+    $html .= '<tr class="subtotal-box">
+                <td class="subtotal-title">Shipping Charge:</td>
+                <td class="subtotal-amount">$' . number_format($invoice['shipping_charge'], 2) . '</td>
+            </tr>';
 }
 
-$html .= '<div class="total-row total-main">
-                <span class="total-label">Total:</span>
-                <span class="total-value">$' . $invoice['total_amount'] . '</span>
-            </div>
+$html .= '<tr class="subtotal-box">
+                <td class="subtotal-title">Total:</td>
+                <td class="subtotal-amount">$' . number_format($invoice['total_amount'], 2) . '</td>
+            </tr>
             
-            <div class="words-section">
-                <div class="total-row">
-                    <span class="total-label">Total In Words:</span>
-                </div>
-                <div style="font-size: 11px; color: #5d6772; font-weight: 500; margin-top: 4px;">
-                    ' . numberToWords($invoice['total_amount']) . ' Dollars
-                </div>
+           
+        </table>
+
+        <div class="address-deatils-box text-right">
+                <span class="bold-text">Total In Words:</span>
+                 ' . numberToWords($invoice['total_amount']) . ' Dollars
             </div>
-        </div>
+        
     </td>';
 
 $html .= '</tr>
@@ -701,29 +711,52 @@ $html .= '</div>
 </html>';
 
 // Configure DomPDF
-$options = new Options();
-$options->set('isRemoteEnabled', true);
-$options->set('isHtml5ParserEnabled', true);
-$options->set('isPhpEnabled', true);
+try {
+    $options = new Options();
+    $options->set('isRemoteEnabled', true);
+    $options->set('isHtml5ParserEnabled', true);
+    $options->set('isPhpEnabled', false);
+    $options->set('defaultFont', 'DejaVu Sans');
+    $options->set('debugLayout', false);
+    $options->set('debugLayoutLines', false);
+    $options->set('debugLayoutBlocks', false);
+    $options->set('debugLayoutInline', false);
+    $options->set('debugLayoutPaddingBox', false);
 
-$dompdf = new Dompdf($options);
-
-// Load HTML content
-$dompdf->loadHtml($html);
-
-// Set paper size and orientation
-$dompdf->setPaper('A4', 'portrait');
-
-// Render PDF
-$dompdf->render();
-
-// Clear any previous output
-ob_clean();
-
-// Output the PDF
-$dompdf->stream('Invoice_' . $invoice['invoice_id'] . '.pdf', [
-    'Attachment' => true
-]);
+    $dompdf = new Dompdf($options);
+    
+    // Set time limit for PDF generation
+    set_time_limit(120);
+    
+    // Load HTML content with UTF-8 encoding
+    $dompdf->loadHtml(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+    
+    // Set paper size and orientation
+    $dompdf->setPaper('A4', 'portrait');
+    
+    // Render PDF
+    $dompdf->render();
+    
+    // Clear output buffer
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    
+    // Output the PDF
+    $dompdf->stream('Invoice_' . $invoice['invoice_id'] . '.pdf', [
+        'Attachment' => true,
+        'compress' => true
+    ]);
+    
+} catch (Exception $e) {
+    // Handle DomPDF errors gracefully
+    ob_clean();
+    echo "<h3>Error Generating PDF</h3>";
+    echo "<p>An error occurred while generating the PDF. Please try again.</p>";
+    echo "<p>Error details: " . htmlspecialchars($e->getMessage()) . "</p>";
+    error_log("Dompdf Error: " . $e->getMessage());
+    exit;
+}
 
 exit;
 ?>
