@@ -128,7 +128,6 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 // Function to convert number to words
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -466,14 +465,23 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 												<?php endif; ?>
 											</div>
 
-											<!-- Bill To -->
+											<!-- Bill To - Updated section -->
 											<div class="billing-to">
 												<div class="billing-title">Billing To</div>
-												<div class="d-flex align-items-center mb-1">
-													<div>
-														<h6 class="fs-14 fw-semibold"><?= htmlspecialchars($client['first_name'] ??'') ?></h6>
-													</div>
-												</div>
+												<?php if (!empty($client['company_name'])): ?>
+													<h6 class="fs-14 fw-semibold mb-1"><?= htmlspecialchars($client['company_name']) ?></h6>
+												<?php endif; ?>
+												
+												<?php 
+												// Build client name from first_name and last_name
+												$client_name = '';
+												if (!empty($client['first_name']) || !empty($client['last_name'])) {
+													$client_name = trim(($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? ''));
+												}
+												if (!empty($client_name)): ?>
+													<p class="mb-1 fs-13"><span class="text-dark">Client:</span> <?= htmlspecialchars($client_name) ?></p>
+												<?php endif; ?>
+												
 												<?php if (!empty($client_address['billing_address1'])): ?>
 													<p class="mb-1"><?= htmlspecialchars($client_address['billing_address1'] ??'') ?></p>
 												<?php endif; ?>
@@ -494,8 +502,8 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 											<div class="table-responsive rounded border-bottom-0 border table-nowrap">
 												<table class="table m-0">
 													<thead class="table-dark" id="table-heading">
-														<?php if ($item_type == 1): ?>
-															<!-- Product Headings -->
+														
+														
 															<tr>
 																<th>#</th>
 																<th>Product/Service</th>
@@ -507,9 +515,9 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 																<th>Tax</th>
 																<th>Amount</th>
 															</tr>
-														<?php else: ?>
-															<!-- Service Headings -->
-															<tr>
+														
+														
+															<!--<tr>
 																<th>#</th>
 																<th>Service</th>
 																<th>HSN code</th>
@@ -519,8 +527,7 @@ $showBankDetails = $bank && (!empty($bank['bank_name']) || !empty($bank['account
 																<th>Hourly Price</th>
 																<th>Tax</th>
 																<th>Amount</th>
-															</tr>
-														<?php endif; ?>
+															</tr> -->
 													</thead>
 													
                                                     <tbody>
