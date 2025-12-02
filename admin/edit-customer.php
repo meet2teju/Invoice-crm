@@ -315,10 +315,10 @@ $contacts_query = "SELECT * FROM client_contact_persons WHERE client_id = $clien
                                                     <div class="col-md-6">
                                                         <h6 class="mb-3">Billing Address</h6>
                                                         <div class="row">
-                                                            <div class="col-12 mb-3">
+                                                            <!-- <div class="col-12 mb-3">
                                                                 <label class="form-label">Name</label>
                                                                 <input type="text" id="billing_name" class="form-control" name="billing_name" value="<?php echo htmlspecialchars($addressrow['billing_name']); ?>">
-                                                            </div>
+                                                            </div> -->
                                                             <div class="col-12 mb-3">
                                                                 <label class="form-label">Address Line 1</label>
                                                                 <input type="text" id="billing_address1" class="form-control" name="billing_address1" value="<?php echo htmlspecialchars($addressrow['billing_address1']); ?>">
@@ -386,10 +386,10 @@ $contacts_query = "SELECT * FROM client_contact_persons WHERE client_id = $clien
                                                      <i class="isax isax-document-copy me-1"></i>Copy From Billing</a> -->
                                                         </div>
                                                         <div class="row">
-                                                            <div class="col-12 mb-3">
+                                                            <!-- <div class="col-12 mb-3">
                                                                 <label class="form-label">Name</label>
                                                                 <input type="text" class="form-control" id="shipping_name" name="shipping_name" value="<?php echo htmlspecialchars($addressrow['shipping_name']); ?>">
-                                                            </div>
+                                                            </div> -->
                                                             <div class="col-12 mb-3">
                                                                 <label class="form-label">Address Line 1</label>
                                                                 <input type="text" class="form-control" id="shipping_address1" name="shipping_address1" value="<?php echo htmlspecialchars($addressrow['shipping_address1']); ?>">
