@@ -10,8 +10,8 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 
 $quotationId = intval($_GET['id']);
 
-// Fetch quotation info
-$sql = "SELECT q.*, c.first_name, c.last_name, c.email, c.customer_image 
+// Fetch quotation info - UPDATED TO INCLUDE COMPANY_NAME AND PHONE_NUMBER
+$sql = "SELECT q.*, c.first_name, c.last_name, c.email, c.customer_image, c.company_name, c.phone_number 
         FROM quotation q
         LEFT JOIN client c ON q.client_id = c.id
         WHERE q.id = $quotationId";
@@ -19,24 +19,6 @@ $result = mysqli_query($conn, $sql);
 $quotation = mysqli_fetch_assoc($result);
 
 // Fetch items with updated structure for products and services
-// $items_result = mysqli_query($conn, "
-//     SELECT 
-//         qi.*, 
-//         p.name AS product_name,
-//         p.code AS product_code,
-//         s.name AS service_name_from_product,
-//         s.code AS service_code,
-//         COALESCE(p.code, s.code) AS code, -- Get code from either product or service
-//         t.name AS tax_name, 
-//         t.rate AS tax_rate,
-//         qi.service_name,
-//         qi.rate AS item_tax_rate
-//     FROM quotation_item qi
-//     LEFT JOIN product p ON p.id = qi.product_id
-//     LEFT JOIN product s ON s.id = qi.service_id -- Join for services too
-//     LEFT JOIN tax t ON t.id = qi.tax_id
-//     WHERE qi.quotation_id = $quotationId AND qi.is_deleted = 0
-// ");
 $items_result = mysqli_query($conn, "
     SELECT 
         qi.*, 
@@ -437,14 +419,23 @@ if (!empty($quotation['client_id'])) {
                                             <?php endif; ?>
                                         </div>
 
-                                        <!-- Bill To -->
+                                        <!-- Bill To - Updated section -->
                                         <div class="billing-to">
                                             <div class="billing-title">Billing To</div>
-                                            <div class="d-flex align-items-center mb-1">
-                                                <div>
-                                                    <h6 class="fs-14 fw-semibold"><?= htmlspecialchars($quotation['first_name'] ??'') ?> <?= htmlspecialchars($quotation['last_name'] ??'') ?></h6>
-                                                </div>
-                                            </div>
+                                            <?php if (!empty($quotation['company_name'])): ?>
+                                                <h6 class="fs-14 fw-semibold mb-1"><?= htmlspecialchars($quotation['company_name']) ?></h6>
+                                            <?php endif; ?>
+                                            
+                                            <?php 
+                                            // Build client name from first_name and last_name
+                                            $client_name = '';
+                                            if (!empty($quotation['first_name']) || !empty($quotation['last_name'])) {
+                                                $client_name = trim(($quotation['first_name'] ?? '') . ' ' . ($quotation['last_name'] ?? ''));
+                                            }
+                                            if (!empty($client_name)): ?>
+                                                <p class="mb-1 fs-13"><span class="text-dark">Client:</span> <?= htmlspecialchars($client_name) ?></p>
+                                            <?php endif; ?>
+                                            
                                             <?php if (!empty($client_address['billing_address1'])): ?>
                                                 <p class="mb-1"><?= htmlspecialchars($client_address['billing_address1'] ??'') ?></p>
                                             <?php endif; ?>
