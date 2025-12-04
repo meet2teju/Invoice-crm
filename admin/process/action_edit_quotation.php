@@ -1,6 +1,6 @@
 <?php
-include '../../config/config.php';
 session_start();
+include '../../config/config.php';
 
 // ---------------- Helper Functions ----------------
 function dbString($conn, $value) {
@@ -8,7 +8,20 @@ function dbString($conn, $value) {
 }
 
 function unformat($value) {
-    return (float)str_replace(['$', ',',' '], '', $value);
+    if ($value === null || $value === '') {
+        return 0;
+    }
+    
+    // Remove all non-numeric characters except decimal point and minus sign
+    $cleaned = preg_replace('/[^0-9.-]/', '', $value);
+    
+    // Handle empty result
+    if ($cleaned === '' || $cleaned === null) {
+        return 0;
+    }
+    
+    $result = (float)$cleaned;
+    return is_nan($result) ? 0 : $result;
 }
 
 function dbInt($value) {
@@ -77,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             gst_type = '$gst_type',
             updated_by = '$currentUserId'
             WHERE id = '$quotation_id'";
-
+        
         if (!mysqli_query($conn, $update_quotation)) {
             throw new Exception("Failed to update quotation: " . mysqli_error($conn));
         }
@@ -90,163 +103,158 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         }
 
         // === 3. Insert/update quotation items ===
-        if (isset($_POST['item_id']) && is_array($_POST['item_id'])) {
-            foreach ($_POST['item_id'] as $index => $item_id) {
-                $item_id       = dbInt($item_id);
-                $service_name  = dbString($conn, $_POST['service_name'][$index] ?? '');
-                $quantity      = dbFloat($_POST['quantity'][$index] ?? 0);
-                $selling_price = unformat($_POST['selling_price'][$index] ?? 0);
-                $tax_id        = dbInt($_POST['tax_id'][$index] ?? 0);
-                $rate          = dbFloat($_POST['rate'][$index] ?? 0);
-                $item_amount   = unformat($_POST['amount'][$index] ?? 0);
-                $code          = dbString($conn, $_POST['code'][$index] ?? '');
-                $item_type_row = $_POST['item_type_row'][$index] ?? 'product';
-
-                // Initialize product_id and service_id based on your new logic
-                $product_id_sql = 'NULL';
-                $service_id_sql = 'NULL';
-                $service_name_sql = 'NULL';
-
-                // Determine whether it's a product or service and set appropriate values
-                if ($item_type_row === 'product' && !empty($item_id)) {
-                    // This is a product - store in product_id
-                    $product_id_sql = $item_id;
-                } else if ($item_type_row === 'service') {
-                    if (!empty($item_id)) {
-                        // This is a service selected from dropdown - store in service_id
-                        $service_id_sql = $item_id;
-                        // Also store the service name for reference
-                        $service_name_sql = "'" . dbString($conn, $service_name) . "'";
-                    } else if (!empty($service_name)) {
-                        // This is a custom service (no dropdown selection) - store in service_name
-                        $service_name_sql = "'" . dbString($conn, $service_name) . "'";
-                    } else {
-                        continue;
-                    }
-                } else {
-                    continue;
+        $item_count = 0;
+        
+        // Get all item data
+        $item_id_array = $_POST['item_id'] ?? [];
+        $item_type_row_array = $_POST['item_type_row'] ?? [];
+        $service_name_array = $_POST['service_name'] ?? [];
+        $quantity_array = $_POST['quantity'] ?? [];
+        $selling_price_array = $_POST['selling_price'] ?? [];
+        $tax_id_array = $_POST['tax_id'] ?? [];
+        $rate_array = $_POST['rate'] ?? [];
+        $amount_array = $_POST['amount'] ?? [];
+        
+        // Process each row
+        $max_rows = count($item_type_row_array);
+        
+        for ($index = 0; $index < $max_rows; $index++) {
+            // Get row type
+            $item_type_row = $item_type_row_array[$index] ?? '';
+            
+            // Get values with proper array indexing
+            $item_id = isset($item_id_array[$index]) ? dbInt($item_id_array[$index]) : 0;
+            $service_name = isset($service_name_array[$index]) ? dbString($conn, $service_name_array[$index]) : '';
+            $quantity = isset($quantity_array[$index]) ? dbFloat($quantity_array[$index]) : 0;
+            $selling_price = isset($selling_price_array[$index]) ? unformat($selling_price_array[$index]) : 0;
+            $tax_id = isset($tax_id_array[$index]) ? dbInt($tax_id_array[$index]) : 0;
+            $rate = isset($rate_array[$index]) ? unformat($rate_array[$index]) : 0;
+            $amount = isset($amount_array[$index]) ? unformat($amount_array[$index]) : 0;
+            
+            // Check if this is an empty/blank row that should be skipped
+            $is_empty_row = false;
+            
+            // Determine if row should be skipped based on type
+            if ($item_type_row === 'product') {
+                // For products: must have item_id and valid selling price
+                if ($item_id <= 0 || $selling_price <= 0) {
+                    $is_empty_row = true;
                 }
-
-                // Skip if both product and service are empty
-                if ($product_id_sql === 'NULL' && $service_id_sql === 'NULL' && $service_name_sql === 'NULL') {
-                    continue;
+            } else if ($item_type_row === 'service') {
+                // For services: must have either service_id OR service_name AND valid selling price
+                $has_service_id = ($item_id > 0);
+                $has_service_name = (!empty($service_name) && trim($service_name) !== '');
+                
+                if ((!$has_service_id && !$has_service_name) || $selling_price <= 0) {
+                    $is_empty_row = true;
                 }
+            } else {
+                $is_empty_row = true;
+            }
+            
+            if ($is_empty_row) {
+                continue;
+            }
 
-                $tax_id_sql = ($tax_id === 0) ? 'NULL' : $tax_id;
+            // Initialize product_id and service_id
+            $product_id_sql = 'NULL';
+            $service_id_sql = 'NULL';
+            $service_name_sql = 'NULL';
 
-                // Check if item already exists (using your exact logic)
-                $check_item_query = "";
-                $item_exists = false;
-                $existing_item_id = 0;
-
-                if ($item_type_row === 'product' && !empty($item_id)) {
-                    $check_item_query = "SELECT id FROM quotation_item 
-                                       WHERE quotation_id = '$quotation_id' 
-                                       AND product_id = '$item_id'
-                                       AND is_deleted = 0
-                                       LIMIT 1";
-                } else if ($item_type_row === 'service') {
-                    if (!empty($item_id)) {
-                        // Service from dropdown - check by service_id
-                        $check_item_query = "SELECT id FROM quotation_item 
-                                           WHERE quotation_id = '$quotation_id' 
-                                           AND service_id = '$item_id'
-                                           AND is_deleted = 0
-                                           LIMIT 1";
-                    } else if (!empty($service_name)) {
-                        // Custom service - check by service_name
-                        $escaped_service_name = dbString($conn, $service_name);
-                        $check_item_query = "SELECT id FROM quotation_item 
-                                           WHERE quotation_id = '$quotation_id' 
-                                           AND service_name = '$escaped_service_name'
-                                           AND is_deleted = 0
-                                           LIMIT 1";
-                    } else {
-                        continue;
-                    }
-                } else {
-                    continue;
+            // Determine whether it's a product or service
+            if ($item_type_row === 'product') {
+                // This is a product
+                $product_id_sql = $item_id;
+                
+                // Ensure product quantity is at least 1
+                if ($quantity <= 0) {
+                    $quantity = 1;
+                }
+            } else if ($item_type_row === 'service') {
+                if ($item_id > 0) {
+                    // This is a service from dropdown
+                    $service_id_sql = $item_id;
+                    // Also store the service name
+                    $service_name_sql = "'" . dbString($conn, $service_name) . "'";
+                } else if (!empty($service_name)) {
+                    // This is a custom service
+                    $service_name_sql = "'" . dbString($conn, $service_name) . "'";
                 }
                 
-                $item_exists_result = mysqli_query($conn, $check_item_query);
-                if ($item_exists_result && mysqli_num_rows($item_exists_result) > 0) {
-                    $item_exists = true;
-                    $existing_item = mysqli_fetch_assoc($item_exists_result);
-                    $existing_item_id = $existing_item['id'];
-                }
-
-                if ($item_exists) {
-                    // UPDATE existing item
-                    if ($item_type_row === 'product' && !empty($item_id)) {
-                        $update_item = "UPDATE quotation_item SET
-                            quantity = '$quantity',
-                            selling_price = '$selling_price',
-                            tax_id = $tax_id_sql,
-                            rate = '$rate',
-                            amount = '$item_amount',
-                            is_deleted = 0
-                            WHERE id = '$existing_item_id'";
-                    } else if ($item_type_row === 'service') {
-                        if (!empty($item_id)) {
-                            // Service from dropdown - update by service_id
-                            $update_item = "UPDATE quotation_item SET
-                                quantity = '$quantity',
-                                selling_price = '$selling_price',
-                                tax_id = $tax_id_sql,
-                                rate = '$rate',
-                                amount = '$item_amount',
-                                service_name = $service_name_sql,
-                                is_deleted = 0
-                                WHERE id = '$existing_item_id'";
-                        } else if (!empty($service_name)) {
-                            // Custom service - update by service_name
-                            $update_item = "UPDATE quotation_item SET
-                                quantity = '$quantity',
-                                selling_price = '$selling_price',
-                                tax_id = $tax_id_sql,
-                                rate = '$rate',
-                                amount = '$item_amount',
-                                service_name = $service_name_sql,
-                                is_deleted = 0
-                                WHERE id = '$existing_item_id'";
-                        }
-                    }
-                    
-                    if (!mysqli_query($conn, $update_item)) {
-                        throw new Exception("Failed to update item at index $index: " . mysqli_error($conn));
-                    }
-                } else {
-                    // INSERT new item
-                    $insert_item = "INSERT INTO quotation_item (
-                        quotation_id, product_id, service_id, service_name, quantity, 
-                        selling_price, tax_id, rate, amount, org_id, 
-                        created_by, updated_by
-                    ) VALUES (
-                        '$quotation_id', 
-                        $product_id_sql, 
-                        $service_id_sql, 
-                        $service_name_sql, 
-                        '$quantity',
-                        '$selling_price', 
-                        $tax_id_sql, 
-                        '$rate', 
-                        '$item_amount', 
-                        '$orgId',
-                        '$currentUserId', 
-                        '$currentUserId'
-                    )";
-                    
-                    if (!mysqli_query($conn, $insert_item)) {
-                        throw new Exception("Failed to insert item at index $index: " . mysqli_error($conn));
-                    }
-                }
+                // For services, quantity can be 0 or empty - no default value
+                // Keep the original quantity value (could be 0)
             }
+
+            // Calculate amount if not provided but we have price and quantity
+            if ($amount <= 0 && $selling_price > 0) {
+                // For services, if quantity is 0 or empty, use 1 for calculation
+                $calc_quantity = $quantity;
+                if ($item_type_row === 'service' && $quantity <= 0) {
+                    $calc_quantity = 1;
+                }
+                
+                $line_subtotal = $selling_price * $calc_quantity;
+                $line_tax = $line_subtotal * ($rate / 100);
+                $amount = $line_subtotal + $line_tax;
+            }
+            
+            // Final validation
+            if ($selling_price <= 0 || $amount <= 0) {
+                continue;
+            }
+
+            // Set tax_id - if in Non-GST mode, tax_id should be NULL
+            $tax_id_sql = 'NULL';
+            if ($gst_type !== 'non_gst' && $tax_id > 0) {
+                $tax_id_sql = $tax_id;
+            } else if ($gst_type === 'non_gst') {
+                $rate = 0; // Force 0% tax in Non-GST mode
+            }
+
+            // INSERT new item (without code column)
+            $insert_item = "INSERT INTO quotation_item (
+                quotation_id, 
+                product_id, 
+                service_id, 
+                service_name, 
+                quantity, 
+                selling_price, 
+                tax_id, 
+                rate, 
+                amount, 
+                org_id, 
+                created_by, 
+                updated_by
+            ) VALUES (
+                '$quotation_id', 
+                $product_id_sql, 
+                $service_id_sql, 
+                $service_name_sql, 
+                '$quantity',
+                '$selling_price', 
+                $tax_id_sql, 
+                '$rate', 
+                '$amount', 
+                '$orgId',
+                '$currentUserId', 
+                '$currentUserId'
+            )";
+            
+            if (!mysqli_query($conn, $insert_item)) {
+                throw new Exception("Failed to insert item at index $index: " . mysqli_error($conn));
+            }
+            $item_count++;
         }
 
         // === 4. Handle document uploads ===
         if (!empty($_FILES['document']['name'][0])) {
+            $uploadDir = '../../uploads/';
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            
             foreach ($_FILES['document']['tmp_name'] as $key => $tmpName) {
-                if (!empty($_FILES['document']['name'][$key])) {
+                if (!empty($_FILES['document']['name'][$key]) && $_FILES['document']['error'][$key] === 0) {
                     $document = [
                         'name' => $_FILES['document']['name'][$key],
                         'type' => $_FILES['document']['type'][$key],
@@ -255,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                         'size' => $_FILES['document']['size'][$key]
                     ];
 
-                    $docFileName = uploadFile($document, '../../uploads/');
+                    $docFileName = uploadFile($document, $uploadDir);
                     if ($docFileName) {
                         $docQuery = "INSERT INTO quotation_document (
                             quotation_id, document, created_by, updated_by
@@ -274,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         // === 5. Commit transaction ===
         mysqli_commit($conn);
         
-        $_SESSION['message'] = "Quotation updated successfully!";
+        $_SESSION['message'] = "Quotation updated successfully with $item_count items!";
         $_SESSION['message_type'] = "success";
         
         header("Location: ../edit-quotation.php?id=" . $quotation_id);
@@ -293,4 +301,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
     header("Location: ../quotations.php");
     exit();
 }
+
 ?>
