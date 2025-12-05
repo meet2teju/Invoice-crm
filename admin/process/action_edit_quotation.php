@@ -68,8 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         $tax_amount      = dbFloat($_POST['tax_amount'] ?? 0);
         $shipping_charge = unformat($_POST['shipping_charge'] ?? 0);
         $total_amount    = dbFloat($_POST['total_amount'] ?? 0);
-        
-        // === GST Type field ===
         $gst_type        = dbString($conn, $_POST['gst_type'] ?? 'gst');
 
         // === 1. Update quotation main record ===
@@ -95,17 +93,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             throw new Exception("Failed to update quotation: " . mysqli_error($conn));
         }
 
-        // === 2. Mark old items deleted ===
+        // === 2. MARK ALL OLD ITEMS AS DELETED FIRST ===
         $mark_deleted = "UPDATE quotation_item SET is_deleted = 1 WHERE quotation_id = '$quotation_id'";
         
         if (!mysqli_query($conn, $mark_deleted)) {
             throw new Exception("Failed to mark old items as deleted: " . mysqli_error($conn));
         }
 
-        // === 3. Insert/update quotation items ===
-        $item_count = 0;
-        
-        // Get all item data
+        // === 3. Process NEW items from form ===
         $item_id_array = $_POST['item_id'] ?? [];
         $item_type_row_array = $_POST['item_type_row'] ?? [];
         $service_name_array = $_POST['service_name'] ?? [];
@@ -115,33 +110,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
         $rate_array = $_POST['rate'] ?? [];
         $amount_array = $_POST['amount'] ?? [];
         
-        // Process each row
+        $item_count = 0;
         $max_rows = count($item_type_row_array);
         
         for ($index = 0; $index < $max_rows; $index++) {
             // Get row type
             $item_type_row = $item_type_row_array[$index] ?? '';
             
-            // Get values with proper array indexing
-            $item_id = isset($item_id_array[$index]) ? dbInt($item_id_array[$index]) : 0;
-            $service_name = isset($service_name_array[$index]) ? dbString($conn, $service_name_array[$index]) : '';
-            $quantity = isset($quantity_array[$index]) ? dbFloat($quantity_array[$index]) : 0;
-            $selling_price = isset($selling_price_array[$index]) ? unformat($selling_price_array[$index]) : 0;
-            $tax_id = isset($tax_id_array[$index]) ? dbInt($tax_id_array[$index]) : 0;
-            $rate = isset($rate_array[$index]) ? unformat($rate_array[$index]) : 0;
-            $amount = isset($amount_array[$index]) ? unformat($amount_array[$index]) : 0;
+            // Get raw values
+            $raw_item_id = $_POST['item_id'][$index] ?? '';
+            $raw_service_name = $_POST['service_name'][$index] ?? '';
+            $raw_quantity = $_POST['quantity'][$index] ?? '';
+            $raw_selling_price = $_POST['selling_price'][$index] ?? '';
+            $raw_tax_id = $_POST['tax_id'][$index] ?? '';
+            $raw_rate = $_POST['rate'][$index] ?? '';
+            $raw_amount = $_POST['amount'][$index] ?? '';
             
-            // Check if this is an empty/blank row that should be skipped
+            // Process values
+            $item_id = dbInt($raw_item_id);
+            $service_name = dbString($conn, $raw_service_name);
+            $quantity = dbFloat($raw_quantity);
+            $selling_price = unformat($raw_selling_price);
+            $tax_id = dbInt($raw_tax_id);
+            $rate = unformat($raw_rate);
+            $amount = unformat($raw_amount);
+            
+            // Check if this is an empty/blank row
             $is_empty_row = false;
             
-            // Determine if row should be skipped based on type
             if ($item_type_row === 'product') {
-                // For products: must have item_id and valid selling price
                 if ($item_id <= 0 || $selling_price <= 0) {
                     $is_empty_row = true;
                 }
             } else if ($item_type_row === 'service') {
-                // For services: must have either service_id OR service_name AND valid selling price
                 $has_service_id = ($item_id > 0);
                 $has_service_name = (!empty($service_name) && trim($service_name) !== '');
                 
@@ -161,33 +162,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             $service_id_sql = 'NULL';
             $service_name_sql = 'NULL';
 
-            // Determine whether it's a product or service
             if ($item_type_row === 'product') {
-                // This is a product
                 $product_id_sql = $item_id;
-                
-                // Ensure product quantity is at least 1
                 if ($quantity <= 0) {
                     $quantity = 1;
                 }
             } else if ($item_type_row === 'service') {
                 if ($item_id > 0) {
-                    // This is a service from dropdown
                     $service_id_sql = $item_id;
-                    // Also store the service name
-                    $service_name_sql = "'" . dbString($conn, $service_name) . "'";
+                    $service_name_sql = "'" . $service_name . "'";
                 } else if (!empty($service_name)) {
-                    // This is a custom service
-                    $service_name_sql = "'" . dbString($conn, $service_name) . "'";
+                    $service_name_sql = "'" . $service_name . "'";
                 }
-                
-                // For services, quantity can be 0 or empty - no default value
-                // Keep the original quantity value (could be 0)
             }
 
-            // Calculate amount if not provided but we have price and quantity
+            // Calculate amount if not provided
             if ($amount <= 0 && $selling_price > 0) {
-                // For services, if quantity is 0 or empty, use 1 for calculation
                 $calc_quantity = $quantity;
                 if ($item_type_row === 'service' && $quantity <= 0) {
                     $calc_quantity = 1;
@@ -203,15 +193,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                 continue;
             }
 
-            // Set tax_id - if in Non-GST mode, tax_id should be NULL
+            // Set tax_id
             $tax_id_sql = 'NULL';
             if ($gst_type !== 'non_gst' && $tax_id > 0) {
                 $tax_id_sql = $tax_id;
             } else if ($gst_type === 'non_gst') {
-                $rate = 0; // Force 0% tax in Non-GST mode
+                $rate = 0;
             }
 
-            // INSERT new item (without code column)
+            // INSERT new item
             $insert_item = "INSERT INTO quotation_item (
                 quotation_id, 
                 product_id, 
@@ -243,6 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
             if (!mysqli_query($conn, $insert_item)) {
                 throw new Exception("Failed to insert item at index $index: " . mysqli_error($conn));
             }
+            
             $item_count++;
         }
 
@@ -301,5 +292,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
     header("Location: ../quotations.php");
     exit();
 }
-
 ?>

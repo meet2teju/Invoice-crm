@@ -430,6 +430,12 @@ $isNonGST = ($row['gst_type'] ?? 'gst') === 'non_gst';
                                                             $quantityPlaceholder = $isProduct ? '' : 'Optional';
                                                         ?>
                                                             <tr class="<?= $rowClass ?>">
+                                                                <!-- ADDED: Hidden field for quotation item ID -->
+                                                                <!-- <input type="hidden" name="quotation_item_id[]" value="<?= $item['id'] ?>"> -->
+                                                                <td style="display:none;">
+        <!-- ADDED: Hidden field for quotation item ID - placed inside hidden TD -->
+        <input type="hidden" name="quotation_item_id[]" value="<?= $item['id'] ?>">
+    </td>
                                                                 <td>
                                                                     <div class="product-fields">
                                                                         <select class="form-select product-select" name="item_id[]">
@@ -896,13 +902,21 @@ $(document).ready(function() {
                 $sellingPrice.val('$ 0.00');
             }
             
-            // Format amount
+            // Format amount - FIXED: Check if amount is already correct before recalculating
             const $amount = $row.find('.amount');
             let amountValue = $amount.data('value') || 0;
             
             // If amount data-value is 0, check the input value
             if (amountValue === 0 && $amount.val()) {
                 amountValue = unformat($amount.val());
+                $amount.data('value', amountValue);
+            }
+            
+            // Recalculate amount to ensure it's correct
+            const calculatedAmount = calculateRowAmount($row);
+            if (Math.abs(calculatedAmount - amountValue) > 0.01) {
+                console.log(`Row ${index}: Correcting amount from ${amountValue} to ${calculatedAmount}`);
+                amountValue = calculatedAmount;
                 $amount.data('value', amountValue);
             }
             
@@ -945,6 +959,38 @@ $(document).ready(function() {
         });
     }
     
+    // Helper function to calculate row amount independently
+    function calculateRowAmount($row) {
+        const isService = $row.hasClass('service-row');
+        const isProduct = $row.hasClass('product-row');
+        
+        if (!isService && !isProduct) return 0;
+        
+        const qtyInput = $row.find('.quantity');
+        let qty = unformat(qtyInput.val());
+        
+        // For services, if quantity is empty or 0, treat as 1 for calculation
+        if (isService && (qty === 0 || qtyInput.val() === '')) {
+            qty = 1;
+        }
+        
+        // For products with empty quantity, use 1
+        if (isProduct && (qty === 0 || qtyInput.val() === '')) {
+            qty = 1;
+        }
+        
+        const price = isService ? 
+            ($row.find('.service-price-input').data('value') || 0) : 
+            ($row.find('.selling-price').data('value') || 0);
+        const taxRate = $row.find('.tax-rate').data('value') || 0;
+        
+        const lineSubtotal = qty * price;
+        const lineTaxAmount = lineSubtotal * (taxRate / 100);
+        const lineTotal = lineSubtotal + lineTaxAmount;
+        
+        return lineTotal;
+    }
+    
     function calculateTaxAmount($row) {
         const isService = $row.hasClass('service-row');
         const qtyInput = $row.find('.quantity');
@@ -971,11 +1017,52 @@ $(document).ready(function() {
         return lineTaxAmount;
     }
 
-
-    
-    // Form validation
+    // Form validation - FIXED VERSION
     $('#form').on('submit', function(e) {
-        console.log('Form submit triggered');
+        console.log('Form submit triggered - FIXED VERSION');
+        
+        // ========== CRITICAL FIX: Validate and correct all amounts before submit ==========
+        console.log('Validating and correcting all amounts...');
+        let amountCorrections = 0;
+        
+        $('.add-tbody tr').each(function(index) {
+            const $row = $(this);
+            const isProduct = $row.hasClass('product-row');
+            const isService = $row.hasClass('service-row');
+            
+            if (!isProduct && !isService) {
+                return; // Skip invalid rows
+            }
+            
+            // Skip empty rows
+            const itemId = isProduct ? $row.find('.product-select').val() : $row.find('.service-select').val();
+            const serviceName = isService ? $row.find('.service-name-input').val() : '';
+            
+            if ((!itemId || itemId === '') && (!serviceName || serviceName.trim() === '')) {
+                return; // Skip empty row
+            }
+            
+            // Get current amount
+            const $amount = $row.find('.amount');
+            const currentAmount = $amount.data('value') || unformat($amount.val()) || 0;
+            
+            // Calculate correct amount
+            const correctAmount = calculateRowAmount($row);
+            
+            // If amounts don't match, correct it
+            if (Math.abs(currentAmount - correctAmount) > 0.01) {
+                console.log(`Row ${index}: Correcting amount from ${currentAmount} to ${correctAmount}`);
+                $amount.data('value', correctAmount);
+                $amount.val(formatCurrency(correctAmount));
+                amountCorrections++;
+            }
+        });
+        
+        if (amountCorrections > 0) {
+            console.log(`Corrected ${amountCorrections} amount(s)`);
+            calculateSummary(); // Recalculate totals
+        }
+        // ========== END CRITICAL FIX ==========
         
         // Clean up empty rows before form submission
         let hasValidRows = false;
@@ -1023,6 +1110,20 @@ $(document).ready(function() {
         
         // Format all fields before submission
         formatAllFieldsBeforeSubmit();
+        
+        // ========== DEBUG: Log final values ==========
+        console.log('=== FINAL FORM VALUES ===');
+        $('.add-tbody tr').each(function(index) {
+            const $row = $(this);
+            const isProduct = $row.hasClass('product-row');
+            
+            const itemId = isProduct ? $row.find('.product-select').val() : $row.find('.service-select').val();
+            const amount = $row.find('.amount').val();
+            const amountValue = $row.find('.amount').data('value');
+            
+            console.log(`Row ${index}: Item=${itemId}, Display Amount=${amount}, Data Value=${amountValue}`);
+        });
+        // ========== END DEBUG ==========
         
         let isValid = true;
         $('.error-text').text('');
@@ -1367,7 +1468,7 @@ $(document).ready(function() {
     });
 
     /* =========================
-       Calculations
+       Calculations - FIXED VERSION
     ========================== */
     function calculateRow($row) {
         const qtyInput = $row.find('.quantity');
@@ -1397,8 +1498,14 @@ $(document).ready(function() {
         $row.find('.tax-amount-line').text(taxAmountFormatted);
         $row.find('.tax-rate-line').text(taxRateFormatted);
         
-        // Ensure data-value is set properly
-        $row.find('.amount').data('value', lineTotal).val(formatCurrency(lineTotal));
+        // CRITICAL FIX: Update amount field with proper calculation
+        const $amount = $row.find('.amount');
+        const currentAmount = $amount.data('value') || 0;
+        
+        // Only update if significantly different to prevent corruption
+        if (Math.abs(currentAmount - lineTotal) > 0.01) {
+            $amount.data('value', lineTotal).val(formatCurrency(lineTotal));
+        }
         
         calculateSummary();
     }
@@ -1578,6 +1685,9 @@ $(document).ready(function() {
 
         const newRow = `
             <tr class="${rowClass}">
+                <!-- ADDED: Empty hidden field for new rows -->
+                <input type="hidden" name="quotation_item_id[]" value="">
+                
                 <td>
                     <div class="product-fields">
                         <select class="form-select product-select" name="item_id[]">
@@ -1740,6 +1850,28 @@ $(document).ready(function() {
         calculateSummary();
     }
 
+    // ========== ADDITIONAL FIX: Validate amounts when new row is added ==========
+    $(document).on('DOMNodeInserted', '.add-tbody', function(e) {
+        if ($(e.target).is('tr')) {
+            setTimeout(function() {
+                // When a new row is added, validate all existing rows
+                $('.add-tbody tr').each(function() {
+                    const $row = $(this);
+                    const $amount = $row.find('.amount');
+                    const currentAmount = $amount.data('value') || 0;
+                    const correctAmount = calculateRowAmount($row);
+                    
+                    // Fix if amount is incorrect
+                    if (Math.abs(currentAmount - correctAmount) > 0.01 && correctAmount > 0) {
+                        $amount.data('value', correctAmount);
+                        $amount.val(formatCurrency(correctAmount));
+                    }
+                });
+                calculateSummary();
+            }, 300);
+        }
+    });
+
     // Trigger GST toggle on page load to apply initial state
     setTimeout(function() {
         const initialGstType = $('input[name="gst_type"]:checked').val();
@@ -1832,8 +1964,9 @@ $(document).ready(function() {
     updateProductDropdowns();
     updateServiceDropdowns();
     
-    console.log('Initialization complete - service dropdown and name input work independently');
+    console.log('Initialization complete - amount corruption fix applied');
 });
-</script>
+
+ </script>
 </body>
 </html>
