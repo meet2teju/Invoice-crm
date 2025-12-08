@@ -343,7 +343,7 @@ while ($item = mysqli_fetch_assoc($itemResult)) {
                                                                     <a class="nav-link d-inline-flex align-items-center border fs-12 fw-semibold rounded-2" data-bs-toggle="tab" data-bs-target="#terms" href="javascript:void(0);"><i class="isax isax-document me-1"></i>Add Terms & Conditions</a>
                                                                 </li>
                                                                 <li class="nav-item" role="presentation">
-                                                                    <a class="nav-link d-inline-flex align-items-center border fs-12 fw-semibold rounded-2" data-bs-toggle="tab" data-bs-target="#bank" href="javascript:void(0);"><i class="isax isax-bank me-1"></i>Bank Details</a>
+                                                                    <a class="nav-link d-inline-flex align-items-center border fs-12 fw-semibold rounded-2" data-bs-toggle="tab" data-bs-target="#bank" href="javascript:void(0);" id="bank-tab-link"><i class="isax isax-bank me-1"></i>Bank Details</a>
                                                                 </li>
                                                                 <li class="nav-item" role="presentation">
                                                                     <a class="nav-link d-inline-flex align-items-center border fs-12 fw-semibold rounded-2" data-bs-toggle="tab" data-bs-target="#documents" href="javascript:void(0);"><i class="isax isax-bank me-1"></i>Upload Documnets</a>
@@ -704,70 +704,66 @@ $(document).ready(function() {
         }
     });
 
-    // Form validation
-    // $('#form').on('submit', function(e) {
-    //     let isValid = true;
-    //     $('.error-text').text('');
+    // Form validation with bank account tab auto-open
+    $('#form').on('submit', function(e) {
+        let isValid = true;
+        $('.error-text').text('');
 
-    //     if (!$('#client_id').val()) {
-    //         $('#clientname_error').text('Client is required.');
-    //         isValid = false;
-    //     }
-    //     if (!$('#invoice_date').val()) {
-    //         $('#invoice_date_error').text('Invoice Date is required.');
-    //         isValid = false;
-    //     }
+        if (!$('#client_id').val()) {
+            $('#clientname_error').text('Client is required.');
+            isValid = false;
+        }
+        if (!$('#invoice_date').val()) {
+            $('#invoice_date_error').text('Invoice Date is required.');
+            isValid = false;
+        }
 
-    //     if (!$('#due_date').val()) {
-    //         $('#invoice_due_error').text('Invoice Due Date is required.');
-    //         isValid = false;
-    //     }
+        if (!$('#due_date').val()) {
+            $('#invoice_due_error').text('Due Date is required.');
+            isValid = false;
+        }
 
-    //     if (!$('.add-tbody tr').length) {
-    //         $('#product_error').text('Please add at least one product or service');
-    //         isValid = false;
-    //     }
+        if (!$('.add-tbody tr').length) {
+            $('#product_error').text('Please add at least one product or service');
+            isValid = false;
+        }
 
-    //     if (!isValid) {
-    //         e.preventDefault();
-    //         $('html, body').animate({ scrollTop: $('.error-text:visible').first().offset().top - 100 }, 500);
-    //     }
-    // });
-// Form validation
-$('#form').on('submit', function(e) {
-    let isValid = true;
-    $('.error-text').text('');
+        // ADDED: Bank account validation
+        if (!$('#bank_id').val()) {
+            $('#invoice_account_error').text('Account is required.');
+            
+            // Auto-open the Bank Details tab
+            $('#bank-tab-link').tab('show');
+            
+            // Add a red border to highlight the required field
+            $('#bank_id').addClass('is-invalid');
+            
+            isValid = false;
+        } else {
+            $('#invoice_account_error').text('');
+            $('#bank_id').removeClass('is-invalid');
+        }
 
-    if (!$('#client_id').val()) {
-        $('#clientname_error').text('Client is required.');
-        isValid = false;
-    }
-    if (!$('#invoice_date').val()) {
-        $('#invoice_date_error').text('Invoice Date is required.');
-        isValid = false;
-    }
+        if (!isValid) {
+            e.preventDefault();
+            
+            // Scroll to the first error
+            let firstError = $('.error-text:visible').first();
+            if (firstError.length) {
+                $('html, body').animate({ 
+                    scrollTop: firstError.offset().top - 100 
+                }, 500);
+            }
+            
+            // If bank error exists, scroll to bank tab
+            if ($('#invoice_account_error').text()) {
+                $('html, body').animate({ 
+                    scrollTop: $('#bank-tab-link').offset().top - 150 
+                }, 500);
+            }
+        }
+    });
 
-    if (!$('#due_date').val()) {
-        $('#invoice_due_error').text('Due Date is required.');
-        isValid = false;
-    }
-
-    if (!$('.add-tbody tr').length) {
-        $('#product_error').text('Please add at least one product or service');
-        isValid = false;
-    }
-
-    // ADDED: Bank account validation
-    if (!$('#bank_id').val()) {
-        $('#invoice_account_error').text('Account is required.');
-        isValid = false;
-    }
-
-    if (!isValid) {
-        e.preventDefault();
-        $('html, body').animate({ scrollTop: $('.error-text:visible').first().offset().top - 100 }, 500);
-    }
-});
     // =============================================
     // Load products and services functions
     // =============================================

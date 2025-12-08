@@ -52,31 +52,61 @@ if (mysqli_query($conn, $insert_project)) {
 
     // Insert tasks (project_task)
 // Insert tasks (project_task)
+// if (!empty($_POST['task_name']) && is_array($_POST['task_name'])) {
+//     foreach ($_POST['task_name'] as $index => $task_name) {
+//         $task_desc  = $_POST['task_description'][$index] ?? '';
+//         $start_date = $_POST['start_date'][$index] ?? '';
+//         $end_date   = $_POST['end_date'][$index] ?? '';
+//         $hour  = $_POST['hour'][$index] ?? '';
+//         $status   = $_POST['status_id'][$index] ?? '';
+
+//         $task_name  = mysqli_real_escape_string($conn, $task_name);
+//         $task_desc  = mysqli_real_escape_string($conn, $task_desc);
+//          $hour       = mysqli_real_escape_string($conn, $hour);
+//         $status     = mysqli_real_escape_string($conn, $status);
+//         $start_date = !empty($start_date) ? "'" . mysqli_real_escape_string($conn, $start_date) . "'" : 'NULL';
+//         $end_date   = !empty($end_date) ? "'" . mysqli_real_escape_string($conn, $end_date) . "'" : 'NULL';
+
+//         if (!empty($task_name) && !empty($task_desc)) {
+//             $query = "
+//                 INSERT INTO project_task (project_id, task_name, task_description, start_date, end_date, hour, status_id)
+//                 VALUES ('$project_id', '$task_name', '$task_desc', $start_date, $end_date, '$hour', '$status')
+//             ";
+//             mysqli_query($conn, $query) or die("Task insert failed: " . mysqli_error($conn));
+//         }
+//     }
+// }
+// Insert tasks (project_task)
 if (!empty($_POST['task_name']) && is_array($_POST['task_name'])) {
     foreach ($_POST['task_name'] as $index => $task_name) {
         $task_desc  = $_POST['task_description'][$index] ?? '';
         $start_date = $_POST['start_date'][$index] ?? '';
         $end_date   = $_POST['end_date'][$index] ?? '';
-        $hour  = $_POST['hour'][$index] ?? '';
-        $status   = $_POST['status_id'][$index] ?? '';
-
+        $hour       = $_POST['hour'][$index] ?? '';
+        $status     = $_POST['status_id'][$index] ?? '';
+        
         $task_name  = mysqli_real_escape_string($conn, $task_name);
         $task_desc  = mysqli_real_escape_string($conn, $task_desc);
-         $hour       = mysqli_real_escape_string($conn, $hour);
-        $status     = mysqli_real_escape_string($conn, $status);
+        $hour       = mysqli_real_escape_string($conn, $hour);
+        
+        // Convert status to integer or NULL if empty
+        $status = ($status !== '' && is_numeric($status)) ? intval($status) : 'NULL';
+        
+        // Convert hour to integer or NULL if empty
+        $hour = ($hour !== '' && is_numeric($hour)) ? intval($hour) : 'NULL';
+        
         $start_date = !empty($start_date) ? "'" . mysqli_real_escape_string($conn, $start_date) . "'" : 'NULL';
         $end_date   = !empty($end_date) ? "'" . mysqli_real_escape_string($conn, $end_date) . "'" : 'NULL';
-
+        
         if (!empty($task_name) && !empty($task_desc)) {
             $query = "
                 INSERT INTO project_task (project_id, task_name, task_description, start_date, end_date, hour, status_id)
-                VALUES ('$project_id', '$task_name', '$task_desc', $start_date, $end_date, '$hour', '$status')
+                VALUES ('$project_id', '$task_name', '$task_desc', $start_date, $end_date, $hour, $status)
             ";
             mysqli_query($conn, $query) or die("Task insert failed: " . mysqli_error($conn));
         }
     }
 }
-
     $_SESSION['message'] = 'Project added successfully';
     $_SESSION['message_type'] = 'success';
 } else {

@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $item_type      = isset($_POST['item_type']) && $_POST['item_type'] == "1" ? 1 : 0;
     $category_id    = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : "NULL";
     $selling_price  = !empty($_POST['selling_price']) ? (float)$_POST['selling_price'] : 0.00;
-    $purchase_price = !empty($_POST['purchase_price']) ? (float)$_POST['purchase_price'] : 0.00;
+      $purchase_price = !empty($_POST['purchase_price']) ? (float)$_POST['purchase_price'] : 0.00; //purchase price
     $quantity       = !empty($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
     $unit_id        = !empty($_POST['unit_id']) ? (int)$_POST['unit_id'] : "NULL";
     $discount_type  = (!empty($_POST['discount_type']) && in_array($_POST['discount_type'], ['%', 'fixed'])) 
