@@ -32,7 +32,7 @@ if (!$isLoggedIn):
     <header class="header">
       <nav class="navbar navbar-expand-lg">
         <div class="container">
-          <a class="navbar-brand" href="index.php"><img src="images/logo.png" alt="logo"></a>
+          <a class="navbar-brand" href="index.php"><img src="assets/images/logo.png" alt="logo"></a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -65,7 +65,7 @@ if (!$isLoggedIn):
     <section class="main-part">
       <div class="hero-banner">
         <div class="container">
-          <img src="images/banner-bac-img.png" alt="banner-img" class="bac-shape">
+          <img src="assets/images/banner-bac-img.png" alt="banner-img" class="bac-shape">
           <div class="row align-items-center row-gap-4">
             <div class="col-lg-6 col-md-12" data-aos="fade-right" data-aos-duration="1000">
               <h1 class="banner-title">Free Online <span class="hilight-color">Invoice</span>  Generator</h1>
@@ -73,7 +73,7 @@ if (!$isLoggedIn):
               <a type="button" href="admin/register.php" class="primary-btn mt-50">Generate Free Invoice</a>
             </div>
             <div class="col-lg-6 col-md-12" data-aos="fade-left" data-aos-duration="1000">
-              <img src="images/banner-img.png" alt="hreo-img" class="img-box banner-img">
+              <img src="assets/images/banner-img.png" alt="hreo-img" class="img-box banner-img">
             </div>
           </div>
         </div>
@@ -87,22 +87,22 @@ if (!$isLoggedIn):
           </div>
           <div class="logo-slider">
             <div class="logo-card">
-                <img src="images/Invoice Generator-1.png" alt="about-img">
+                <img src="assets/images/Invoice Generator-1.png" alt="about-img">
             </div>
             <div class="logo-card">
-                <img src="images/Invoice Generator-2.png" alt="about-img">
+                <img src="assets/images/Invoice Generator-2.png" alt="about-img">
             </div>
             <div class="logo-card">
-              <img src="images/Invoice Generator-3.png" alt="about-img">
+              <img src="assets/images/Invoice Generator-3.png" alt="about-img">
             </div>
             <div class="logo-card">
-                <img src="images/Invoice Generator-4.png" alt="about-img">
+                <img src="assets/images/Invoice Generator-4.png" alt="about-img">
             </div>
             <div class="logo-card">
-              <img src="images/Invoice Generator-5.png" alt="about-img">
+              <img src="assets/images/Invoice Generator-5.png" alt="about-img">
             </div>
             <div class="logo-card">
-              <img src="images/Invoice Generator-4.png" alt="about-img">
+              <img src="assets/images/Invoice Generator-4.png" alt="about-img">
             </div>
           </div>
         </div>
@@ -113,7 +113,7 @@ if (!$isLoggedIn):
           <p class="banner-p text-center mt-0">Automate your invoicing with the best AI Invoice Generator and create custom Invoices effortlessly.</p>
           <div class="row mt-50 row-gap-4 justify-content-between align-items-center">
             <div class="col-lg-5 col-md-12">
-              <img src="images/invoise-steps-img.png" alt="hreo-img" class="img-box banner-img">
+              <img src="assets/images/invoise-steps-img.png" alt="hreo-img" class="img-box banner-img">
             </div>
             <div class="col-lg-6 col-md-12">
               <div class="step-box">
@@ -286,7 +286,7 @@ if (!$isLoggedIn):
       <div class="container pt-100" id="contact">
         <div class="row row-gap-4">
           <div class="col-lg-6 col-md-12" data-aos="fade-right" data-aos-duration="1000">
-            <img src="images/contact-img.png" alt="hreo-img" class="contact-img">
+            <img src="assets/images/contact-img.png" alt="hreo-img" class="contact-img">
           </div>
           <div class="col-lg-6 col-md-12" data-aos="fade-left" data-aos-duration="1000">
             <div class="contact-form">
@@ -318,7 +318,7 @@ if (!$isLoggedIn):
       <footer class="footer mt-100">
         <div class="container">
           <div class="footer-top">
-            <img src="images/logo.png" alt="Logo" class="footer-logo">
+            <img src="assets/images/logo.png" alt="Logo" class="footer-logo">
             <ul class="footer-menu">
                 <li><a href="#">Home</a></li>
                 <li><a href="#how-to-use">How To Use</a></li>
